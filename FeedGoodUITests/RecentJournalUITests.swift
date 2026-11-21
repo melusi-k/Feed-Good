@@ -30,6 +30,9 @@ final class RecentJournalUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Recent journal moments"].exists)
         XCTAssertTrue(card.label.contains("Moment fern"))
         XCTAssertTrue(card.label.contains("An observation from my journal"))
+        // Hittable can mean just the top edge is visible. Reveal the full preview for evidence.
+        app.swipeUp()
+        XCTAssertTrue(card.isHittable)
         let image = XCTAttachment(screenshot: app.screenshot())
         image.name = "SIMULATOR - Today real recent journal moment"
         image.lifetime = .keepAlways; add(image)
