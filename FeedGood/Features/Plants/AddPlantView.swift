@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct AddPlantView: View {
-    @Environment(\\.dismiss) private var dismiss
-    @Environment(\\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var name = ""
     @State private var species = ""
     @State private var notes = ""
