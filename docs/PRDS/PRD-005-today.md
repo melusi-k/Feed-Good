@@ -88,3 +88,8 @@ Replaces a blank landing screen or an undifferentiated list of tasks with a cont
 - Should the screen vary by season or local weather in a later release?
 - How much content should appear before scrolling?
 - Which interactions should be available directly on Today versus opening a feature screen?
+
+
+## 12. Delivery tracking
+
+- GitHub implementation issue: [#13 — Today with real care](https://github.com/melusi-k/Feed-Good/issues/13).
