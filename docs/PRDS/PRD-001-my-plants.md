@@ -83,14 +83,24 @@ No feature-level charge. My Plants is part of the free, local-first initial rele
 
 Replaces an informal or fragmented way of keeping plant details in memory or separate notes with one local plant record. It does not replace a specialist botanical reference or professional horticultural advice.
 
-## 11. Open questions
+## 11. Decisions and open questions
 
-- Is plant name mandatory, and should species/common name be optional?
-- Does initial onboarding offer a curated plant catalogue, manual entry first, or both?
-- Which profile fields are required at MVP versus later?
-- What exact deletion and recovery behavior is expected for associated photos, care activity and journal entries?
-- Is plant photo storage limited to app-managed local files, and what is the backup/export expectation?
-- Should the collection remember sort selection across launches?
+Reconciled against the app on main (b5e593f8) on 2026-11-21. "Current baseline" means shipped behavior that this PRD adopts unless the owner changes it.
+
+### Settled (current baseline)
+
+- **Plant name is required; species and notes are optional.** The edit form blocks saving a blank (whitespace-only) name; values are trimmed. Source: `PlantProfileDraft.isValid`.
+- **Onboarding is manual entry first.** There is no plant catalogue in the app. A curated catalogue is out of scope here and belongs to PRD-008. Source: `AddPlantView`, empty state in `PlantListView`.
+- **MVP profile fields:** name (required), species (optional), notes (optional), photo (optional), created date (automatic). Source: `Plant` model.
+- **Deleting a plant removes its care tasks, care history and journal entries.** The delete alert says so and cannot be undone. Source: cascade rules in `Plant`, alert text in `PlantDetailView`. The journal-photo part is covered in PRD-004.
+- **Plant photos are stored locally, nothing is uploaded.** Photos are picked with the system picker, resized to 1200 px on the longest edge and saved as JPEG (quality 0.82) in SwiftData external storage. Source: `PlantPhotoService`.
+- **Backup and export:** plant names, species, notes and creation dates are included in the journal archive (Settings > Export journal). Plant profile photos are not. See PRD-004 and PRD-009. Source: `docs/JOURNAL_ARCHIVE.md`.
+
+### Still open
+
+- **Search and sort are not implemented.** Section 3 and section 4 describe search by name or species and sorting by name or recently added. Main only lists plants newest first, with no search field and no sort control. Either build them (issue #3) or mark them "planned" in sections 3 and 4. Product decision: which one?
+- **Remembering a sort choice across launches** depends on the above. Stays open until a sort control exists.
+- **Plant profile photo backup.** The journal archive leaves out profile photos, so a user who deletes the app loses them. Decide whether a fuller garden backup is wanted (see PRD-009).
 
 ## 12. Delivery tracking
 
