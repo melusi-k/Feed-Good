@@ -81,15 +81,27 @@ Included in the free initial release. Entries and photos are stored locally; no 
 
 Replaces scattered camera-roll photos and disconnected notes with a plant-centred record. It does not replace a full photo-management or cloud-backup service.
 
-## 11. Open questions
+## 11. Decisions and open questions
 
-- Is the journal a dedicated primary tab at MVP, or is it first accessed through plant profiles?
-- Which milestone types are predefined, and can users create custom milestones?
-- Are multiple photos per entry supported?
-- What image formats, size limits and storage strategy are acceptable?
-- What export format and backup expectations apply to journal content?
-- What happens to journal entries and photo files when a plant is deleted?
-- Is a date-only entry sufficient, or must exact time be preserved?
+Reconciled against the app on main (b5e593f8) on 2026-11-21.
+
+### Settled (current baseline)
+
+- **Journal is a primary tab and is also reachable from each plant profile.** The tab bar is Today, My Plants, Journal, Settings; a plant profile links to a journal filtered to that plant. Source: `AppTabView`, `PlantDetailView`.
+- **One photo per entry.** An entry has a date, a note and an optional single photo; it needs a note or a photo to save. Source: `JournalEntry`, `JournalDraft.isValid`, `JournalView`.
+- **Photo handling:** system picker, no library permission, resized to 1200 px longest edge and recompressed to JPEG (quality 0.82), stored locally in SwiftData external storage. Unreadable images are rejected and the previous photo is kept. Source: `PlantPhotoService`, `JournalView`.
+- **Entries keep date and time.** The entry date is a full date-time chosen with a date picker, defaulting to now. Source: `JournalDraft.date`, `JournalView`.
+- **Export format and expectations:** Settings > Export journal writes a versioned JSON archive with plant IDs, names, species, notes, creation dates and every entry's ID, plant ID, date, note and JPEG bytes. It is a manual export, not an automatic backup, and it does not include plant profile photos, care routines or history, or settings. Source: `docs/JOURNAL_ARCHIVE.md`.
+- **Recovery is additive:** Settings > Recover journal adds missing plants and entries and never overwrites existing records. A conflicting ID, broken reference, unsupported version or invalid record rejects the whole import. Limits are 25 MB and 1,000 entries. Source: `docs/JOURNAL_ARCHIVE.md`.
+- **Deleting an entry deletes its photo.** The confirmation says it can't be undone and exported archives are unchanged. **Deleting a plant deletes all its journal entries and photos.** Recovering an older archive can bring them back, only when the user chooses to. Source: `JournalStore.delete`, `Plant` cascade rule, `docs/JOURNAL_ARCHIVE.md`.
+
+### Still open
+
+- **Milestones are not implemented.** There are no predefined or custom milestone types in the app. Tracked in #14; the types and whether users can create custom ones are undecided. Product decision.
+- **Combined care and journal timeline** (#14) is not built. Journal shows entries only.
+- **Multiple photos per entry.** Current baseline is one. Decide whether MVP needs more.
+- **Installed-store migration on a real device** has not been tested, per `docs/JOURNAL_ARCHIVE.md`. Do not claim upgrade acceptance until it is. Owner-reported device checks so far (build 7): create, view and edit.
+- **Archive scale.** The 1,000-entry and 25 MB limits are a v1 safety choice. A streaming archive is future work.
 
 ## 12. Delivery tracking
 
