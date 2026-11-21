@@ -1,6 +1,6 @@
 # PRD-008 — Plant Care Guide
 
-**Status:** Editorial and implementation planning  
+**Status:** Implementation in progress; editorial approval is a release gate  
 **Release:** MVP, after editorial provenance and review process is established  
 **Primary surface:** Care Guide, Plant Profile, Care Routine
 
@@ -93,4 +93,5 @@ Replaces scattered, inconsistent searching with a coherent in-app learning refer
 ## 12. Delivery tracking
 
 - GitHub implementation issue: [#23 — Plant Care Guide: curated, source-backed horticultural learning](https://github.com/melusi-k/Feed-Good/issues/23).
+- Implementation PR: [#23 — offline, source-backed Care Guide](https://github.com/melusi-k/Feed-Good/pull/23).
 - Editorial owner remains unassigned; this is a release gate, not an implementation assumption.
