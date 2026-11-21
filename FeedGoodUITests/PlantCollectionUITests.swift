@@ -28,6 +28,9 @@ final class PlantCollectionUITests: XCTestCase {
         image.lifetime = .keepAlways; add(image)
         search.tap(); search.typeText(" no match")
         XCTAssertTrue(app.descendants(matching: .any)["plants.search.empty"].waitForExistence(timeout: 5))
+        let emptyImage = XCTAttachment(screenshot: app.screenshot())
+        emptyImage.name = "SIMULATOR - My Plants no matching plants and clear search"
+        emptyImage.lifetime = .keepAlways; add(emptyImage)
         app.buttons["plants.search.clear"].tap()
         XCTAssertTrue(aloe.waitForExistence(timeout: 5))
         if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
