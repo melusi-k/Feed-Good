@@ -3,8 +3,8 @@ import SwiftData
 
 /// The living record for one plant: photo, identity, growing context and notes.
 struct PlantDetailView: View {
-    @Environment(\\.modelContext) private var modelContext
-    @Environment(\\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     let plant: Plant
 
@@ -64,7 +64,7 @@ struct PlantDetailView: View {
 
                 notesCard
 
-                Label("Added \\(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
+                Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
                     .font(.caption)
                     .foregroundStyle(FeedGoodTheme.muted)
 
@@ -91,11 +91,11 @@ struct PlantDetailView: View {
         .sheet(isPresented: $showingEditor) {
             EditPlantView(plant: plant)
         }
-        .alert("Delete \\(plant.name)?", isPresented: $showingDeleteConfirmation) {
+        .alert("Delete \(plant.name)?", isPresented: $showingDeleteConfirmation) {
             Button("Delete", role: .destructive) { deletePlant() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes \\(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
+            Text("This permanently deletes \(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
         }
     }
 
