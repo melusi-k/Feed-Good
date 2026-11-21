@@ -1,6 +1,6 @@
 import Foundation
 
-enum CareGuideReviewStatus: String, Codable {
+enum CareGuideReviewStatus: String, Codable, Hashable {
     case draft
     case approved
     case retired
