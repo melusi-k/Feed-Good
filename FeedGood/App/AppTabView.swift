@@ -93,7 +93,7 @@ private struct SettingsView: View {
                         .font(.callout)
                         .foregroundStyle(FeedGoodTheme.muted)
                         .accessibilityIdentifier("settings.notificationStatus")
-                    Button("Open iPhone notification settings") {
+                    Button("Manage Feed Good notifications") {
                         if let url = URL(string: UIApplication.openSettingsURLString) {
                             openURL(url)
                         }
