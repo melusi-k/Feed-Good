@@ -89,3 +89,8 @@ Replaces ad hoc memory or generic recurring task lists with plant-specific routi
 - How should paused, seasonal and one-off care be represented?
 - What is the correction/deletion policy for an incorrectly recorded care event?
 - Which source, if any, will support species-specific care recommendations?
+
+
+## 12. Delivery tracking
+
+- GitHub implementation issue: [#4 — Care Routine: plant-specific care tasks and history](https://github.com/melusi-k/Feed-Good/issues/4).
