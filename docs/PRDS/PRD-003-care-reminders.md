@@ -90,3 +90,8 @@ Replaces reliance on memory alone for users who opt in. It does not replace the 
 - How should overdue tasks be represented without sending repeated notifications?
 - What reconciliation should happen after reinstall, device restore or significant time-zone changes?
 - Which notification preview details are safe and useful?
+
+
+## 12. Delivery tracking
+
+- GitHub implementation issue: [#5 — Local care reminders and notification lifecycle](https://github.com/melusi-k/Feed-Good/issues/5).
