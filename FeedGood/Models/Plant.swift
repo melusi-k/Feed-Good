@@ -46,8 +46,8 @@ final class Plant {
     var species: String
     var notes: String
     /// User-described growing context. Empty/default values mean the user has not supplied context.
-    var growingEnvironmentRaw: String = GrowingEnvironment.unspecified.rawValue
-    var lightConditionRaw: String = LightCondition.unspecified.rawValue
+    var growingEnvironmentRaw: String = "unspecified"
+    var lightConditionRaw: String = "unspecified"
     @Attribute(.externalStorage) var photoData: Data?
     @Relationship(deleteRule: .cascade, inverse: \CareTask.plant) var careTasks: [CareTask]? = []
     @Relationship(deleteRule: .cascade, inverse: \CareEvent.plant) var careEvents: [CareEvent]? = []
