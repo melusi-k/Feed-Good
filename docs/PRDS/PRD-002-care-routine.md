@@ -80,16 +80,26 @@ Included in the free initial release. Care records and scheduling are local-firs
 
 Replaces ad hoc memory or generic recurring task lists with plant-specific routines and a traceable care history. It does not replace observation of the plant or professional advice.
 
-## 11. Open questions
+## 11. Decisions and open questions
 
-- Are schedules interval-based, calendar-based, or both?
-- Which task types are included at MVP, and how are custom tasks represented?
-- Does completion advance the next due date automatically, or can the user review it first?
-- Can users record an activity without a pre-existing task?
-- How should paused, seasonal and one-off care be represented?
-- What is the correction/deletion policy for an incorrectly recorded care event?
-- Which source, if any, will support species-specific care recommendations?
+Reconciled against the app on main (b5e593f8) on 2026-11-21.
 
+### Settled (current baseline)
+
+- **Schedules are interval-based only.** Each task repeats every N days (minimum 1, default 7). There are no calendar-based rules such as "every Monday" or seasonal windows. Source: `CareTask.intervalDays`, `CareSchedule.nextDate`.
+- **Task types at MVP:** Watering, Feeding, Pruning and Custom. A custom task is a task kind with a user-entered title. Source: `CareKind`.
+- **Completion advances the due date automatically.** Recording care sets the next due date to the completion time plus the interval, with no review step. If the save fails, the due date and history are rolled back and an error is shown. Source: `CareRecorder.complete`, `PlantCareView`.
+- **Care can only be recorded against an existing task.** There is no "record an activity without a task" flow. The history row keeps the task title it had when recorded. Source: `PlantCareView` (Record care button only appears on a task).
+- **Paused care** is a "Routine enabled" switch on each task. A paused task shows "Paused" and cannot be recorded. Source: `CareTask.isEnabled`.
+- **Removing a task keeps its care history.** The confirmation says so. Source: `CareTaskEditor`.
+- **Task wording is the user's own routine, not advice.** The screen says it is "your schedule, not plant-care advice". No species-specific care recommendation exists in the app. Source: `PlantCareView`, `CareTask` doc comment.
+
+### Still open
+
+- **Correcting or deleting a wrongly recorded care event is not possible.** History rows are read-only and nothing in the app edits or deletes them (apart from deleting the whole plant). Product decision: allow edit/delete of events? If deleting an event, should it also roll the due date back?
+- **One-off and seasonal care** have no representation yet. A one-off task would need a "does not repeat" option, and seasonal care would need a calendar-based schedule. Decide whether either is in scope for MVP or later.
+- **Recording care without a task** (a spontaneous watering, say). Decide whether to keep tasks mandatory.
+- **Source for species-specific care recommendations.** Unchanged, deferred to PRD-008 (Plant Care Guide).
 
 ## 12. Delivery tracking
 
