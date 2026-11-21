@@ -86,3 +86,8 @@ Replaces generic filler or an empty home-screen message with a distinctive, supp
 - Should users be able to save or revisit past mantras and tips?
 - Should content vary by season, hemisphere or known plant collection?
 - Is content attribution displayed in the UI, in an about/source view, or both?
+
+
+## 12. Delivery tracking
+
+- GitHub implementation issue: [#16 — Daily content](https://github.com/melusi-k/Feed-Good/issues/16).
