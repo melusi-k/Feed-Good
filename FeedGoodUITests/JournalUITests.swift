@@ -29,6 +29,16 @@ final class JournalUITests: XCTestCase {
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts[editedValue.trimmingCharacters(in: .whitespacesAndNewlines)].waitForExistence(timeout: 5))
         let image = XCTAttachment(screenshot: app.screenshot()); image.name = "Journal saved entry"; image.lifetime = .keepAlways; self.add(image)
+        XCTAssertFalse(app.buttons["journal.export"].exists)
+        XCTAssertFalse(app.buttons["journal.recover"].exists)
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["journal.export"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["journal.recover"].exists)
+        let settingsImage = XCTAttachment(screenshot: app.screenshot())
+        settingsImage.name = "Settings journal archive controls"
+        settingsImage.lifetime = .keepAlways
+        self.add(settingsImage)
+        app.tabBars.buttons["Journal"].tap()
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "journal.delete.")).firstMatch.tap()
         app.buttons["Delete entry"].tap()
         XCTAssertTrue(app.staticTexts["Remember a little moment"].waitForExistence(timeout: 5))
