@@ -31,6 +31,7 @@ final class CareTask {
     var intervalDays: Int = 7
     var dueDate: Date = Date.now
     var isEnabled: Bool = true
+    var reminderEnabled: Bool = false
     var plant: Plant?
 
     var kind: CareKind { CareKind(rawValue: kindRaw) ?? .custom }
