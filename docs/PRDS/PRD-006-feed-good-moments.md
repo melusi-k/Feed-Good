@@ -30,6 +30,7 @@ Make plant care feel encouraging and rewarding through short daily mantras and p
 
 - Distinguish a mantra or reflection from an actionable care tip.
 - Mantras may be reflective and encouraging; factual tips must be reviewed and traceable to an appropriate source.
+- Every bundled item, including an original reflection, records stable identity, content kind, provenance, review status, review date and reviewer. Original copy is labelled as original Feed Good content, not an attributed quotation or factual care advice. Do not claim human or expert approval when only an assistant editorial/source check has occurred.
 - Keep content short, accessible and relevant to the daily garden experience.
 - Use a curated, bundled content set for the initial offline-first release unless remote content is separately approved.
 - Avoid repeating content too frequently where a deterministic local selection strategy can prevent it.
@@ -68,7 +69,7 @@ Included in the free initial release. Initial content is bundled with the app; n
 ## 9. Launch plan
 
 1. Define the editorial voice and separate reflection content from factual guidance.
-2. Build a reviewed, bundled content set with source and review metadata for factual tips.
+2. Build a reviewed, bundled content set with provenance and review metadata for every item, including original reflections and factual tips. Test that metadata is complete, content kinds remain distinct and unchecked content is not selected.
 3. Review content for horticultural accuracy, accessibility and tone.
 4. Test daily selection, date changes, repeat behavior and offline fallback.
 5. Include a content review owner and update process before adding new tips.
