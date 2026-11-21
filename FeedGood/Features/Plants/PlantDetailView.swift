@@ -31,6 +31,11 @@ struct PlantDetailView: View {
                         .foregroundStyle(plant.species.isEmpty ? FeedGoodTheme.muted.opacity(0.8) : FeedGoodTheme.muted)
                 }
 
+                NavigationLink { PlantCareView(plant: plant) } label: {
+                    Label("Care routine and history", systemImage: "drop")
+                }
+                .accessibilityIdentifier("plantDetail.care")
+
                 notesCard
 
                 Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
