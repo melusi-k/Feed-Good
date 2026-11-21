@@ -5,13 +5,13 @@ import UniformTypeIdentifiers
 import UIKit
 
 enum JournalArchiveError: LocalizedError {
-    case invalidRecord, unsupportedVersion, tooLarge, conflictingEntry
+    case invalidRecord, unsupportedVersion, tooLarge, conflictingRecord
     var errorDescription: String? {
         switch self {
         case .invalidRecord: return "This archive has an invalid record, plant reference or photo. Nothing was imported."
         case .unsupportedVersion: return "This archive version isn't supported. Nothing was imported."
         case .tooLarge: return "This archive exceeds the 25 MB or 1,000-record safety limit. Nothing was imported."
-        case .conflictingEntry: return "A record has the same ID but different content. Nothing was imported; existing records are unchanged."
+        case .conflictingRecord: return "A record has the same ID but different content. Nothing was imported; existing records are unchanged."
         }
     }
 }
@@ -239,7 +239,7 @@ struct JournalArchive: Codable {
             if let entry = entries[record.id] {
                 guard let plantID = entry.plant?.id,
                       EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData) == record else {
-                    throw JournalArchiveError.conflictingEntry
+                    throw JournalArchiveError.conflictingRecord
                 }
             }
         }
@@ -251,7 +251,7 @@ struct JournalArchive: Codable {
                         intervalDays: task.intervalDays, dueDate: task.dueDate, isEnabled: task.isEnabled,
                         reminderEnabled: task.reminderEnabled
                       ) == record else {
-                    throw JournalArchiveError.conflictingEntry
+                    throw JournalArchiveError.conflictingRecord
                 }
             }
         }
@@ -262,7 +262,7 @@ struct JournalArchive: Codable {
                         id: event.id, plantID: plantID, taskID: event.taskID, taskTitle: event.taskTitle,
                         completedAt: event.completedAt, note: event.note
                       ) == record else {
-                    throw JournalArchiveError.conflictingEntry
+                    throw JournalArchiveError.conflictingRecord
                 }
             }
         }
