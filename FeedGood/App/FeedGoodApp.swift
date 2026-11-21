@@ -16,6 +16,6 @@ struct FeedGoodApp: App {
                 .modifier(CareRemindersLifecycle())
                 .environmentObject(reminderScheduler)
         }
-        .modelContainer(for: [Plant.self, CareTask.self, CareEvent.self], inMemory: isUITesting)
+        .modelContainer(for: [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self], inMemory: isUITesting)
     }
 }
