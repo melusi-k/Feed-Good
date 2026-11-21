@@ -13,13 +13,18 @@ final class PlantCollectionUITests: XCTestCase {
             app.buttons["plants.save"].tap()
             XCTAssertTrue(app.buttons["plants.row.\(plantName)"].waitForExistence(timeout: 5))
         }
+        let visibleSearch = app.searchFields.firstMatch
+        XCTAssertTrue(visibleSearch.waitForExistence(timeout: 5))
+        XCTAssertTrue(visibleSearch.isHittable, "Search must be visible without pulling down")
+        let listImage = XCTAttachment(screenshot: app.screenshot())
+        listImage.name = "SIMULATOR - My Plants search visible without pulling down"
+        listImage.lifetime = .keepAlways; add(listImage)
         app.buttons["plants.sort"].tap()
         app.buttons["Name"].tap()
         let aloe = app.buttons["plants.row.Aloe desk"]
         let fern = app.buttons["plants.row.Zulu fern"]
         XCTAssertLessThan(aloe.frame.minY, fern.frame.minY)
         let search = app.searchFields.firstMatch
-        if !search.isHittable { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("FERN")
         XCTAssertTrue(fern.waitForExistence(timeout: 5))
         XCTAssertFalse(aloe.exists)
