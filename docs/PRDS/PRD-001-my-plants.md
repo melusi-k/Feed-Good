@@ -86,3 +86,8 @@ Replaces an informal or fragmented way of keeping plant details in memory or sep
 - What exact deletion and recovery behavior is expected for associated photos, care activity and journal entries?
 - Is plant photo storage limited to app-managed local files, and what is the backup/export expectation?
 - Which sort and filter options are essential for the first release?
+
+
+## 12. Delivery tracking
+
+- GitHub implementation issue: [#3 — My Plants: complete plant profiles and editing](https://github.com/melusi-k/Feed-Good/issues/3).
