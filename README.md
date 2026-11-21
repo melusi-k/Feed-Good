@@ -74,6 +74,7 @@ xcodebuild test -project FeedGood.xcodeproj -scheme FeedGood -destination 'platf
 ## Product and engineering docs
 
 - [Product brief](docs/PRODUCT_BRIEF.md)
+- [Feature PRDs](docs/PRDS/README.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 
