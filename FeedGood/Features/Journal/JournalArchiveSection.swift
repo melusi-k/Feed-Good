@@ -13,6 +13,9 @@ struct JournalArchiveSection: View {
     @State private var importing = false
     @State private var archive: JournalArchiveDocument?
     @State private var statusMessage: String?
+    @State private var pendingRecoveryData: Data?
+    @State private var recoveryPreview: JournalArchivePreview?
+    @State private var showingRecoveryConfirmation = false
 
     var body: some View {
         Group {
@@ -56,11 +59,24 @@ struct JournalArchiveSection: View {
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                 guard size <= JournalArchive.maxBytes else { throw JournalArchiveError.tooLarge }
-                let count = try JournalArchive.recover(Data(contentsOf: url), context: context)
-                statusMessage = "Recovered \(count) journal entries and related garden records. Existing records were kept. Save a fresh export after reviewing your garden."
+                let data = try Data(contentsOf: url)
+                recoveryPreview = try JournalArchive.preview(data, context: context)
+                pendingRecoveryData = data
+                showingRecoveryConfirmation = true
             } catch {
-                errorMessage = "Recovery failed: \(error.localizedDescription)"
+                errorMessage = "Recovery preview failed: \(error.localizedDescription)"
             }
+        }
+        .confirmationDialog(
+            "Review garden recovery",
+            isPresented: $showingRecoveryConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Recover garden data", role: .destructive) { recoverPendingArchive() }
+                .accessibilityIdentifier("journal.recover.confirm")
+            Button("Cancel", role: .cancel) { clearPendingRecovery() }
+        } message: {
+            Text(recoveryPreview?.confirmationMessage ?? "Review the archive before recovering your garden.")
         }
     }
 
@@ -76,5 +92,21 @@ struct JournalArchiveSection: View {
         } catch {
             errorMessage = "Export failed: \(error.localizedDescription)"
         }
+    }
+
+    private func recoverPendingArchive() {
+        guard let data = pendingRecoveryData, let preview = recoveryPreview else { return }
+        do {
+            _ = try JournalArchive.recover(data, context: context)
+            statusMessage = "Recovered \(preview.plantsToAdd) plants, \(preview.entriesToAdd) journal entries, \(preview.careTasksToAdd) care routines and \(preview.careEventsToAdd) care-history records. Existing records were kept."
+        } catch {
+            errorMessage = "Recovery failed: \(error.localizedDescription)"
+        }
+        clearPendingRecovery()
+    }
+
+    private func clearPendingRecovery() {
+        pendingRecoveryData = nil
+        recoveryPreview = nil
     }
 }
