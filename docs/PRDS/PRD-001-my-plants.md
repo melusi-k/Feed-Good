@@ -94,4 +94,4 @@ Replaces an informal or fragmented way of keeping plant details in memory or sep
 
 ## 12. Delivery tracking
 
-- GitHub implementation issue: [#3 — My Plants: complete plant profiles and editing](https://github.com/melusi-k/Feed-Good).
+- GitHub implementation issue: [#3 — My Plants: complete plant profiles and editing](https://github.com/melusi-k/Feed-Good/issues/3).
