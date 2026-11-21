@@ -1,0 +1,63 @@
+name: FeedGood
+options:
+  bundleIdPrefix: com.melusik
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  FeedGood:
+    type: application
+    platform: iOS
+    sources:
+      - path: FeedGood
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.melusik.feedgood
+        # Keep the product executable name aligned with the Xcode target so XCTest can resolve TEST_HOST.
+        INFOPLIST_KEY_CFBundleDisplayName: Feed Good
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+  FeedGoodTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FeedGoodTests
+    dependencies:
+      - target: FeedGood
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.melusik.feedgood.tests
+        GENERATE_INFOPLIST_FILE: YES
+  FeedGoodUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: FeedGoodUITests
+    dependencies:
+      - target: FeedGood
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.melusik.feedgood.uitests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  FeedGood:
+    build:
+      targets:
+        FeedGood: all
+        FeedGoodTests: [test]
+        FeedGoodUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - FeedGoodTests
+        - FeedGoodUITests
