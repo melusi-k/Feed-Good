@@ -140,13 +140,21 @@ enum CareGuideCatalog {
         )
     ]
 
-    static func publishedArticles(in articles: [CareGuideArticle] = CareGuideCatalog.articles) -> [CareGuideArticle] {
+    static func publishedArticles() -> [CareGuideArticle] {
+        publishedArticles(in: articles)
+    }
+
+    static func publishedArticles(in articles: [CareGuideArticle]) -> [CareGuideArticle] {
         articles.filter(\.isApprovedForPublication).sorted {
             $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
         }
     }
 
-    static func search(_ query: String, in articles: [CareGuideArticle] = CareGuideCatalog.articles) -> [CareGuideArticle] {
+    static func search(_ query: String) -> [CareGuideArticle] {
+        search(query, in: articles)
+    }
+
+    static func search(_ query: String, in articles: [CareGuideArticle]) -> [CareGuideArticle] {
         let published = publishedArticles(in: articles)
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return published }
