@@ -147,7 +147,7 @@ struct JournalArchive: Codable {
               (careEvents?.count ?? 0) <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
-        if version == 2, careTasks == nil || careEvents == nil {
+        if version == 2 && (careTasks == nil || careEvents == nil) {
             throw JournalArchiveError.invalidRecord
         }
 
