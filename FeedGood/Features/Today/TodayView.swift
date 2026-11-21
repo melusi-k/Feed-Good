@@ -179,42 +179,7 @@ struct TodayView: View {
     }
 
     private var dailyThought: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("A THOUGHT FOR TODAY")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(1.2)
-                    .foregroundStyle(FeedGoodTheme.leaf.opacity(0.72))
-
-                Text("Growth happens\none small moment\nat a time.")
-                    .font(.system(size: 21, weight: .medium, design: .serif))
-                    .lineSpacing(1)
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                    .accessibilityIdentifier("today.dailyThought")
-
-                Text("Take a moment to notice something new.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(FeedGoodTheme.leaf.opacity(0.78))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-            ZStack {
-                Circle()
-                    .fill(FeedGoodTheme.sage.opacity(0.32))
-                    .frame(width: 88, height: 88)
-                Image(systemName: "leaf")
-                    .font(.system(size: 39, weight: .light))
-                    .rotationEffect(.degrees(-28))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                Image(systemName: "sparkle")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(FeedGoodTheme.moss)
-                    .offset(x: 32, y: -30)
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(FeedGoodTheme.mist.opacity(0.82), in: RoundedRectangle(cornerRadius: FeedGoodTheme.cardRadius, style: .continuous))
+        DailyMomentsView()
     }
 
     private var careCheckIn: some View {
