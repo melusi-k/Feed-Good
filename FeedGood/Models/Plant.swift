@@ -49,9 +49,9 @@ final class Plant {
     var growingEnvironmentRaw: String = GrowingEnvironment.unspecified.rawValue
     var lightConditionRaw: String = LightCondition.unspecified.rawValue
     @Attribute(.externalStorage) var photoData: Data?
-    @Relationship(deleteRule: .cascade, inverse: \\CareTask.plant) var careTasks: [CareTask]? = []
-    @Relationship(deleteRule: .cascade, inverse: \\CareEvent.plant) var careEvents: [CareEvent]? = []
-    @Relationship(deleteRule: .cascade, inverse: \\JournalEntry.plant) var journalEntries: [JournalEntry]? = []
+    @Relationship(deleteRule: .cascade, inverse: \CareTask.plant) var careTasks: [CareTask]? = []
+    @Relationship(deleteRule: .cascade, inverse: \CareEvent.plant) var careEvents: [CareEvent]? = []
+    @Relationship(deleteRule: .cascade, inverse: \JournalEntry.plant) var journalEntries: [JournalEntry]? = []
     var createdAt: Date
 
     var growingEnvironment: GrowingEnvironment {
