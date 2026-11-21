@@ -27,11 +27,13 @@ struct AddPlantView: View {
                             Text(option.title).tag(option)
                         }
                     }
+                    .accessibilityIdentifier("plants.growingEnvironment")
                     Picker("Observed light", selection: $lightCondition) {
                         ForEach(LightCondition.allCases) { option in
                             Text(option.title).tag(option)
                         }
                     }
+                    .accessibilityIdentifier("plants.lightCondition")
                 } header: {
                     Text("Growing context (optional)")
                 } footer: {
