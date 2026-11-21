@@ -43,7 +43,26 @@ jobs:
           fi
           echo "Testing on simulator $SIMULATOR_ID"
           xcodebuild test \
+            -resultBundlePath TestResults.xcresult \
             -project FeedGood.xcodeproj \
             -scheme FeedGood \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Export test attachments
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -d TestResults.xcresult ]; then
+            xcrun xcresulttool export attachments --path TestResults.xcresult --output-path TestAttachments
+          fi
+      - name: Keep test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: |
+            TestResults.xcresult
+            TestAttachments
+          if-no-files-found: ignore
+          retention-days: 7
