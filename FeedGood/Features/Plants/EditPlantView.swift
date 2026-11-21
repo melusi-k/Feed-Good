@@ -5,7 +5,7 @@ import PhotosUI
 /// Edits an existing plant's profile through a draft, so cancelling never
 /// touches the stored record. Photos remain local to this device.
 struct EditPlantView: View {
-    @Environment(\\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
 
     let plant: Plant
 
