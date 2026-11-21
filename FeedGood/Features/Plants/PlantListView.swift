@@ -30,11 +30,12 @@ struct PlantListView: View {
                             if visiblePlants.isEmpty {
                                 ContentUnavailableView {
                                     Label("No matching plants", systemImage: "magnifyingglass")
+                                        .accessibilityIdentifier("plants.search.empty")
                                 } description: {
                                     Text("Try a plant name or the species you saved.")
                                 } actions: {
                                     Button("Clear search") { query = "" }.accessibilityIdentifier("plants.search.clear")
-                                }.accessibilityIdentifier("plants.search.empty")
+                                }
                             }
                             ForEach(visiblePlants) { plant in
                                 NavigationLink {
