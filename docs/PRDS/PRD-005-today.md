@@ -29,7 +29,7 @@ Give people a calm daily check-in that helps them see what matters in their gard
 ## 4. Behavior changes
 
 - Today is a thoughtful daily check-in, not a complete task-management backlog.
-- Prioritise a warm welcome and daily reflection, the most relevant care check-in, a visual view of the user's plants and a recent journal moment or prompt.
+- Prioritise a warm welcome and daily reflection, the most relevant care check-in, a visual view of the user's plants and real recent journal entries. Show an observation prompt only when no journal entries exist.
 - Show due, upcoming and overdue care with context and plain-language explanations.
 - Do not show every task merely to fill the screen; relevance is more important than volume.
 - Provide direct routes to the relevant plant, care action or journal entry.
@@ -50,7 +50,7 @@ Give people a calm daily check-in that helps them see what matters in their gard
 
 - Today tab / home screen.
 - Daily care summary and plant collection preview.
-- Recent journal moment or observation prompt.
+- Recent journal entries from the existing Journal store, with plant identity, date and a route to the correct entry or plant journal. Observation prompt only as the empty state.
 - Empty, no-care-due and offline states.
 - Deep links into Plant Profile, Care Routine and Plant Journal.
 
@@ -72,7 +72,7 @@ Included in the free initial release. Uses local plant, care and journal data; n
 1. Confirm content hierarchy and rules for what qualifies as relevant today.
 2. Validate each summary against source plant, care and journal records.
 3. Test empty, populated, no-care-due, overdue, offline and notification-denied states.
-4. Verify navigation destinations and date labels.
+4. Verify navigation destinations and date labels. For #13, test recent-entry selection and date ordering, no-entry prompt fallback, correct plant routing, and reflection of journal edits/deletions without a duplicate history store. A populated journal must not be replaced by a generic prompt.
 5. Conduct design, accessibility and usability review [measure].
 6. Ship as the primary daily entry point once dependent feature behavior is stable.
 
