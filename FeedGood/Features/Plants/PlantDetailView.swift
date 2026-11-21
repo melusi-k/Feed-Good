@@ -1,11 +1,10 @@
 import SwiftUI
 import SwiftData
 
-/// The living record for one plant: photo, identity and notes, with routes
-/// to edit the profile or delete the plant (always confirmed).
+/// The living record for one plant: photo, identity, growing context and notes.
 struct PlantDetailView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\\.modelContext) private var modelContext
+    @Environment(\\.dismiss) private var dismiss
 
     let plant: Plant
 
@@ -31,6 +30,28 @@ struct PlantDetailView: View {
                         .foregroundStyle(plant.species.isEmpty ? FeedGoodTheme.muted.opacity(0.8) : FeedGoodTheme.muted)
                 }
 
+                if plant.growingEnvironment != .unspecified || plant.lightCondition != .unspecified {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("GROWING CONTEXT")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundStyle(FeedGoodTheme.muted)
+                        if plant.growingEnvironment != .unspecified {
+                            Label(plant.growingEnvironment.title, systemImage: "house")
+                        }
+                        if plant.lightCondition != .unspecified {
+                            Label(plant.lightCondition.title, systemImage: "sun.max")
+                        }
+                        Text("Based on your observations.")
+                            .font(.caption)
+                            .foregroundStyle(FeedGoodTheme.muted)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(17)
+                    .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .accessibilityIdentifier("plantDetail.growingContext")
+                }
+
                 NavigationLink { PlantCareView(plant: plant) } label: {
                     Label("Care routine and history", systemImage: "drop")
                 }
@@ -43,7 +64,7 @@ struct PlantDetailView: View {
 
                 notesCard
 
-                Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
+                Label("Added \\(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
                     .font(.caption)
                     .foregroundStyle(FeedGoodTheme.muted)
 
@@ -70,11 +91,11 @@ struct PlantDetailView: View {
         .sheet(isPresented: $showingEditor) {
             EditPlantView(plant: plant)
         }
-        .alert("Delete \(plant.name)?", isPresented: $showingDeleteConfirmation) {
+        .alert("Delete \\(plant.name)?", isPresented: $showingDeleteConfirmation) {
             Button("Delete", role: .destructive) { deletePlant() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes \(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
+            Text("This permanently deletes \\(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
         }
     }
 
