@@ -35,6 +35,7 @@ This is a target structure, not a requirement to create empty folders or abstrac
 ## Data ownership
 
 - Plant is the authoritative record for a plant.
+- Deleting a plant removes its photo and notes, and cascades to its care activity and journal entries once those exist; the app always confirms before destructive deletion.
 - Care activity records belong to one plant and are append-oriented history.
 - Journal entries belong to one plant; user-authored text and photos must not be silently discarded.
 - Reminder configuration is distinct from notification delivery state.

@@ -23,18 +23,27 @@ struct PlantListView: View {
                     List {
                         Section {
                             ForEach(plants) { plant in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(plant.name)
-                                        .font(.headline)
-                                    if !plant.species.isEmpty {
-                                        Text(plant.species)
-                                            .font(.subheadline)
-                                            .foregroundStyle(FeedGoodTheme.muted)
+                                NavigationLink {
+                                    PlantDetailView(plant: plant)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        PlantPhotoView(photoData: plant.photoData)
+                                            .frame(width: 44, height: 44)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(plant.name)
+                                                .font(.headline)
+                                            if !plant.species.isEmpty {
+                                                Text(plant.species)
+                                                    .font(.subheadline)
+                                                    .foregroundStyle(FeedGoodTheme.muted)
+                                            }
+                                        }
+                                        .padding(.vertical, 4)
                                     }
                                 }
-                                .padding(.vertical, 4)
+                                .accessibilityIdentifier("plants.row.\(plant.name)")
                             }
-                            .onDelete(perform: deletePlants)
                         } header: {
                             Text("My Plants")
                         }
@@ -59,11 +68,5 @@ struct PlantListView: View {
             }
         }
         .tint(FeedGoodTheme.leaf)
-    }
-
-    private func deletePlants(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(plants[index])
-        }
     }
 }

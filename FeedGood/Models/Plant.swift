@@ -7,6 +7,7 @@ final class Plant {
     var name: String
     var species: String
     var notes: String
+    @Attribute(.externalStorage) var photoData: Data?
     var createdAt: Date
 
     init(
@@ -14,12 +15,14 @@ final class Plant {
         name: String,
         species: String = "",
         notes: String = "",
+        photoData: Data? = nil,
         createdAt: Date = .now
     ) {
         self.id = id
         self.name = name
         self.species = species
         self.notes = notes
+        self.photoData = photoData
         self.createdAt = createdAt
     }
 }
