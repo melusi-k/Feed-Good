@@ -1,17 +1,55 @@
 import SwiftUI
+import UIKit
 
 enum FeedGoodTheme {
-    // Semantic palette: warm, botanical and deliberately restrained.
-    static let background = Color(red: 0.953, green: 0.949, blue: 0.914) // #F3F2E9
-    static let surface = Color(red: 0.995, green: 0.992, blue: 0.976)
-    static let leaf = Color(red: 0.161, green: 0.294, blue: 0.231) // canopy
-    static let sage = Color(red: 0.663, green: 0.725, blue: 0.612)
-    static let moss = Color(red: 0.404, green: 0.545, blue: 0.365)
-    static let soil = Color(red: 0.286, green: 0.255, blue: 0.216)
-    static let muted = Color(red: 0.427, green: 0.451, blue: 0.396)
-    static let mist = Color(red: 0.902, green: 0.922, blue: 0.875)
-    static let bloom = Color(red: 0.761, green: 0.584, blue: 0.475)
+    static let background = adaptive(light: 0xF3F2E9, dark: 0x171F19)
+    static let surface = adaptive(light: 0xFDFCF7, dark: 0x222C24)
+    static let leaf = adaptive(light: 0x294B3B, dark: 0xA7C69A)
+    static let sage = adaptive(light: 0xA9B99C, dark: 0x526B54)
+    static let moss = adaptive(light: 0x678B5D, dark: 0x9BB98A)
+    static let soil = adaptive(light: 0x494139, dark: 0xF0EDE2)
+    static let muted = adaptive(light: 0x6D7365, dark: 0xB6C0B1)
+    static let mist = adaptive(light: 0xE6EBDD, dark: 0x2C3B30)
+    static let bloom = adaptive(light: 0xC29679, dark: 0xD7A98B)
+    static let border = adaptive(light: 0xDDE2D5, dark: 0x405044)
+    static let primaryForeground = adaptive(light: 0xFFFFFF, dark: 0x172019)
 
     static let cardRadius: CGFloat = 24
     static let contentPadding: CGFloat = 22
+
+    private static func adaptive(light: UInt32, dark: UInt32) -> Color {
+        Color(uiColor: UIColor { traits in
+            let hex = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(
+                red: CGFloat((hex >> 16) & 0xFF) / 255,
+                green: CGFloat((hex >> 8) & 0xFF) / 255,
+                blue: CGFloat(hex & 0xFF) / 255,
+                alpha: 1
+            )
+        })
+    }
+}
+
+enum FeedGoodAppearance: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
+    }
+
+    var preferredColorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
 }

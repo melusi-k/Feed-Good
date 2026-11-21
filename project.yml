@@ -38,13 +38,26 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.melusik.feedgood.tests
         GENERATE_INFOPLIST_FILE: YES
+  FeedGoodUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: FeedGoodUITests
+    dependencies:
+      - target: FeedGood
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.melusik.feedgood.uitests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   FeedGood:
     build:
       targets:
         FeedGood: all
         FeedGoodTests: [test]
+        FeedGoodUITests: [test]
     test:
       config: Debug
       targets:
         - FeedGoodTests
+        - FeedGoodUITests
