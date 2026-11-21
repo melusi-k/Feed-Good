@@ -17,7 +17,7 @@ enum JournalArchiveError: LocalizedError {
 }
 
 struct JournalArchive: Codable {
-    var version = 1
+    var version = 2
     var plants: [PlantRecord]
     var entries: [EntryRecord]
     struct PlantRecord: Codable {
@@ -25,6 +25,7 @@ struct JournalArchive: Codable {
     }
     struct EntryRecord: Codable, Equatable {
         var id: UUID; var plantID: UUID; var date: Date; var note: String; var photoData: Data?
+        var milestoneRaw: String? = nil
     }
     static let maxBytes = 25 * 1024 * 1024
 
@@ -32,7 +33,7 @@ struct JournalArchive: Codable {
     static func export(plants: [Plant], entries: [JournalEntry]) throws -> Data {
         let records = try entries.map { entry -> EntryRecord in
             guard let plantID = entry.plant?.id else { throw JournalArchiveError.invalidRecord }
-            return EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData)
+            return EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw)
         }
         let archive = JournalArchive(plants: plants.map { PlantRecord(id: $0.id, name: $0.name, species: $0.species, notes: $0.notes, createdAt: $0.createdAt) }, entries: records)
         try archive.validate()
@@ -42,13 +43,15 @@ struct JournalArchive: Codable {
     }
 
     func validate() throws {
-        guard version == 1 else { throw JournalArchiveError.unsupportedVersion }
+        guard version == 1 || version == 2 else { throw JournalArchiveError.unsupportedVersion }
         guard entries.count <= 1000, plants.count <= 1000 else { throw JournalArchiveError.tooLarge }
         let plantIDs = Set(plants.map(\.id))
         guard plantIDs.count == plants.count, Set(entries.map(\.id)).count == entries.count,
               plants.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else { throw JournalArchiveError.invalidRecord }
         for entry in entries {
-            guard plantIDs.contains(entry.plantID), !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.photoData != nil else { throw JournalArchiveError.invalidRecord }
+            if version == 1, entry.milestoneRaw != nil { throw JournalArchiveError.invalidRecord }
+            if let raw = entry.milestoneRaw, JournalMilestone(rawValue: raw) == nil { throw JournalArchiveError.invalidRecord }
+            guard plantIDs.contains(entry.plantID), !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.photoData != nil || entry.milestoneRaw != nil else { throw JournalArchiveError.invalidRecord }
             if let data = entry.photoData { guard UIImage(data: data) != nil else { throw JournalArchiveError.invalidRecord } }
         }
     }
@@ -66,7 +69,7 @@ struct JournalArchive: Codable {
         for record in archive.entries {
             if let entry = entries[record.id] {
                 guard let plantID = entry.plant?.id,
-                      EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData) == record else { throw JournalArchiveError.conflictingEntry }
+                      EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw) == record else { throw JournalArchiveError.conflictingEntry }
             }
         }
         var restored = 0
@@ -76,7 +79,7 @@ struct JournalArchive: Codable {
         }
         for record in archive.entries where entries[record.id] == nil {
             guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
-            context.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, plant: plant))
+            context.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, plant: plant))
             restored += 1
         }
         do { try context.save() }
