@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct PlantCareView: View {
+    @EnvironmentObject private var scheduler: CareReminderScheduler
+    @Environment(\.openURL) private var openURL
     @Environment(\.modelContext) private var context
     let plant: Plant
     @State private var adding = false
@@ -18,6 +20,12 @@ struct PlantCareView: View {
             Section {
                 Text("Your schedule, not plant-care advice. Check the soil and your plant before deciding what it needs.")
                     .font(.callout).foregroundStyle(.secondary)
+            }
+            Section("Optional reminders") {
+                Text(scheduler.message).font(.callout).foregroundStyle(.secondary)
+                Button("Notification settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
             }
             Section("Care routine") {
                 if tasks.isEmpty { Text("No care tasks yet. Add a routine that suits this plant.").foregroundStyle(.secondary) }
@@ -82,6 +90,7 @@ struct PlantCareView: View {
 }
 
 struct CareTaskEditor: View {
+    @EnvironmentObject private var scheduler: CareReminderScheduler
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     let plant: Plant
@@ -91,6 +100,7 @@ struct CareTaskEditor: View {
     @State private var interval = 7
     @State private var dueDate = Date.now
     @State private var enabled = true
+    @State private var reminders = false
     @State private var errorMessage: String?
     @State private var confirmingDelete = false
 
@@ -103,6 +113,12 @@ struct CareTaskEditor: View {
                     Stepper("Every \(interval) days", value: $interval, in: 1...3650)
                     DatePicker("Next care", selection: $dueDate)
                     Toggle("Routine enabled", isOn: $enabled)
+                    Toggle("Remind me", isOn: Binding(get: { reminders }, set: { value in
+                        reminders = value
+                        if value { Task { await scheduler.requestPermission() } }
+                    }))
+                        .accessibilityIdentifier("care.remindMe")
+                    Text("One alert at the next future care date. Notification text includes this plant and task name. Past-due tasks do not repeat alerts.").font(.caption).foregroundStyle(.secondary)
                 } footer: { Text("Choose an interval for this plant. This is your own routine, not a recommended watering frequency.") }
                 if task != nil {
                     Section {
@@ -123,6 +139,7 @@ struct CareTaskEditor: View {
             .onAppear {
                 if let task { kind = task.kind; customTitle = task.customTitle; interval = task.intervalDays; dueDate = task.dueDate; enabled = task.isEnabled }
             }
+            .task { reminders = task?.reminderEnabled ?? false }
             .confirmationDialog("Remove this task? Its care history will stay.", isPresented: $confirmingDelete, titleVisibility: .visible) {
                 Button("Remove task", role: .destructive) {
                     guard let task else { return }
@@ -142,6 +159,7 @@ struct CareTaskEditor: View {
         record.intervalDays = interval
         record.dueDate = dueDate
         record.isEnabled = enabled
+        record.reminderEnabled = reminders
         do { try context.save(); dismiss() }
         catch { context.rollback(); errorMessage = "Couldn't save this routine. Try again." }
     }
