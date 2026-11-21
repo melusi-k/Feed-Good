@@ -12,8 +12,8 @@ final class JournalTests: XCTestCase {
 
     private func samplePhoto() -> Data {
         UIGraphicsImageRenderer(size: CGSize(width: 3, height: 3)).image { context in
-            UIColor.systemGreen.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: 3, height: 3))
+            context.cgContext.setFillColor(UIColor.systemGreen.cgColor)
+            context.cgContext.fill(CGRect(x: 0, y: 0, width: 3, height: 3))
         }.pngData()!
     }
 
