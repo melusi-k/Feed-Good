@@ -1,32 +1,32 @@
-import XCTest
+import Testing
 @testable import FeedGood
 
-final class PlantProfileDraftTests: XCTestCase {
-    func testDraftStartsFromPlantValues() {
+struct PlantProfileDraftTests {
+    @Test func draftStartsFromPlantValues() {
         let plant = Plant(name: "Monstera", species: "Monstera deliciosa", notes: "New leaf")
         let draft = PlantProfileDraft(plant: plant)
 
-        XCTAssertEqual(draft.name, "Monstera")
-        XCTAssertEqual(draft.species, "Monstera deliciosa")
-        XCTAssertEqual(draft.notes, "New leaf")
+        #expect(draft.name == "Monstera")
+        #expect(draft.species == "Monstera deliciosa")
+        #expect(draft.notes == "New leaf")
     }
 
-    func testBlankNameIsInvalid() {
+    @Test func blankNameIsInvalid() {
         let draft = PlantProfileDraft(name: "")
-        XCTAssertFalse(draft.isValid)
+        #expect(!draft.isValid)
     }
 
-    func testWhitespaceOnlyNameIsInvalid() {
+    @Test func whitespaceOnlyNameIsInvalid() {
         let draft = PlantProfileDraft(name: "   \n  ")
-        XCTAssertFalse(draft.isValid)
+        #expect(!draft.isValid)
     }
 
-    func testNameWithContentIsValid() {
+    @Test func nameWithContentIsValid() {
         let draft = PlantProfileDraft(name: " Fern ")
-        XCTAssertTrue(draft.isValid)
+        #expect(draft.isValid)
     }
 
-    func testApplyingTrimsAndWritesBackOntoPlant() {
+    @Test func applyingTrimsAndWritesBackOntoPlant() {
         let plant = Plant(name: "Monstera")
         var draft = PlantProfileDraft(plant: plant)
         draft.name = "  Monty  "
@@ -35,12 +35,12 @@ final class PlantProfileDraftTests: XCTestCase {
 
         draft.applying(to: plant)
 
-        XCTAssertEqual(plant.name, "Monty")
-        XCTAssertEqual(plant.species, "Monstera deliciosa")
-        XCTAssertEqual(plant.notes, "Moved to the window")
+        #expect(plant.name == "Monty")
+        #expect(plant.species == "Monstera deliciosa")
+        #expect(plant.notes == "Moved to the window")
     }
 
-    func testApplyingBlankSpeciesAndNotesStoresEmptyStrings() {
+    @Test func applyingBlankSpeciesAndNotesStoresEmptyStrings() {
         let plant = Plant(name: "Monstera", species: "Deliciosa", notes: "Old note")
         var draft = PlantProfileDraft(plant: plant)
         draft.species = "   "
@@ -48,7 +48,7 @@ final class PlantProfileDraftTests: XCTestCase {
 
         draft.applying(to: plant)
 
-        XCTAssertEqual(plant.species, "")
-        XCTAssertEqual(plant.notes, "")
+        #expect(plant.species == "")
+        #expect(plant.notes == "")
     }
 }
