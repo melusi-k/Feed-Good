@@ -29,8 +29,9 @@ final class PlantStoryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts[expected].waitForExistence(timeout: 5))
         // Return via the existing source screens to record care, then revisit the projection.
         app.tabBars.buttons["My Plants"].tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let returnRow = app.descendants(matching: .any)["plants.row.Story fern"]
+        XCTAssertTrue(returnRow.waitForExistence(timeout: 5)); returnRow.tap()
+        XCTAssertTrue(app.buttons["plantDetail.care"].waitForExistence(timeout: 5))
         app.buttons["plantDetail.care"].tap()
         app.buttons["care.add"].tap()
         app.buttons["care.taskSave"].tap()
