@@ -5,7 +5,7 @@ import SwiftData
 struct FeedGoodApp: App {
     var body: some Scene {
         WindowGroup {
-            PlantListView()
+            AppTabView()
         }
         .modelContainer(for: Plant.self)
     }
