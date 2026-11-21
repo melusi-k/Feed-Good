@@ -1,28 +1,59 @@
 # Feed Good
 
-A native iOS gardening companion that helps people care for their plants and enjoy the journey of growing with them.
+**A gardening companion with the practical reliability of an assistant and the personality of a journal.**
 
-Feed Good starts with a simple promise: make plant care feel encouraging, personal and achievable.
+Feed Good helps people grow happier, healthier plants by making plant care more personal, understandable and rewarding. It combines reliable care guidance with a personal journal, helping people build meaningful relationships with the plants in their lives.
 
-## Product direction
+Its purpose is not simply to tell people when to water their plants. It is to help people understand their plants, notice how they change, learn what they need, and build a relationship with them over time.
 
-- **My Plants:** a personal collection of plants.
-- **Care Routine:** clear, configurable care tasks and local reminders.
-- **Plant Journal:** photos, notes and milestones that capture each plant's journey.
-- **Feed Good:** a daily gardening mantra and practical, confidence-building guidance.
+## Our central product principle
 
-The first release is intentionally local-first. Core plant records and care history should work without an account or network connection.
+> **Help people build a relationship with their plants, rather than simply reminding them to water.**
+
+This is the test for every product and design decision. A feature should help someone understand, notice, learn about, or connect with a plant—not merely generate another task to complete.
+
+### What this means in practice
+
+- **Reminders explain, they don't just demand.** When a plant might need attention, guidance should explain why and help the person understand what to look for.
+- **Plant profiles are living records.** Each profile should grow into a record of that plant's identity, care, changes and journey.
+- **The journal builds observation.** Encourage people to notice growth, new leaves, seasonal changes, small wins and challenges.
+- **Care guidance educates without guilt.** Help people learn what their plants need without making them feel bad when they miss a task.
+- **Progress matters more than perfection.** Celebrate consistency, curiosity and progress—not perfect streaks or flawless routines.
+
+## Product vision
+
+Feed Good helps people grow happier, healthier plants by making plant care more personal, understandable and rewarding. It combines reliable care guidance with a personal journal, helping people build meaningful relationships with the plants in their lives.
+
+## Product experience
+
+- **Today:** a thoughtful daily check-in with relevant care guidance, gentle prompts and a reason to spend a moment with your plants.
+- **My Plants:** a personal collection where each plant has an identity and, over time, a living record of its journey.
+- **Care Routine:** clear, plant-aware care guidance and reminders that explain why attention may be useful.
+- **Plant Journal:** photos, observations, notes and milestones that help people notice and remember change.
+- **Feed Good moments:** encouraging thoughts and practical learning that make plant care feel approachable and rewarding.
+
+## Product principles
+
+1. Relationship before reminders.
+2. Explain the why, not only the what.
+3. Encourage observation and curiosity.
+4. Teach without judgement or guilt.
+5. Celebrate progress, not perfection.
+6. Be dependable, honest and clear about what the app knows.
+7. Keep the experience personal and useful, not noisy.
 
 ## Technology
 
 - SwiftUI
 - SwiftData
-- UserNotifications (for a later care-reminder milestone)
+- UserNotifications (for local care reminders)
 - XcodeGen
-- XCTest
+- XCTest and XCUITest
 - GitHub Actions
 
 Minimum deployment target: iOS 18.
+
+The first release is intentionally local-first. Core plant records, observations and care history should work without an account or network connection.
 
 ## Build
 
@@ -48,6 +79,6 @@ xcodebuild test -project FeedGood.xcodeproj -scheme FeedGood -destination 'platf
 
 ## Delivery principles
 
-Plan → Build → Verify → Observe. A successful build is not the same as feature acceptance; record automated, simulator and physical-device evidence separately.
+Plan → Build → Verify → Observe. A successful build is not the same as feature acceptance; record automated, simulator and physical-device evidence separately. Every screen and interaction should respect the relationship-first product principle and support both light and dark appearance.
 
 Feed Good is inspired by the engineering discipline developed in [Ate](https://github.com/melusi-k/ate-ios), while maintaining its own product identity and appropriately smaller architecture.
