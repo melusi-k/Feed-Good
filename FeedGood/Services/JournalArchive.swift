@@ -16,6 +16,31 @@ enum JournalArchiveError: LocalizedError {
     }
 }
 
+
+struct JournalArchivePreview: Equatable {
+    let version: Int
+    let plantsToAdd: Int
+    let plantsAlreadyPresent: Int
+    let entriesToAdd: Int
+    let entriesAlreadyPresent: Int
+    let careTasksToAdd: Int
+    let careTasksAlreadyPresent: Int
+    let careEventsToAdd: Int
+    let careEventsAlreadyPresent: Int
+
+    var confirmationMessage: String {
+        """
+        Archive version \(version)
+        Plants: \(plantsToAdd) to add, \(plantsAlreadyPresent) already present
+        Journal entries: \(entriesToAdd) to add, \(entriesAlreadyPresent) already present
+        Care routines: \(careTasksToAdd) to add, \(careTasksAlreadyPresent) already present
+        Care history: \(careEventsToAdd) to add, \(careEventsAlreadyPresent) already present
+
+        Existing IDs are checked for identical content. Any conflicting record stops recovery before changes are saved.
+        """
+    }
+}
+
 /// Version 1 is journal-only. Version 2 includes the complete local garden record.
 struct JournalArchive: Codable {
     var version = 2
@@ -163,6 +188,32 @@ struct JournalArchive: Codable {
                 throw JournalArchiveError.invalidRecord
             }
         }
+    }
+
+    @MainActor
+    static func preview(_ data: Data, context: ModelContext) throws -> JournalArchivePreview {
+        guard data.count <= maxBytes else { throw JournalArchiveError.tooLarge }
+        let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
+        try archive.validate()
+
+        let plantIDs = Set(try context.fetch(FetchDescriptor<Plant>()).map(\.id))
+        let entryIDs = Set(try context.fetch(FetchDescriptor<JournalEntry>()).map(\.id))
+        let taskIDs = Set(try context.fetch(FetchDescriptor<CareTask>()).map(\.id))
+        let eventIDs = Set(try context.fetch(FetchDescriptor<CareEvent>()).map(\.id))
+        let tasks = archive.careTasks ?? []
+        let events = archive.careEvents ?? []
+
+        return JournalArchivePreview(
+            version: archive.version,
+            plantsToAdd: archive.plants.filter { !plantIDs.contains($0.id) }.count,
+            plantsAlreadyPresent: archive.plants.filter { plantIDs.contains($0.id) }.count,
+            entriesToAdd: archive.entries.filter { !entryIDs.contains($0.id) }.count,
+            entriesAlreadyPresent: archive.entries.filter { entryIDs.contains($0.id) }.count,
+            careTasksToAdd: tasks.filter { !taskIDs.contains($0.id) }.count,
+            careTasksAlreadyPresent: tasks.filter { taskIDs.contains($0.id) }.count,
+            careEventsToAdd: events.filter { !eventIDs.contains($0.id) }.count,
+            careEventsAlreadyPresent: events.filter { eventIDs.contains($0.id) }.count
+        )
     }
 
     /// Additive and idempotent. All archive and conflict checks happen before the
