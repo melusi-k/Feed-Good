@@ -73,8 +73,8 @@ jobs:
 
       - name: Package unsigned IPA
         run: |
-          APP_PATH="build/FeedGood.xcarchive/Products/Applications/Feed Good.app"
-          test -d "$APP_PATH" || { echo "::error::Archived Feed Good.app not found"; exit 1; }
+          APP_PATH="build/FeedGood.xcarchive/Products/Applications/FeedGood.app"
+          test -d "$APP_PATH" || { echo "::error::Archived FeedGood.app not found"; exit 1; }
           mkdir -p build/Payload dist
           cp -R "$APP_PATH" build/Payload/
           (cd build && /usr/bin/zip -qry "../dist/$IPA_NAME" Payload)
@@ -84,7 +84,7 @@ jobs:
         run: |
           mkdir -p build/verify
           unzip -q "dist/$IPA_NAME" -d build/verify
-          APP="build/verify/Payload/Feed Good.app"
+          APP="build/verify/Payload/FeedGood.app"
           PLIST="$APP/Info.plist"
           plutil -lint "$PLIST"
           BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$PLIST")
