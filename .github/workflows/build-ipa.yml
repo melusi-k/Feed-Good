@@ -22,6 +22,8 @@ jobs:
     name: Archive and package Feed Good IPA
     runs-on: macos-15
     timeout-minutes: 45
+    permissions:
+      contents: write
     env:
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
@@ -121,3 +123,61 @@ jobs:
           path: dist/*.ipa
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TESTS_RAN: ${{ github.event_name == 'push' || inputs.run_tests }}
+        run: |
+          set -euo pipefail
+          TAG="build-$BUILD_NUMBER"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::Release $TAG already exists; leaving it unchanged"
+            exit 0
+          fi
+          SHORT=$(git rev-parse --short HEAD)
+          PREV=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')
+          if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/$PREV^{commit}" >/dev/null; then
+            git log "$PREV..HEAD" --no-merges --format='%s' > build/changes.txt
+          fi
+          if [ ! -s build/changes.txt ]; then
+            git log -1 --format='%s' > build/changes.txt
+          fi
+          FEATURE=$(head -1 build/changes.txt | sed -E 's/ \(#[0-9]+\)$//')
+          if [ "$TESTS_RAN" = "true" ]; then
+            TESTS="The unit tests ran in this build and passed."
+          else
+            TESTS="The unit tests were skipped in this build."
+          fi
+          {
+            echo "Main feature: $FEATURE"
+            echo
+            echo "Changes in this build, newest first, taken from the commit titles since the previous build."
+            echo
+            sed 's/^/- /' build/changes.txt
+            echo
+            echo "## What to Test"
+            echo
+            sed -E 's/ \(#[0-9]+\)$//; s/^/- Check: /' build/changes.txt
+            echo "- Close and reopen the app and confirm what you saved is still there."
+            echo "- Look at the main screens in light and dark appearance."
+            echo
+            echo "## How to Test"
+            echo
+            echo "1. Download $IPA_NAME below. It is unsigned and needs signing with your sideloading tool before installation on an iOS 18+ device."
+            echo "2. Open Feed Good and go through each item under What to Test."
+            echo "3. Force-quit and reopen the app, then confirm your changes are still there."
+            echo "4. Repeat the main screens in light and dark appearance."
+            echo
+            echo "## Build evidence"
+            echo
+            echo "Source: $SHORT. Build IPA run: $RUN_URL. $TESTS The IPA contents were checked (bundle ID, version, build number, arm64). Automated success is not physical-device acceptance; this IPA has not been installed or device-tested."
+          } > build/release-notes.md
+          gh release create "$TAG" "dist/$IPA_NAME" \
+            --target "$GITHUB_SHA" \
+            --title "Feed Good $APP_VERSION (build $BUILD_NUMBER): $FEATURE" \
+            --notes-file build/release-notes.md \
+            --prerelease \
+            --latest=false
+          echo "Published pre-release $TAG" >> "$GITHUB_STEP_SUMMARY"
