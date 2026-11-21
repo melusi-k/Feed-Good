@@ -20,7 +20,7 @@ struct JournalView: View {
             if plants.isEmpty {
                 ContentUnavailableView("Your garden story starts here", systemImage: "book.closed", description: Text("Add a plant in My Plants, then keep its notes and photos here."))
             } else if visibleEntries.isEmpty {
-                ContentUnavailableView("Remember a little moment", systemImage: "leaf", description: Text("Add a dated note or photo. Small changes count."))
+                ContentUnavailableView("Remember a little moment", systemImage: "leaf", description: Text("Add a dated note, photo or milestone. Small changes count."))
             }
             ForEach(visibleEntries) { entry in
                 VStack(alignment: .leading, spacing: 10) {
@@ -29,6 +29,7 @@ struct JournalView: View {
                         Spacer()
                         Text(entry.date.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
                     }
+                    if let milestone = entry.milestone { Label(milestone.title, systemImage: "sparkle").font(.subheadline).foregroundStyle(FeedGoodTheme.leaf).accessibilityIdentifier("journal.milestoneLabel") }
                     if let photo = entry.photoData {
                         PlantPhotoView(photoData: photo).frame(maxWidth: .infinity).frame(height: 190).clipped().accessibilityLabel("Journal photo")
                     }
@@ -81,6 +82,11 @@ struct JournalEditor: View {
                     }.accessibilityIdentifier("journal.plant")
                 } else { Text(entry?.plant?.name ?? "Plant unavailable") }
                 DatePicker("Date", selection: $draft.date)
+                Picker("Milestone", selection: $draft.milestone) {
+                    Text("No milestone").tag(JournalMilestone?.none)
+                    ForEach(JournalMilestone.allCases) { Text($0.title).tag(Optional($0)) }
+                }.accessibilityIdentifier("journal.milestone")
+                Text("Optional observation, not a plant-health assessment. Use a note for any other moment.").font(.caption).foregroundStyle(.secondary)
                 TextField("What did you notice?", text: $draft.note, axis: .vertical).lineLimit(3...10).accessibilityIdentifier("journal.note")
                 Section {
                     if let photo = draft.photoData { PlantPhotoView(photoData: photo).frame(height: 180).clipped() }
@@ -101,7 +107,7 @@ struct JournalEditor: View {
             }
             .onAppear {
                 selectedPlant = entry?.plant?.id ?? plants.first?.id
-                if let entry { draft = JournalDraft(date: entry.date, note: entry.note, photoData: entry.photoData) }
+                if let entry { draft = JournalDraft(date: entry.date, note: entry.note, photoData: entry.photoData, milestone: entry.milestone) }
             }
             .onChange(of: photoItem) { _, item in
                 guard let item else { return }
