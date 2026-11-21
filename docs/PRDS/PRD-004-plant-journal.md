@@ -22,7 +22,7 @@ Give every plant a personal, chronological story so people can capture observati
 | --- | --- | --- | --- | --- |
 | Entry creation | Create a dated note for the correct plant | [measure] | [target: persistence and relationship tests pass] | [owner] / [date] |
 | Photo attachment | Attach, view and remove a photo safely | [measure] | [target: supported image lifecycle tests pass] | [owner] / [date] |
-| Timeline | Display entries chronologically with correct dates | [measure] | [target: ordering and date-boundary tests pass] | [owner] / [date] |
+| Timeline | Combine care events and journal entries per plant with correct dates | [measure] | [target: ordering and date-boundary tests pass] | [owner] / [date] |
 | Milestones | Record and distinguish meaningful plant moments | [measure] | [target: agreed milestone flows pass] | [owner] / [date] |
 | Content preservation | Retain user-authored entries through edits and upgrades | [measure] | [target: migration and persistence tests pass] | [owner] / [date] |
 
@@ -31,6 +31,7 @@ Give every plant a personal, chronological story so people can capture observati
 - Journal entries belong to one plant and have a date/time, optional text, optional photo and an optional milestone type.
 - Make a basic entry quick to create; a photo or milestone must not be mandatory.
 - Present entries in chronological order and make their associated plant clear.
+- For #14, provide a per-plant story combining existing care events and journal entries in one date-ordered timeline. Distinguish the record kinds and include milestone observations. Read from the existing source records, not a duplicate history store. Reflect edits and deletions supported by either source without losing unrelated records.
 - Support observations and milestones such as new leaf, flowering, repotting and recovery without forcing users into a fixed taxonomy.
 - Allow users to edit or delete their own entries with clear confirmation where deletion is destructive.
 - Preserve user-authored text and photos through ordinary edits and app upgrades.
@@ -49,7 +50,7 @@ Give every plant a personal, chronological story so people can capture observati
 ## 6. Surfaces
 
 - Journal timeline across the user's garden.
-- Plant-specific journal timeline on Plant Profile.
+- Plant-specific combined care and journal timeline on Plant Profile (#14).
 - Add/Edit Journal Entry.
 - Photo selection and photo viewing.
 - Milestone selection and presentation.
@@ -72,7 +73,7 @@ Included in the free initial release. Entries and photos are stored locally; no 
 
 1. Agree the entry schema, supported milestone types and photo-storage policy.
 2. Verify create/edit/delete and plant relationship integrity.
-3. Test chronological ordering, local dates, time-zone behavior and empty states.
+3. Test chronological ordering, local dates, time-zone behavior and empty states. For #14, test mixed-source merge ordering (including deterministic ties), plant isolation, care-only/journal-only/empty timelines, milestone display, and source edits/deletions updating the timeline without duplicate records or unrelated data loss.
 4. Test photo permission, selection, unavailable files and deletion.
 5. Validate persistence and migration behavior with realistic user-authored content.
 6. Complete privacy, accessibility and physical-device checks before release.
