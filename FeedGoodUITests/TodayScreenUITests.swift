@@ -16,7 +16,8 @@ final class TodayScreenUITests: XCTestCase {
         app.launch()
 
         app.tabBars.buttons["Settings"].tap()
-        XCTAssertTrue(app.staticTexts["Appearance"].firstMatch.waitForExistence(timeout: 5))
+        let appearancePicker = app.descendants(matching: .any)["settings.appearance"]
+        XCTAssertTrue(appearancePicker.waitForExistence(timeout: 5))
 
         let darkOption = app.buttons["Dark"]
         XCTAssertTrue(darkOption.waitForExistence(timeout: 3))
