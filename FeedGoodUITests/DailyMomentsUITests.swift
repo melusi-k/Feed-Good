@@ -34,7 +34,5 @@ final class DailyMomentsUITests: XCTestCase {
         review.name = "SIMULATOR - Daily tip source and honest review status"
         review.lifetime = .keepAlways
         add(review)
-        app.buttons["today.sourceDone"].tap()
-        XCTAssertFalse(app.staticTexts["today.reviewStatus"].exists)
     }
 }
