@@ -66,7 +66,7 @@ struct PlantListView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .searchable(text: $query, prompt: "Plant name or species")
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Plant name or species")
             .background(FeedGoodTheme.background)
             .navigationTitle("Feed Good")
             .toolbar {
