@@ -90,3 +90,9 @@ Replaces scattered camera-roll photos and disconnected notes with a plant-centre
 - What export format and backup expectations apply to journal content?
 - What happens to journal entries and photo files when a plant is deleted?
 - Is a date-only entry sufficient, or must exact time be preserved?
+
+
+## 12. Delivery tracking
+
+- Journal entries, photos and garden-wide chronology: [#12 — Plant Journal](https://github.com/melusi-k/Feed-Good/issues/12).
+- Combined plant story, care/journal timeline and milestones: [#14 — Plant story](https://github.com/melusi-k/Feed-Good/issues/14).
