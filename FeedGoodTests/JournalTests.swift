@@ -175,6 +175,7 @@ final class JournalTests: XCTestCase {
         let destination = try memory()
         let destinationContext = ModelContext(destination)
         destinationContext.insert(Plant(id: plant.id, name: "Existing fern"))
+        try destinationContext.save()
 
         let preview = try JournalArchive.preview(data, context: destinationContext)
         XCTAssertEqual(preview.version, 2)
@@ -184,7 +185,7 @@ final class JournalTests: XCTestCase {
         XCTAssertEqual(preview.entriesAlreadyPresent, 0)
         XCTAssertEqual(preview.careTasksToAdd, 1)
         XCTAssertEqual(preview.careEventsToAdd, 1)
-        XCTAssertTrue(preview.confirmationMessage.contains("conflicting record"))
+        XCTAssertTrue(preview.confirmationMessage.contains("any conflict"))
     }
 
     func testArchiveConflictAndMalformedReferencesRejectBeforeWrites() throws {
