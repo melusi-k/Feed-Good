@@ -27,7 +27,7 @@ final class JournalUITests: XCTestCase {
         XCTAssertTrue(editedValue.contains("and another"))
         XCTAssertNotEqual(editedValue, "A new leaf today")
         app.buttons["journal.save"].tap()
-        XCTAssertTrue(app.staticTexts[editedValue].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[editedValue.trimmingCharacters(in: .whitespacesAndNewlines)].waitForExistence(timeout: 5))
         let image = XCTAttachment(screenshot: app.screenshot()); image.name = "Journal saved entry"; image.lifetime = .keepAlways; self.add(image)
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "journal.delete.")).firstMatch.tap()
         app.buttons["Delete entry"].tap()
