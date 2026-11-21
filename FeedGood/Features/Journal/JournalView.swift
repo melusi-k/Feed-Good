@@ -17,6 +17,11 @@ struct JournalView: View {
 
     var body: some View {
         List {
+            if let plant {
+                NavigationLink { PlantStoryView(plant: plant) } label: {
+                    Label("Plant story: care and journal", systemImage: "clock.arrow.circlepath")
+                }.accessibilityIdentifier("journal.story")
+            }
             if plants.isEmpty {
                 ContentUnavailableView("Your garden story starts here", systemImage: "book.closed", description: Text("Add a plant in My Plants, then keep its notes and photos here."))
             } else if visibleEntries.isEmpty {
