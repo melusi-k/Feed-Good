@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-enum GrowingEnvironment: String, CaseIterable, Identifiable {
+enum GrowingEnvironment: String, CaseIterable, Identifiable, Hashable {
     case unspecified
     case indoor
     case outdoor
@@ -20,7 +20,7 @@ enum GrowingEnvironment: String, CaseIterable, Identifiable {
     }
 }
 
-enum LightCondition: String, CaseIterable, Identifiable {
+enum LightCondition: String, CaseIterable, Identifiable, Hashable {
     case unspecified
     case low
     case indirect
