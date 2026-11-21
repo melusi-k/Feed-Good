@@ -1,6 +1,6 @@
 # PRD-009 — Settings & Data Portability
 
-**Status:** Existing journal archive; full portability enhancement planned  
+**Status:** Implementation in progress  
 **Release:** MVP release-readiness requirement  
 **Primary surface:** Settings, Export, Restore
 
@@ -32,7 +32,7 @@ Give people clear control over Feed Good's behavior and confidence that their lo
 - Show notification authorization state and offer a direct route to the relevant iOS Settings page; notification scheduling remains owned by PRD-003.
 - Show app version and basic about information.
 - Preserve the existing version-1 journal archive for compatibility.
-- Define version 2 as a complete local garden archive containing plants, profile photos, care routines, care history, journal entries and journal photos.
+- Define version 2 as a complete local garden archive containing plants, optional growing context, profile photos, care routines, care history, journal entries and journal photos.
 - Define and document the archive format, versioning and compatibility expectations.
 - Validate an archive before restore and show what will be added or skipped.
 - Restore additively: add missing records, skip identical records and reject conflicting IDs before writing.
@@ -74,7 +74,7 @@ Included in the free initial release. Export and restore are core trust and data
 ## 9. Launch plan
 
 1. Retain JSON version 1 as journal-only compatibility input.
-2. Define version 2 as a complete garden archive, retaining JSON and the current additive merge policy.
+2. Define version 2 as a complete garden archive, retaining JSON, optional growing context from PRD-007 and the current additive merge policy.
 3. Round-trip plants, profile photos, care routines, care events, journal entries and journal photos.
 4. Verify relationship integrity, duplicate handling, conflicts and unsupported versions.
 5. Test corrupt/incomplete archives and failure rollback.
@@ -94,4 +94,5 @@ Replaces opaque app settings and fragile manual recovery with explicit user cont
 
 - GitHub implementation issue: [#15 — Settings: privacy, notification state, export and recovery](https://github.com/melusi-k/Feed-Good/issues/15).
 - Existing implementation: JSON version 1, journal entries and plant identity only; excludes care records and both plant-profile photos and settings.
-- MVP enhancement: JSON version 2 complete garden archive with additive, idempotent recovery and conflict rejection.
+- MVP enhancement: JSON version 2 complete garden archive with additive, idempotent recovery, pre-restore preview and conflict rejection.
+- Implementation PR: [#15 — complete garden archive v2](https://github.com/melusi-k/Feed-Good/pull/15).
