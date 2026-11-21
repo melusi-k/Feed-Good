@@ -9,6 +9,9 @@ final class PlantProfileDraftTests: XCTestCase {
         XCTAssertEqual(draft.name, "Monstera")
         XCTAssertEqual(draft.species, "Monstera deliciosa")
         XCTAssertEqual(draft.notes, "New leaf")
+        XCTAssertEqual(draft.growingEnvironment, "")
+        XCTAssertEqual(draft.lightCondition, "")
+        XCTAssertEqual(draft.growingLocation, "")
     }
 
     func testBlankNameIsInvalid() {
@@ -32,12 +35,18 @@ final class PlantProfileDraftTests: XCTestCase {
         draft.name = "  Monty  "
         draft.species = "  Monstera deliciosa "
         draft.notes = "\n Moved to the window  \n"
+        draft.growingEnvironment = GrowingEnvironment.balcony.rawValue
+        draft.lightCondition = LightCondition.indirect.rawValue
+        draft.growingLocation = "  Kitchen windowsill  "
 
         draft.applying(to: plant)
 
         XCTAssertEqual(plant.name, "Monty")
         XCTAssertEqual(plant.species, "Monstera deliciosa")
         XCTAssertEqual(plant.notes, "Moved to the window")
+        XCTAssertEqual(plant.growingEnvironment, "Balcony")
+        XCTAssertEqual(plant.lightCondition, "Bright indirect")
+        XCTAssertEqual(plant.growingLocation, "Kitchen windowsill")
     }
 
     func testApplyingBlankSpeciesAndNotesStoresEmptyStrings() {
@@ -45,10 +54,16 @@ final class PlantProfileDraftTests: XCTestCase {
         var draft = PlantProfileDraft(plant: plant)
         draft.species = "   "
         draft.notes = ""
+        draft.growingEnvironment = GrowingEnvironment.outdoors.rawValue
+        draft.lightCondition = ""
+        draft.growingLocation = "  "
 
         draft.applying(to: plant)
 
         XCTAssertEqual(plant.species, "")
         XCTAssertEqual(plant.notes, "")
+        XCTAssertEqual(plant.growingEnvironment, "Outdoors")
+        XCTAssertNil(plant.lightCondition)
+        XCTAssertNil(plant.growingLocation)
     }
 }
