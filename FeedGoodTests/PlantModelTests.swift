@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 @testable import FeedGood
 
-final class PlantModelTests: XCTestCase {
-    func testPlantKeepsProvidedDetails() {
+struct PlantModelTests {
+    @Test func plantKeepsProvidedDetails() {
         let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
         let plant = Plant(
             name: "Monstera",
@@ -11,16 +12,16 @@ final class PlantModelTests: XCTestCase {
             createdAt: createdAt
         )
 
-        XCTAssertEqual(plant.name, "Monstera")
-        XCTAssertEqual(plant.species, "Monstera deliciosa")
-        XCTAssertEqual(plant.notes, "New leaf unfurling")
-        XCTAssertEqual(plant.createdAt, createdAt)
+        #expect(plant.name == "Monstera")
+        #expect(plant.species == "Monstera deliciosa")
+        #expect(plant.notes == "New leaf unfurling")
+        #expect(plant.createdAt == createdAt)
     }
 
-    func testPlantHasUniqueIdentityByDefault() {
+    @Test func plantHasUniqueIdentityByDefault() {
         let first = Plant(name: "Fern")
         let second = Plant(name: "Fern")
 
-        XCTAssertNotEqual(first.id, second.id)
+        #expect(first.id != second.id)
     }
 }

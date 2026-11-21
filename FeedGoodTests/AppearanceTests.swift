@@ -1,23 +1,23 @@
-import XCTest
+import Testing
 @testable import FeedGood
 
-final class AppearanceTests: XCTestCase {
-    func testAppearanceOffersSystemLightAndDark() {
-        XCTAssertEqual(FeedGoodAppearance.allCases, [.system, .light, .dark])
+struct AppearanceTests {
+    @Test func appearanceOffersSystemLightAndDark() {
+        #expect(FeedGoodAppearance.allCases == [.system, .light, .dark])
     }
 
-    func testSystemAppearanceDoesNotOverrideDeviceSetting() {
-        XCTAssertNil(FeedGoodAppearance.system.preferredColorScheme)
+    @Test func systemAppearanceDoesNotOverrideDeviceSetting() {
+        #expect(FeedGoodAppearance.system.preferredColorScheme == nil)
     }
 
-    func testLightAndDarkAppearanceAreExplicit() {
-        XCTAssertEqual(FeedGoodAppearance.light.preferredColorScheme, .light)
-        XCTAssertEqual(FeedGoodAppearance.dark.preferredColorScheme, .dark)
+    @Test func lightAndDarkAppearanceAreExplicit() {
+        #expect(FeedGoodAppearance.light.preferredColorScheme == .light)
+        #expect(FeedGoodAppearance.dark.preferredColorScheme == .dark)
     }
 
-    func testUnknownStoredAppearanceFallsBackToSystem() {
+    @Test func unknownStoredAppearanceFallsBackToSystem() {
         let storedValue = "sepia"
         let appearance = FeedGoodAppearance(rawValue: storedValue) ?? .system
-        XCTAssertEqual(appearance, .system)
+        #expect(appearance == .system)
     }
 }
