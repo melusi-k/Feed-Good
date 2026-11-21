@@ -434,33 +434,7 @@ struct TodayView: View {
     }
 
     private var journalPrompt: some View {
-        Button {
-            selectedTab = .journal
-        } label: {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: "book.closed")
-                    .font(.system(size: 21, weight: .light))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                    .frame(width: 44, height: 44)
-                    .background(FeedGoodTheme.mist, in: RoundedRectangle(cornerRadius: 14))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("A little something to remember")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(FeedGoodTheme.soil)
-                    Text("What have you noticed in your garden lately?")
-                        .font(.system(size: 12))
-                        .foregroundStyle(FeedGoodTheme.muted)
-                        .multilineTextAlignment(.leading)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-            }
-            .padding(15)
-            .background(FeedGoodTheme.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        }
-        .buttonStyle(.plain)
+        RecentJournalView(selectedTab: $selectedTab)
     }
 
     private var footer: some View {
