@@ -13,6 +13,6 @@ struct FeedGoodApp: App {
         WindowGroup {
             AppTabView()
         }
-        .modelContainer(for: [Plant.self], inMemory: isUITesting)
+        .modelContainer(for: [Plant.self, CareTask.self, CareEvent.self], inMemory: isUITesting)
     }
 }

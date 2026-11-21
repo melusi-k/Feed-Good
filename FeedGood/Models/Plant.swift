@@ -8,6 +8,8 @@ final class Plant {
     var species: String
     var notes: String
     @Attribute(.externalStorage) var photoData: Data?
+    @Relationship(deleteRule: .cascade, inverse: \CareTask.plant) var careTasks: [CareTask]? = []
+    @Relationship(deleteRule: .cascade, inverse: \CareEvent.plant) var careEvents: [CareEvent]? = []
     var createdAt: Date
 
     init(
