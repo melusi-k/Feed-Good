@@ -23,7 +23,7 @@ Let people optionally describe where and how they grow plants so Feed Good can p
 | Optional context | Add a plant with no context and later add/edit/clear context | [measure] | [target: all paths pass; plant creation never blocked] | [owner] / [date] |
 | Persistence | Save and reload supported environment and light fields | [measure] | [target: model and persistence tests pass] | [owner] / [date] |
 | Privacy | Verify no precise location permission or network request is required | [measure] | [target: privacy review passes] | [owner] / [date] |
-| Accessibility | Complete or skip setup with assistive technology | [measure] | [target: no blocking accessibility defects] | [owner] / [date] |
+| Accessibility | Add and edit context fields with assistive technology and Dynamic Type | [measure] | [target: no blocking accessibility defects] | [owner] / [date] |
 
 ## 4. Behavior changes
 
@@ -50,7 +50,6 @@ Let people optionally describe where and how they grow plants so Feed Good can p
 - Add Plant context fields.
 - Edit Plant context fields.
 - Plant Profile context summary.
-- Add/Edit Plant context fields.
 - Relevant explanatory copy in care guidance.
 
 ## 7. Pricing
@@ -87,4 +86,4 @@ Replaces implicit assumptions about where a plant lives with optional, user-desc
 ## 12. Delivery tracking
 
 - GitHub implementation issue: [#22 — Plant profiles: optional growing context](https://github.com/melusi-k/Feed-Good/issues/22).
-- Implementation PR: [#22](https://github.com/melusi-k/Feed-Good/pull/22).
+- Implementation PR: [#22 — optional growing context](https://github.com/melusi-k/Feed-Good/pull/22).
