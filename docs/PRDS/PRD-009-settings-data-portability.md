@@ -1,6 +1,6 @@
 # PRD-009 — Settings & Data Portability
 
-**Status:** Draft for product review  
+**Status:** Existing journal archive; full portability enhancement planned  
 **Release:** MVP release-readiness requirement  
 **Primary surface:** Settings, Export, Restore
 
@@ -31,10 +31,12 @@ Give people clear control over Feed Good's behavior and confidence that their lo
 - Provide a Settings area with plain-language privacy and local-storage information.
 - Show notification authorization state and offer a direct route to the relevant iOS Settings page; notification scheduling remains owned by PRD-003.
 - Show app version and basic about information.
-- Export plants, care history, journal entries and the media required to restore those records.
+- Preserve the existing version-1 journal archive for compatibility.
+- Define version 2 as a complete local garden archive containing plants, profile photos, care routines, care history, journal entries and journal photos.
 - Define and document the archive format, versioning and compatibility expectations.
-- Validate an archive before restore and show what will be added, replaced or otherwise affected.
-- Require explicit confirmation before any operation that could overwrite existing data.
+- Validate an archive before restore and show what will be added or skipped.
+- Restore additively: add missing records, skip identical records and reject conflicting IDs before writing.
+- Never overwrite existing user-authored records during merge recovery.
 - Surface actionable errors and preserve original records when export or restore fails.
 - Keep the experience usable without an account or network connection.
 
@@ -71,12 +73,12 @@ Included in the free initial release. Export and restore are core trust and data
 
 ## 9. Launch plan
 
-1. Agree the archive format, versioning and media-inclusion contract.
-2. Test export and restore using realistic collections and journal media.
-3. Verify round-trip fidelity, relationship integrity and schema-version handling.
-4. Test corrupt, unsupported and incomplete archives.
-5. Verify cancellation, overwrite confirmation and failure recovery.
-6. Review privacy copy against actual storage and permission behavior before release.
+1. Retain JSON version 1 as journal-only compatibility input.
+2. Define version 2 as a complete garden archive, retaining JSON and the current additive merge policy.
+3. Round-trip plants, profile photos, care routines, care events, journal entries and journal photos.
+4. Verify relationship integrity, duplicate handling, conflicts and unsupported versions.
+5. Test corrupt/incomplete archives and failure rollback.
+6. Review privacy copy against the actual archive contents.
 
 ## 10. Replaces
 
@@ -84,13 +86,12 @@ Replaces opaque app settings and fragile manual recovery with explicit user cont
 
 ## 11. Open questions
 
-- Which archive format should be used, and should it be human-readable as well as restorable?
-- Does export include original image files, thumbnails, or both?
-- Should restore merge with existing records or replace the current library after explicit confirmation?
-- How are duplicate records detected during a merge?
-- How long must older archive versions remain restorable?
+- Should future versions add archive encryption or password protection? Version 2 remains JSON unless a separate privacy decision changes this.
+- How long must older archive versions remain restorable? Version 1 remains supported for import.
 - Should the app offer a separate destructive delete-all-data action, and what confirmation is appropriate?
 
 ## 12. Delivery tracking
 
 - GitHub implementation issue: [#15 — Settings: privacy, notification state, export and recovery](https://github.com/melusi-k/Feed-Good/issues/15).
+- Existing implementation: JSON version 1, journal entries and plant identity only; excludes care records and both plant-profile photos and settings.
+- MVP enhancement: JSON version 2 complete garden archive with additive, idempotent recovery and conflict rejection.
