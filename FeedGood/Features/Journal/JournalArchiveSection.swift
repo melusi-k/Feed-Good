@@ -16,10 +16,10 @@ struct JournalArchiveSection: View {
         Group {
             if let statusMessage { Text(statusMessage).font(.callout).accessibilityIdentifier("journal.status") }
                 Section("Local journal archive") {
-                    Text("Export includes all journal notes/photos and plant identity, not care records, profile photos or settings. Save outside the app before deletion. Archives contain private text and photos.").font(.caption).foregroundStyle(.secondary)
+                    Text("Export includes all journal notes/photos and plant identity, not care records, profile photos or settings. Save outside the app before deletion. Archives contain private text and photos.").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("journal.archiveScope")
                     Button("Export journal") { export() }.accessibilityIdentifier("journal.export")
                     Button("Recover journal") { importing = true }.accessibilityIdentifier("journal.recover")
-                    Text("Recovery adds missing entries, recreates missing plants and skips identical entries. Existing details are never overwritten. Conflicting IDs reject the import. Recovering an old archive can restore deleted entries.").font(.caption).foregroundStyle(.secondary)
+                    Text("Recovery adds missing entries, recreates missing plants and skips identical entries. Existing details are never overwritten. Conflicting IDs reject the import. Recovering an old archive can restore deleted entries.").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("journal.recoveryPolicy")
                 }
         }
         .alert("Journal archive", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
