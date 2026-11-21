@@ -27,6 +27,14 @@ struct PlantCareView: View {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 }
             }
+            Section("Learn") {
+                NavigationLink {
+                    CareGuideView()
+                } label: {
+                    Label("Plant Care Guide", systemImage: "book.closed")
+                }
+                .accessibilityIdentifier("care.guide")
+            }
             Section("Care routine") {
                 if tasks.isEmpty { Text("No care tasks yet. Add a routine that suits this plant.").foregroundStyle(.secondary) }
                 ForEach(tasks) { task in
