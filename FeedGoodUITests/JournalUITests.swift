@@ -20,13 +20,14 @@ final class JournalUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "journal.edit.")).firstMatch.tap()
         let edit = app.descendants(matching: .any)["journal.note"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        edit.press(forDuration: 1.2)
-        let selectAll = app.descendants(matching: .any)["Select All"]
-        XCTAssertTrue(selectAll.waitForExistence(timeout: 3))
-        selectAll.tap()
-        edit.typeText("Two new leaves today")
+        edit.tap()
+        edit.typeText(" and another")
+        let editedValue = edit.value as? String ?? ""
+        XCTAssertTrue(editedValue.contains("A new leaf today"))
+        XCTAssertTrue(editedValue.contains("and another"))
+        XCTAssertNotEqual(editedValue, "A new leaf today")
         app.buttons["journal.save"].tap()
-        XCTAssertTrue(app.staticTexts["Two new leaves today"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[editedValue].waitForExistence(timeout: 5))
         let image = XCTAttachment(screenshot: app.screenshot()); image.name = "Journal saved entry"; image.lifetime = .keepAlways; self.add(image)
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "journal.delete.")).firstMatch.tap()
         app.buttons["Delete entry"].tap()
