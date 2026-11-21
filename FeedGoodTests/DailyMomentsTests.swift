@@ -32,7 +32,7 @@ struct DailyMomentsTests {
         #expect(tips.first == tips.last)
     }
 
-    @Test func midnightLeapDayAndYearRolloverAdvanceExactlyOneItem() {
+    @Test func midnightLeapDayAndYearRolloverAdvanceExactlyOneItem() throws {
         let calendar = calendar("UTC")
         for pair in [
             ("2028-02-28T23:59:59Z", "2028-02-29T00:00:00Z"),
@@ -46,7 +46,7 @@ struct DailyMomentsTests {
         }
     }
 
-    @Test func dstUsesCivilDaysAndNotElapsedHours() {
+    @Test func dstUsesCivilDaysAndNotElapsedHours() throws {
         let calendar = calendar("America/New_York")
         for start in ["2026-03-07T12:00:00-05:00", "2026-10-31T12:00:00-04:00"] {
             let dates = (0..<4).map { calendar.date(byAdding: .day, value: $0, to: date(start))! }
