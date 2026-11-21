@@ -31,9 +31,13 @@ final class JournalUITests: XCTestCase {
         let image = XCTAttachment(screenshot: app.screenshot()); image.name = "Journal saved entry"; image.lifetime = .keepAlways; self.add(image)
         XCTAssertFalse(app.buttons["journal.export"].exists)
         XCTAssertFalse(app.buttons["journal.recover"].exists)
+        XCTAssertFalse(app.staticTexts["journal.archiveScope"].exists)
+        XCTAssertFalse(app.staticTexts["journal.recoveryPolicy"].exists)
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["journal.export"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["journal.recover"].exists)
+        XCTAssertTrue(app.staticTexts["journal.archiveScope"].exists)
+        XCTAssertTrue(app.staticTexts["journal.recoveryPolicy"].exists)
         let settingsImage = XCTAttachment(screenshot: app.screenshot())
         settingsImage.name = "Settings journal archive controls"
         settingsImage.lifetime = .keepAlways
