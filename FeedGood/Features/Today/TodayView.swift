@@ -79,6 +79,7 @@ struct TodayView: View {
                 .lineSpacing(-1)
                 .foregroundStyle(FeedGoodTheme.soil)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("today.welcome")
 
             Text("A little attention goes a long way.")
                 .font(.system(size: 15))
@@ -99,6 +100,7 @@ struct TodayView: View {
                     .font(.system(size: 21, weight: .medium, design: .serif))
                     .lineSpacing(1)
                     .foregroundStyle(FeedGoodTheme.leaf)
+                    .accessibilityIdentifier("today.dailyThought")
 
                 Text("Take a moment to notice something new.")
                     .font(.system(size: 12))
