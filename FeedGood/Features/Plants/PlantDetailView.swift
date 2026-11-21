@@ -36,6 +36,11 @@ struct PlantDetailView: View {
                 }
                 .accessibilityIdentifier("plantDetail.care")
 
+                NavigationLink { JournalView(plant: plant) } label: {
+                    Label("Plant journal", systemImage: "book.closed")
+                }
+                .accessibilityIdentifier("plantDetail.journal")
+
                 notesCard
 
                 Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
