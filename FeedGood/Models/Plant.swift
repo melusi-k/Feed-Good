@@ -1,0 +1,25 @@
+import Foundation
+import SwiftData
+
+@Model
+final class Plant {
+    var id: UUID
+    var name: String
+    var species: String
+    var notes: String
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        species: String = "",
+        notes: String = "",
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.name = name
+        self.species = species
+        self.notes = notes
+        self.createdAt = createdAt
+    }
+}
