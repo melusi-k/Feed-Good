@@ -43,7 +43,7 @@ Give every plant a personal, chronological story so people can capture observati
 - Public sharing, social feeds, comments or community messaging.
 - AI image diagnosis or guaranteed species identification.
 - Cloud photo backup, cross-device sync or public web galleries.
-- Automated growth measurements or image-based comparisons unless separately specified.
+- Side-by-side photo comparison, automated growth measurement and advanced growth analytics; these are later opportunities requiring separate product validation.
 - Complex media editing.
 
 ## 6. Surfaces
@@ -91,8 +91,7 @@ Replaces scattered camera-roll photos and disconnected notes with a plant-centre
 - What happens to journal entries and photo files when a plant is deleted?
 - Is a date-only entry sufficient, or must exact time be preserved?
 
-
 ## 12. Delivery tracking
 
 - Journal entries, photos and garden-wide chronology: [#12 — Plant Journal](https://github.com/melusi-k/Feed-Good/issues/12).
-- Combined plant story, care/journal timeline and milestones: [#14 — Plant story](https://github.com/melusi-k/Feed-Good/issues/14).
+- Combined care/journal timeline and milestones: [#14 — Plant story](https://github.com/melusi-k/Feed-Good/issues/14).
