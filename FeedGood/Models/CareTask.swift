@@ -37,11 +37,23 @@ final class CareTask {
     var kind: CareKind { CareKind(rawValue: kindRaw) ?? .custom }
     var title: String { kind == .custom ? customTitle : kind.title }
 
-    init(kind: CareKind, customTitle: String = "", intervalDays: Int, dueDate: Date, plant: Plant) {
+    init(
+        id: UUID = UUID(),
+        kind: CareKind,
+        customTitle: String = "",
+        intervalDays: Int,
+        dueDate: Date,
+        isEnabled: Bool = true,
+        reminderEnabled: Bool = false,
+        plant: Plant
+    ) {
+        self.id = id
         self.kindRaw = kind.rawValue
         self.customTitle = customTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         self.intervalDays = max(1, intervalDays)
         self.dueDate = dueDate
+        self.isEnabled = isEnabled
+        self.reminderEnabled = reminderEnabled
         self.plant = plant
     }
 }
@@ -56,11 +68,30 @@ final class CareEvent {
     var plant: Plant?
 
     init(task: CareTask, completedAt: Date = .now, note: String = "") {
+        self.id = UUID()
         self.taskID = task.id
         self.taskTitle = task.title
         self.completedAt = completedAt
         self.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
         self.plant = task.plant
+    }
+
+    /// Restores a historical completion snapshot even when its original task
+    /// has since been removed from the user's active care routine.
+    init(
+        id: UUID = UUID(),
+        taskID: UUID,
+        taskTitle: String,
+        completedAt: Date = .now,
+        note: String = "",
+        plant: Plant
+    ) {
+        self.id = id
+        self.taskID = taskID
+        self.taskTitle = taskTitle
+        self.completedAt = completedAt
+        self.note = note
+        self.plant = plant
     }
 }
 
