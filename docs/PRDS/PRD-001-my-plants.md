@@ -14,6 +14,7 @@ Make Feed Good the trusted home for a person's plants, giving every plant a clea
 - An established plant owner keeps a collection organised and can quickly find a specific plant.
 - A user gives a plant a personal name while retaining its species or common name as useful context.
 - A user opens a profile to understand the plant's current details and reach its care or journal history.
+- A user searches for a plant by its chosen name or known species and opens the correct record.
 - A user corrects details, changes a photo or removes a plant they no longer own.
 
 ## 3. Capability targets
@@ -23,6 +24,7 @@ Make Feed Good the trusted home for a person's plants, giving every plant a clea
 | Plant creation | Create a valid plant with required fields | [measure] | [target: all required-field and persistence tests pass] | [owner] / [date] |
 | Plant identity | Preserve chosen name and botanical/common-name fields | [measure] | [target: values survive relaunch and edits] | [owner] / [date] |
 | Collection retrieval | Find and open the correct plant from My Plants | [measure] | [target: no wrong-record navigation in test set] | [owner] / [date] |
+| Search and sort | Search by plant name/species and sort by name or recently added | [measure] | [target: deterministic results, empty and case-insensitive search tests pass] | [owner] / [date] |
 | Edit and delete | Update a plant and confirm destructive removal | [measure] | [target: relationship integrity and confirmation tests pass] | [owner] / [date] |
 | Accessibility | Navigate primary plant journeys with VoiceOver and Dynamic Type | [measure] | [target: no blocking accessibility defects] | [owner] / [date] |
 
@@ -31,6 +33,8 @@ Make Feed Good the trusted home for a person's plants, giving every plant a clea
 - Treat the plant as the authoritative record to which care activities, reminders and journal entries attach.
 - Support create, view, edit and delete journeys with clear validation and forgiving form behavior.
 - Support a chosen plant name, species/common name, photo and notes as described by the product brief; mark any field not yet implemented as planned rather than implying availability.
+- Provide basic collection search across the user's plant names and known species/common-name fields.
+- Provide simple, predictable sorting (at minimum name and recently added); preserve the user's selected sort where practical.
 - Make empty states explain the value of adding a plant and offer a clear first action.
 - Make destructive deletion explicit. Explain what associated data will be removed and require confirmation.
 - Preserve plant identity and relationships through ordinary edits and app relaunches.
@@ -42,11 +46,12 @@ Make Feed Good the trusted home for a person's plants, giving every plant a clea
 - Public plant profiles, sharing, social feeds or community messaging.
 - Mandatory account creation, cloud sync or cross-device collaboration.
 - A comprehensive botanical catalogue unless separately approved.
+- Complex multi-attribute filter builders, saved searches or multiple garden workspaces.
 - Automated health scoring or unsupported claims about plant condition.
 
 ## 6. Surfaces
 
-- My Plants collection and its empty state.
+- My Plants collection, basic search/sort controls and its empty state.
 - Add Plant and Edit Plant forms.
 - Plant Profile / Plant Detail.
 - Photo selection and photo presentation.
@@ -69,10 +74,10 @@ No feature-level charge. My Plants is part of the free, local-first initial rele
 
 1. Confirm the plant data contract and required/optional fields.
 2. Verify create, read, update and delete behavior, including SwiftData relationship integrity.
-3. Test empty, populated, long-name, missing-photo and deletion states.
+3. Test empty, populated, long-name, missing-photo, search, sort and deletion states.
 4. Verify persistence after relaunch and accessibility in light and dark appearances.
 5. Record unit, UI, simulator and physical-device evidence independently.
-6. Release with the core app; monitor [measure: add completion, edit errors and deletion issues] where privacy-respecting measurement is available.
+6. Release with the core app; monitor [measure: add completion, search success, edit errors and deletion issues] where privacy-respecting measurement is available.
 
 ## 10. Replaces
 
@@ -85,9 +90,8 @@ Replaces an informal or fragmented way of keeping plant details in memory or sep
 - Which profile fields are required at MVP versus later?
 - What exact deletion and recovery behavior is expected for associated photos, care activity and journal entries?
 - Is plant photo storage limited to app-managed local files, and what is the backup/export expectation?
-- Which sort and filter options are essential for the first release?
-
+- Should the collection remember sort selection across launches?
 
 ## 12. Delivery tracking
 
-- GitHub implementation issue: [#3 — My Plants: complete plant profiles and editing](https://github.com/melusi-k/Feed-Good/issues/3).
+- GitHub implementation issue: [#3 — My Plants: complete plant profiles and editing](https://github.com/melusi-k/Feed-Good).
