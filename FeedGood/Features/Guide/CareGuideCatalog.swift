@@ -60,7 +60,7 @@ enum CareGuideCatalog {
             ],
             tags: ["light", "sun", "shade", "indoor", "placement", "leaves"],
             sources: [
-                CareGuideSource(title: "Lighting for indoor plants", publisher: "University of Minnesota Extension", url: "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/lighting-for-indoor-plants"),
+                CareGuideSource(title: "Lighting for indoor plants and starting seeds", publisher: "University of Minnesota Extension", url: "https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/lighting-for-indoor-plants"),
                 CareGuideSource(title: "How to grow houseplants", publisher: "Royal Horticultural Society", url: "https://www.rhs.org.uk/plants/types/houseplants/growing-guide")
             ],
             reviewStatus: .draft,
