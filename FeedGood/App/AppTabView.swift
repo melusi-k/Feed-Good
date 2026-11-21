@@ -70,6 +70,8 @@ private struct SettingsView: View {
                     Text("Choose the look that feels right. System follows your iPhone setting.")
                 }
 
+                JournalArchiveSection()
+
                 Section {
                     HStack(spacing: 12) {
                         Image(systemName: appearance == .dark ? "moon.stars.fill" : "sun.max.fill")
