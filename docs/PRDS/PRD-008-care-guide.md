@@ -1,6 +1,6 @@
 # PRD-008 — Plant Care Guide
 
-**Status:** Draft for product review  
+**Status:** Editorial and implementation planning  
 **Release:** MVP, after editorial provenance and review process is established  
 **Primary surface:** Care Guide, Plant Profile, Care Routine
 
@@ -32,6 +32,7 @@ Give people a trustworthy, approachable place to learn how plant care works, wit
 - Organise content by topic and make it searchable using everyday language.
 - Explain unfamiliar terms and give practical, appropriately qualified next steps.
 - Record source provenance, review status, reviewer and review date for factual content.
+- Prefer sources in this order: peer-reviewed horticultural research and university/agricultural extension publications; public botanical gardens and government horticultural bodies; established horticultural institutions. Commercial or community sources may inform topic discovery but are not sole authority for factual claims.
 - Distinguish general education from guidance that is genuinely specific to a known plant.
 - Link to relevant guide topics from plant profiles and care tasks where useful.
 - Keep the guide available offline and avoid turning every article into a scheduled task.
@@ -68,12 +69,13 @@ Included in the free initial release. The MVP guide is bundled and available off
 
 ## 9. Launch plan
 
-1. Define editorial standards, acceptable sources and review ownership.
-2. Agree a modest MVP topic list rather than maximising article volume.
-3. Create bundled content with provenance and review metadata.
-4. Review factual accuracy, clarity, tone and accessibility.
-5. Test search, navigation, offline behavior and contextual entry points.
-6. Establish a process to correct or retire inaccurate content in future app releases.
+1. Adopt the source hierarchy and content metadata contract.
+2. Assign a named horticultural/editorial reviewer before publishing factual entries.
+3. Agree a modest MVP topic list rather than maximising article volume.
+4. Create bundled content with provenance, review status, reviewer and review date.
+5. Review factual accuracy, clarity, tone and accessibility.
+6. Test search, navigation, offline behavior and contextual entry points.
+7. Establish a correction/withdrawal process and a review cadence.
 
 ## 10. Replaces
 
@@ -81,8 +83,8 @@ Replaces scattered, inconsistent searching with a coherent in-app learning refer
 
 ## 11. Open questions
 
-- Which source hierarchy is acceptable for horticultural claims?
-- Who will own factual review and how often should content be reviewed?
+- Which named person will own horticultural review and approval? This remains a release gate; no unreviewed factual content should ship.
+- What review cadence should apply to the bundled content?
 - Should the guide ship with a fixed MVP set or a smaller set expanded through app updates?
 - How should source citations appear in the interface?
 - Which topics are essential for the first release?
@@ -91,3 +93,4 @@ Replaces scattered, inconsistent searching with a coherent in-app learning refer
 ## 12. Delivery tracking
 
 - GitHub implementation issue: [#23 — Plant Care Guide: curated, source-backed horticultural learning](https://github.com/melusi-k/Feed-Good/issues/23).
+- Editorial owner remains unassigned; this is a release gate, not an implementation assumption.
