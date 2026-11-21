@@ -13,12 +13,12 @@ final class JournalUITests: XCTestCase {
         app.tabBars.buttons["Journal"].tap()
         let add = app.buttons["journal.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 5)); add.tap()
-        let note = app.textViews["journal.note"]
+        let note = app.descendants(matching: .any)["journal.note"]
         XCTAssertTrue(note.waitForExistence(timeout: 5)); note.tap(); note.typeText("A new leaf today")
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["A new leaf today"].waitForExistence(timeout: 5))
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "journal.edit.")).firstMatch.tap()
-        let edit = app.textViews["journal.note"]
+        let edit = app.descendants(matching: .any)["journal.note"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap(); edit.typeText(" and another")
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["A new leaf today and another"].waitForExistence(timeout: 5))
