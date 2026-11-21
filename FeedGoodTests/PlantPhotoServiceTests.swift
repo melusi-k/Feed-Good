@@ -5,7 +5,11 @@ import UIKit
 final class PlantPhotoServiceTests: XCTestCase {
     private func makePNG(width: CGFloat, height: CGFloat) -> Data {
         let size = CGSize(width: width, height: height)
-        let renderer = UIGraphicsImageRenderer(size: size)
+        // Scale 1 keeps point size == pixel size, so assertions about the
+        // stored photo's dimensions are deterministic.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
         let image = renderer.image { context in
             UIColor.green.setFill()
             context.fill(CGRect(origin: .zero, size: size))
