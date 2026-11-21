@@ -42,6 +42,7 @@ struct PlantDetailView: View {
                 .accessibilityIdentifier("plantDetail.journal")
 
                 notesCard
+                if hasGrowingContext { growingContextCard }
 
                 Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
                     .font(.caption)
@@ -76,6 +77,36 @@ struct PlantDetailView: View {
         } message: {
             Text("This permanently deletes \(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
         }
+    }
+
+    private var hasGrowingContext: Bool {
+        plant.growingEnvironment != nil || plant.lightCondition != nil || plant.growingLocation != nil
+    }
+
+    private var growingContextCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("GROWING CONTEXT")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .tracking(1.2)
+                .foregroundStyle(FeedGoodTheme.muted)
+            if let environment = plant.growingEnvironment {
+                Label(environment, systemImage: "house")
+            }
+            if let light = plant.lightCondition {
+                Label(light, systemImage: "sun.max")
+            }
+            if let location = plant.growingLocation {
+                Label(location, systemImage: "mappin.and.ellipse")
+            }
+            Text("Based on what you've observed, not measured conditions.")
+                .font(.caption)
+                .foregroundStyle(FeedGoodTheme.muted)
+        }
+        .font(.system(size: 14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(17)
+        .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .accessibilityIdentifier("plantDetail.growingContext")
     }
 
     private var notesCard: some View {
