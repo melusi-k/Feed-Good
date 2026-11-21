@@ -6,7 +6,7 @@ import PhotosUI
 /// touches the stored record. Photos are picked with the system picker,
 /// resized by PlantPhotoService and stored on-device only.
 struct EditPlantView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\\.dismiss) private var dismiss
 
     let plant: Plant
 
@@ -60,6 +60,8 @@ struct EditPlantView: View {
                         .lineLimit(3...6)
                         .accessibilityIdentifier("editPlant.notes")
                 }
+
+                growingContextFields
             }
             .navigationTitle("Edit plant")
             .navigationBarTitleDisplayMode(.inline)
@@ -82,6 +84,28 @@ struct EditPlantView: View {
             } message: {
                 Text("Try a different photo. Your current photo is unchanged.")
             }
+        }
+    }
+
+    private var growingContextFields: some View {
+        Section {
+            Picker("Environment", selection: $draft.growingEnvironment) {
+                Text("Not set").tag("")
+                ForEach(GrowingEnvironment.allCases) { option in
+                    Text(option.rawValue).tag(option.rawValue)
+                }
+            }
+            Picker("Light conditions", selection: $draft.lightCondition) {
+                Text("Not set").tag("")
+                ForEach(LightCondition.allCases) { option in
+                    Text(option.rawValue).tag(option.rawValue)
+                }
+            }
+            TextField("Where it grows (optional)", text: $draft.growingLocation)
+        } header: {
+            Text("Growing context (optional)")
+        } footer: {
+            Text("These are your observations, not sensor readings. Leave anything blank if you're unsure. Feed Good doesn't need your precise location.")
         }
     }
 
