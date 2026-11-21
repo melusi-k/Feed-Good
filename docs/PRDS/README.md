@@ -1,6 +1,6 @@
 # Feed Good — Feature PRDs
 
-This directory contains the product requirements for individual Feed Good capabilities. Each PRD uses the same 11-part structure so that product intent, measurable outcomes, behavior, safety and launch criteria remain reviewable independently.
+This directory contains the product requirements for individual Feed Good capabilities. Each PRD uses the agreed 11-part product template, followed by delivery tracking, so product intent, measurable outcomes, behavior, safety and launch criteria remain reviewable independently.
 
 ## Product standard
 
