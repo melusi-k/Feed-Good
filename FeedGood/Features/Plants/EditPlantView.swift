@@ -3,10 +3,9 @@ import SwiftData
 import PhotosUI
 
 /// Edits an existing plant's profile through a draft, so cancelling never
-/// touches the stored record. Photos are picked with the system picker,
-/// resized by PlantPhotoService and stored on-device only.
+/// touches the stored record. Photos remain local to this device.
 struct EditPlantView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\\.dismiss) private var dismiss
 
     let plant: Plant
 
@@ -59,6 +58,23 @@ struct EditPlantView: View {
                     TextField("Notes (optional)", text: $draft.notes, axis: .vertical)
                         .lineLimit(3...6)
                         .accessibilityIdentifier("editPlant.notes")
+                }
+
+                Section {
+                    Picker("Where does it grow?", selection: $draft.growingEnvironment) {
+                        ForEach(GrowingEnvironment.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                    Picker("Observed light", selection: $draft.lightCondition) {
+                        ForEach(LightCondition.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                } header: {
+                    Text("Growing context (optional)")
+                } footer: {
+                    Text("These are your observations, not measurements. You can leave them unset or change them later. Feed Good does not need your location.")
                 }
             }
             .navigationTitle("Edit plant")
