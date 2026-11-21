@@ -29,7 +29,7 @@ struct AppTabView: View {
                 }
                 .tag(AppTab.plants)
 
-            JournalView()
+            NavigationStack { JournalView() }
                 .tabItem {
                     Label("Journal", systemImage: selectedTab == .journal ? "book.closed.fill" : "book.closed")
                 }
@@ -89,22 +89,6 @@ private struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(FeedGoodTheme.background)
             .navigationTitle("Settings")
-        }
-        .tint(FeedGoodTheme.leaf)
-    }
-}
-
-private struct JournalView: View {
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView {
-                Label("Your garden story starts here", systemImage: "book.closed")
-            } description: {
-                Text("Soon, you’ll be able to keep the little moments, new leaves and milestones that make each plant yours.")
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(FeedGoodTheme.background)
-            .navigationTitle("Journal")
         }
         .tint(FeedGoodTheme.leaf)
     }
