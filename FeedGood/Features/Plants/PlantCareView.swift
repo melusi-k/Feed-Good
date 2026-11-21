@@ -61,7 +61,7 @@ struct PlantCareView: View {
             NavigationStack {
                 Form {
                     Text(task.title)
-                    TextField("Optional note", text: $note, axis: .vertical).accessibilityIdentifier("care.note")
+                    TextField("Optional note", text: $note).accessibilityIdentifier("care.note")
                 }
                 .navigationTitle("Record care")
                 .toolbar {
