@@ -36,7 +36,7 @@ struct JournalArchivePreview: Equatable {
         Care routines: \(careTasksToAdd) to add, \(careTasksAlreadyPresent) already present
         Care history: \(careEventsToAdd) to add, \(careEventsAlreadyPresent) already present
 
-        Existing IDs are checked for identical content. Any conflicting record stops recovery before changes are saved.
+        Existing plant records are preserved. Existing journal and care records are checked for identical content; any conflict stops recovery before changes are saved.
         """
     }
 }
