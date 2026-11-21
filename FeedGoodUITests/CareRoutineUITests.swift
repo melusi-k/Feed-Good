@@ -1,0 +1,31 @@
+import XCTest
+
+final class CareRoutineUITests: XCTestCase {
+    func testCreateRoutineRecordCareAndReadHistory() {
+        let app = XCUIApplication()
+        app.launchArguments = ["FEEDGOOD_UI_TESTING"]
+        app.launch()
+        app.tabBars.buttons["My Plants"].tap()
+        app.buttons["plants.add"].tap()
+        let name = app.textFields["plants.name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap(); name.typeText("Care fern")
+        app.buttons["plants.save"].tap()
+        let row = app.descendants(matching: .any)["plants.row.Care fern"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
+        app.buttons["plantDetail.care"].tap()
+        XCTAssertTrue(app.buttons["care.add"].waitForExistence(timeout: 5))
+        app.buttons["care.add"].tap()
+        app.buttons["care.taskSave"].tap()
+        let complete = app.buttons["care.complete.Watering"]
+        XCTAssertTrue(complete.waitForExistence(timeout: 5)); complete.tap()
+        let note = app.textFields["care.note"]
+        XCTAssertTrue(note.waitForExistence(timeout: 5)); note.tap(); note.typeText("Checked the soil first")
+        app.buttons["care.recordSave"].tap()
+        XCTAssertTrue(app.staticTexts["Checked the soil first"].waitForExistence(timeout: 5))
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Care routine and saved history"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
