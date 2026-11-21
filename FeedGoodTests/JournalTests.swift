@@ -155,6 +155,38 @@ final class JournalTests: XCTestCase {
         XCTAssertTrue(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
     }
 
+    func testArchivePreviewShowsNewAndAlreadyPresentRecordCounts() throws {
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Fern")
+        sourceContext.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .now, plant: plant)
+        sourceContext.insert(task)
+        let event = CareEvent(task: task, note: "Checked soil")
+        sourceContext.insert(event)
+        try JournalStore.save(JournalDraft(note: "New frond"), plant: plant, entry: nil, context: sourceContext)
+
+        let data = try JournalArchive.export(
+            plants: [plant],
+            entries: sourceContext.fetch(FetchDescriptor<JournalEntry>()),
+            careTasks: [task],
+            careEvents: [event]
+        )
+        let destination = try memory()
+        let destinationContext = ModelContext(destination)
+        destinationContext.insert(Plant(id: plant.id, name: "Existing fern"))
+
+        let preview = try JournalArchive.preview(data, context: destinationContext)
+        XCTAssertEqual(preview.version, 2)
+        XCTAssertEqual(preview.plantsToAdd, 0)
+        XCTAssertEqual(preview.plantsAlreadyPresent, 1)
+        XCTAssertEqual(preview.entriesToAdd, 1)
+        XCTAssertEqual(preview.entriesAlreadyPresent, 0)
+        XCTAssertEqual(preview.careTasksToAdd, 1)
+        XCTAssertEqual(preview.careEventsToAdd, 1)
+        XCTAssertTrue(preview.confirmationMessage.contains("conflicting record"))
+    }
+
     func testArchiveConflictAndMalformedReferencesRejectBeforeWrites() throws {
         let container = try memory(); let context = ModelContext(container)
         let fern = Plant(name: "Fern"); context.insert(fern)
