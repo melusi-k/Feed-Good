@@ -35,8 +35,12 @@ enum PlantPhotoService {
         let scale = longestEdge > maximumDimension ? maximumDimension / longestEdge : 1
         let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
 
-        // Drawing into the renderer also normalizes EXIF orientation.
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        // Drawing into the renderer also normalizes EXIF orientation. Forcing
+        // scale 1 keeps output pixels equal to the point size, so the stored
+        // photo's dimensions are predictable regardless of device scale.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
         let rendered = renderer.image { _ in
             source.draw(in: CGRect(origin: .zero, size: targetSize))
         }
