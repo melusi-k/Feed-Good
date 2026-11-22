@@ -7,7 +7,7 @@ import Testing
 struct CareRoutineReviewTests {
     private func memory() throws -> ModelContainer {
         try ModelContainer(
-            for: Schema([Plant.self, CareTask.self]),
+            for: Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
@@ -30,7 +30,7 @@ struct CareRoutineReviewTests {
         let interval = earlier.intervalDays
         let reviewed = CareRoutineReviewProjection.tasks(for: fern.id, from: [later, unrelated, earlier])
 
-        #expect(reviewed.map(\\.id) == [earlier.id, later.id])
+        #expect(reviewed.map(\.id) == [earlier.id, later.id])
         #expect(earlier.dueDate == dueDate)
         #expect(earlier.intervalDays == interval)
         #expect(earlier.isEnabled)
