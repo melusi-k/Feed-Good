@@ -315,11 +315,18 @@ struct JournalTests {
         let context = ModelContext(try memory())
         let archive = JournalArchive(plants: [], entries: [], careTasks: [], careEvents: [])
         let encoded = try JSONEncoder().encode(archive)
-        let exactLimit = encoded + Data(repeating: 0x20, count: JournalArchive.maxBytes - encoded.count)
+        var belowLimit = encoded
+        belowLimit.append(Data(repeating: 0x20, count: JournalArchive.maxBytes - encoded.count - 1))
+        #expect(belowLimit.count == JournalArchive.maxBytes - 1)
+        #expect(try JournalArchive.preview(belowLimit, context: context).plantsToAdd == 0)
+
+        var exactLimit = encoded
+        exactLimit.append(Data(repeating: 0x20, count: JournalArchive.maxBytes - encoded.count))
         #expect(exactLimit.count == JournalArchive.maxBytes)
         #expect(try JournalArchive.preview(exactLimit, context: context).plantsToAdd == 0)
 
-        let overLimit = exactLimit + Data([0x20])
+        var overLimit = exactLimit
+        overLimit.append(0x20)
         #expect(throws: JournalArchiveError.tooLarge) {
             try JournalArchive.preview(overLimit, context: context)
         }
