@@ -24,6 +24,8 @@ jobs:
           xcode-version: latest-stable
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Generate iOS app icon
+        run: bash scripts/generate-app-icon.sh
       - name: Generate project
         run: xcodegen generate
       - name: Build app
