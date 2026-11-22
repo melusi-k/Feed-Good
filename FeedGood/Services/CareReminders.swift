@@ -104,7 +104,7 @@ final class CareReminderScheduler: ObservableObject {
     }
 
     static func reminders(for tasks: [CareTask], now: Date = .now) -> [CareReminder] {
-        tasks.filter { $0.isEnabled && $0.reminderEnabled && $0.plant?.archivedAt == nil && $0.dueDate > now }
+        tasks.filter { $0.isEnabled && $0.reminderEnabled && $0.plant != nil && $0.plant?.archivedAt == nil && $0.dueDate > now }
             .sorted { $0.dueDate == $1.dueDate ? $0.id.uuidString < $1.id.uuidString : $0.dueDate < $1.dueDate }
             .map {
                 CareReminder(id: prefix + $0.id.uuidString, title: "A moment with \($0.plant!.name)", body: "\($0.title): check what your plant needs before following your own routine.", date: $0.dueDate, taskID: $0.id, plantID: $0.plant!.id)
@@ -153,7 +153,7 @@ struct CareRemindersLifecycle: ViewModifier {
 
     private var revision: String {
         tasks.sorted { $0.id.uuidString < $1.id.uuidString }.map {
-            "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)|\($0.plant?.name ?? "")"
+            "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)|\($0.plant?.name ?? "")|\($0.plant?.archivedAt?.timeIntervalSince1970 ?? 0)"
         }.joined(separator: ";")
     }
     func body(content: Content) -> some View {
