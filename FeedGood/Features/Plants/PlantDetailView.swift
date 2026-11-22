@@ -144,12 +144,14 @@ struct PlantDetailView: View {
         }
         .confirmationDialog("Archive \(plant.name)?", isPresented: $showingArchiveConfirmation, titleVisibility: .visible) {
             Button("Archive plant", role: .destructive) { archivePlant() }
+                .accessibilityIdentifier("plantDetail.archive.confirm")
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This removes the plant from your active collection and care reminders. Its story, photos and care history stay safe. You can restore it at any time.")
         }
         .confirmationDialog("Restore \(plant.name)?", isPresented: $showingRestoreConfirmation, titleVisibility: .visible) {
             Button("Restore plant") { restorePlant() }
+                .accessibilityIdentifier("plantDetail.restore.confirm")
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This returns the same plant and its existing records to your active collection. Eligible future reminders will be restored if notifications are allowed.")
