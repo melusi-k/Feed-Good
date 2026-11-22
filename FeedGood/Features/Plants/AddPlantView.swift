@@ -40,7 +40,7 @@ struct AddPlantView: View {
                 } header: {
                     Text("Growing context (optional)")
                 } footer: {
-                    Text("These are your observations, not measurements. You can leave them unset or change them later. Feed Good does not need your location.")
+                    Text("This helps us tailor plant care guidance to your plant’s growing conditions. These are your observations, not measurements. You can leave them unset or change them later. We do not need your location.")
                 }
             }
             .feedGoodHeader("New plant")
