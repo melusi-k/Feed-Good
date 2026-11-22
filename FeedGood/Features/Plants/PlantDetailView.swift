@@ -1,8 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// The living record for one plant: photo, identity and notes, with routes
-/// to edit the profile or delete the plant (always confirmed).
+/// The living record for one plant: photo, identity, growing context and notes.
 struct PlantDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -29,6 +28,28 @@ struct PlantDetailView: View {
                     Text(plant.species.isEmpty ? "Species not added yet" : plant.species)
                         .font(.subheadline)
                         .foregroundStyle(plant.species.isEmpty ? FeedGoodTheme.muted.opacity(0.8) : FeedGoodTheme.muted)
+                }
+
+                if plant.growingEnvironment != .unspecified || plant.lightCondition != .unspecified {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("GROWING CONTEXT")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundStyle(FeedGoodTheme.muted)
+                        if plant.growingEnvironment != .unspecified {
+                            Label(plant.growingEnvironment.title, systemImage: "house")
+                        }
+                        if plant.lightCondition != .unspecified {
+                            Label(plant.lightCondition.title, systemImage: "sun.max")
+                        }
+                        Text("Based on your observations.")
+                            .font(.caption)
+                            .foregroundStyle(FeedGoodTheme.muted)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(17)
+                    .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .accessibilityIdentifier("plantDetail.growingContext")
                 }
 
                 NavigationLink { PlantCareView(plant: plant) } label: {
