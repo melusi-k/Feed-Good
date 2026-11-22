@@ -2,7 +2,12 @@ import Foundation
 import SwiftData
 
 enum GrowingEnvironment: String, CaseIterable, Identifiable, Hashable {
-    case unspecified, indoor, outdoor, balcony, other
+    case unspecified
+    case indoor
+    case outdoor
+    case balcony
+    case other
+
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -16,7 +21,12 @@ enum GrowingEnvironment: String, CaseIterable, Identifiable, Hashable {
 }
 
 enum LightCondition: String, CaseIterable, Identifiable, Hashable {
-    case unspecified, low, indirect, direct, mixed
+    case unspecified
+    case low
+    case indirect
+    case direct
+    case mixed
+
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -35,7 +45,7 @@ final class Plant {
     var name: String
     var species: String
     var notes: String
-    /// User-described context; defaults preserve existing plants without assumptions.
+    /// User-described growing context. Empty/default values mean the user has not supplied context.
     var growingEnvironmentRaw: String = "unspecified"
     var lightConditionRaw: String = "unspecified"
     @Attribute(.externalStorage) var photoData: Data?
