@@ -289,4 +289,148 @@ struct JournalTests {
         #expect(try verificationContext.fetch(FetchDescriptor<Plant>()).isEmpty)
     }
 
+
+
+    @Test func archiveEnforcesOneThousandRecordsPerCollection() throws {
+        let plants = (0..<JournalArchive.maxRecords).map { index in
+            JournalArchive.PlantRecord(
+                id: UUID(), name: "Plant \(index)", species: "", notes: "",
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+        }
+        let entries = (0..<JournalArchive.maxRecords).map { index in
+            JournalArchive.EntryRecord(
+                id: UUID(), plantID: plants[0].id, date: Date(timeIntervalSince1970: TimeInterval(index)),
+                note: "Entry \(index)", photoData: nil
+            )
+        }
+        let tasks = (0..<JournalArchive.maxRecords).map { _ in
+            JournalArchive.CareTaskRecord(
+                id: UUID(), plantID: plants[0].id, kindRaw: CareKind.watering.rawValue,
+                customTitle: "", intervalDays: 7, dueDate: .distantFuture,
+                isEnabled: true, reminderEnabled: false
+            )
+        }
+        let events = (0..<JournalArchive.maxRecords).map { _ in
+            JournalArchive.CareEventRecord(
+                id: UUID(), plantID: plants[0].id, taskID: UUID(),
+                taskTitle: "Watering", completedAt: .now, note: ""
+            )
+        }
+        var archive = JournalArchive(plants: plants, entries: entries, careTasks: tasks, careEvents: events)
+
+        archive.entries.removeLast()
+        try archive.validate()
+        archive.entries = entries
+        try archive.validate()
+
+        archive.entries.append(
+            JournalArchive.EntryRecord(id: UUID(), plantID: plants[0].id, date: .now, note: "Entry 1001", photoData: nil)
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+
+        archive.entries = entries
+        archive.plants.append(
+            JournalArchive.PlantRecord(id: UUID(), name: "Plant 1001", species: "", notes: "", createdAt: .now)
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+
+        archive.plants = plants
+        archive.careTasks?.append(
+            JournalArchive.CareTaskRecord(id: UUID(), plantID: plants[0].id, kindRaw: CareKind.watering.rawValue, customTitle: "", intervalDays: 7, dueDate: .distantFuture, isEnabled: true, reminderEnabled: false)
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+
+        archive.careTasks = tasks
+        archive.careEvents?.append(
+            JournalArchive.CareEventRecord(id: UUID(), plantID: plants[0].id, taskID: UUID(), taskTitle: "Watering", completedAt: .now, note: "")
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+    }
+
+    @Test func archiveAcceptsTwentyFiveMegabytesAndRejectsOneByteMore() throws {
+        let context = ModelContext(try memory())
+        let archive = JournalArchive(plants: [], entries: [], careTasks: [], careEvents: [])
+        let encoded = try JSONEncoder().encode(archive)
+        var belowLimit = encoded
+        belowLimit.append(Data(repeating: 0x20, count: JournalArchive.maxBytes - encoded.count - 1))
+        #expect(belowLimit.count == JournalArchive.maxBytes - 1)
+        #expect(try JournalArchive.preview(belowLimit, context: context).plantsToAdd == 0)
+
+        var exactLimit = encoded
+        exactLimit.append(Data(repeating: 0x20, count: JournalArchive.maxBytes - encoded.count))
+        #expect(exactLimit.count == JournalArchive.maxBytes)
+        #expect(try JournalArchive.preview(exactLimit, context: context).plantsToAdd == 0)
+
+        var overLimit = exactLimit
+        overLimit.append(0x20)
+        #expect(throws: JournalArchiveError.tooLarge) {
+            try JournalArchive.preview(overLimit, context: context)
+        }
+    }
+
+    @Test func failedRecoverySaveRollsBackEveryInsertedRecord() throws {
+        enum InjectedSaveFailure: Error { case failed }
+
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Recovery fern")
+        sourceContext.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        sourceContext.insert(task)
+        let event = CareEvent(task: task, note: "Checked soil")
+        sourceContext.insert(event)
+        try JournalStore.save(JournalDraft(note: "A new frond"), plant: plant, entry: nil, context: sourceContext)
+        let archiveData = try JournalArchive.export(
+            plants: [plant],
+            entries: sourceContext.fetch(FetchDescriptor<JournalEntry>()),
+            careTasks: [task],
+            careEvents: [event]
+        )
+
+        let destination = try memory()
+        let initialContext = ModelContext(destination)
+        let existingPlant = Plant(name: "Existing local plant")
+        initialContext.insert(existingPlant)
+        try initialContext.save()
+
+        let recoveryContext = ModelContext(destination)
+        #expect(throws: InjectedSaveFailure.self) {
+            try JournalArchive.recover(archiveData, context: recoveryContext) { _ in
+                throw InjectedSaveFailure.failed
+            }
+        }
+
+        let verificationContext = ModelContext(destination)
+        let plants = try verificationContext.fetch(FetchDescriptor<Plant>())
+        #expect(plants.map(\.id) == [existingPlant.id])
+        #expect(try verificationContext.fetch(FetchDescriptor<JournalEntry>()).isEmpty)
+        #expect(try verificationContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
+        #expect(try verificationContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+    }
+
+    @Test func duplicatePlantAndJournalArchiveIDsAreRejected() throws {
+        let plantID = UUID()
+        let duplicatePlants = JournalArchive(
+            plants: [
+                JournalArchive.PlantRecord(id: plantID, name: "Fern", species: "", notes: "", createdAt: .now),
+                JournalArchive.PlantRecord(id: plantID, name: "Aloe", species: "", notes: "", createdAt: .now)
+            ],
+            entries: [], careTasks: [], careEvents: []
+        )
+        #expect(throws: JournalArchiveError.invalidRecord) { try duplicatePlants.validate() }
+
+        let plant = Plant(name: "Fern")
+        let entryID = UUID()
+        let duplicateEntries = JournalArchive(
+            plants: [JournalArchive.PlantRecord(id: plant.id, name: plant.name, species: "", notes: "", createdAt: plant.createdAt)],
+            entries: [
+                JournalArchive.EntryRecord(id: entryID, plantID: plant.id, date: .now, note: "First", photoData: nil),
+                JournalArchive.EntryRecord(id: entryID, plantID: plant.id, date: .now, note: "Second", photoData: nil)
+            ],
+            careTasks: [], careEvents: []
+        )
+        #expect(throws: JournalArchiveError.invalidRecord) { try duplicateEntries.validate() }
+    }
+
 }

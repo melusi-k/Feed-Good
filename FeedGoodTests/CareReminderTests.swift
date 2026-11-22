@@ -103,6 +103,7 @@ struct CareReminderTests {
         #expect(fake.pending[unrelated.id] == unrelated)
     }
 
+
     @Test func notificationPayloadRoundTripsPlantAndTaskIdentityAndRejectsMalformedValues() {
         let taskID = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
         let plantID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
@@ -112,6 +113,17 @@ struct CareReminderTests {
         #expect(destination?.plantID == plantID)
         #expect(CareNotificationPayload.destination(from: [:])?.taskID == nil)
         #expect(CareNotificationPayload.destination(from: [CareNotificationPayload.taskIDKey: "not-a-uuid", CareNotificationPayload.plantIDKey: plantID.uuidString])?.taskID == nil)
+    }
+
+    @Test func reminderComponentsPreserveTheSameInstantAcrossTimeZoneChanges() throws {
+        let dueDate = try #require(ISO8601DateFormatter().date(from: "2026-11-22T18:45:30Z"))
+        for identifier in ["Africa/Johannesburg", "America/Los_Angeles"] {
+            let timeZone = try #require(TimeZone(identifier: identifier))
+            let components = CareNotificationTrigger.dateComponents(for: dueDate, timeZone: timeZone)
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = timeZone
+            #expect(calendar.date(from: components) == dueDate)
+        }
     }
 
 }

@@ -235,7 +235,11 @@ struct JournalArchive: Codable {
     /// Additive and idempotent. All archive and conflict checks happen before the
     /// model context is changed; existing user-authored records are never overwritten.
     @MainActor
-    static func recover(_ data: Data, context: ModelContext) throws -> Int {
+    static func recover(
+        _ data: Data,
+        context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws -> Int {
         guard data.count <= maxBytes else { throw JournalArchiveError.tooLarge }
         guard !context.hasChanges else { throw JournalArchiveError.unsavedChanges }
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
@@ -332,7 +336,7 @@ struct JournalArchive: Codable {
                     plant: plant
                 ))
             }
-            try recoveryContext.save()
+            try save(recoveryContext)
         } catch {
             recoveryContext.rollback()
             throw error

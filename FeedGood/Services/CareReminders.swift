@@ -40,6 +40,16 @@ enum CareNotificationPayload {
 
 enum ReminderPermission { case notDetermined, allowed, denied }
 
+enum CareNotificationTrigger {
+    static func dateComponents(for date: Date, timeZone: TimeZone) -> DateComponents {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        components.timeZone = timeZone
+        return components
+    }
+}
+
 @MainActor
 protocol CareNotificationBoundary {
     func permission() async -> ReminderPermission
@@ -72,10 +82,7 @@ final class LocalCareNotifications: CareNotificationBoundary {
         if let taskID = reminder.taskID, let plantID = reminder.plantID {
             content.userInfo = CareNotificationPayload.make(taskID: taskID, plantID: plantID)
         }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .current
-        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: reminder.date)
-        components.timeZone = calendar.timeZone
+        let components = CareNotificationTrigger.dateComponents(for: reminder.date, timeZone: .current)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         try await center.add(UNNotificationRequest(identifier: reminder.id, content: content, trigger: trigger))
     }
