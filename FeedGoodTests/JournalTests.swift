@@ -82,7 +82,8 @@ struct JournalTests {
         let plant = Plant(
             name: "Fern", species: "Nephrolepis",
             growingEnvironment: .balcony, lightCondition: .indirect,
-            photoData: samplePhoto()
+            photoData: samplePhoto(),
+            archivedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
         sourceContext.insert(plant)
         let dueDate = Date(timeIntervalSince1970: 1_800_000_000)
@@ -120,6 +121,7 @@ struct JournalTests {
         #expect(restoredPlant.photoData == plant.photoData)
         #expect(restoredPlant.growingEnvironment == .balcony)
         #expect(restoredPlant.lightCondition == .indirect)
+        #expect(restoredPlant.archivedAt == plant.archivedAt)
 
         let restoredTask = try #require(destinationContext.fetch(FetchDescriptor<CareTask>()).first)
         #expect(restoredTask.id == task.id)
@@ -263,6 +265,7 @@ struct JournalTests {
         let restored = try #require(context.fetch(FetchDescriptor<Plant>()).first)
         #expect(restored.growingEnvironment == .unspecified)
         #expect(restored.lightCondition == .unspecified)
+        #expect(restored.archivedAt == nil)
     }
 
     @Test func recoveryKeepsUnsavedCallerChanges() throws {
