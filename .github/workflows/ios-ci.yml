@@ -34,7 +34,32 @@ jobs:
             -project FeedGood.xcodeproj \
             -scheme FeedGood \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
+      - name: Verify App Intents metadata
+        run: |
+          APP_PRODUCT="$(find DerivedData/Build/Products -maxdepth 3 -type d -name 'FeedGood.app' -print -quit)"
+          if [ -z "$APP_PRODUCT" ]; then
+            echo "The FeedGood app product was not found after the build."
+            find DerivedData/Build/Products -maxdepth 4 -print
+            exit 1
+          fi
+
+          METADATA_DIR="$APP_PRODUCT/Metadata.appintents"
+          if [ ! -d "$METADATA_DIR" ]; then
+            echo "Xcode did not produce the expected Metadata.appintents directory."
+            find "$APP_PRODUCT" -maxdepth 4 -print
+            exit 1
+          fi
+
+          if [ ! -s "$METADATA_DIR/extract.actionsdata" ]; then
+            echo "App Intents metadata extraction output is missing or empty."
+            find "$METADATA_DIR" -maxdepth 2 -type f -print
+            exit 1
+          fi
+
+          echo "App Intents metadata extraction verified:"
+          find "$METADATA_DIR" -maxdepth 2 -type f -print
       - name: Run unit tests
         run: |
           SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ && /[0-9A-F-]{36}/ { print $2; exit }')"
@@ -49,6 +74,7 @@ jobs:
             -project FeedGood.xcodeproj \
             -scheme FeedGood \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Export test attachments
