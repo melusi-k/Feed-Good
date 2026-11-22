@@ -109,4 +109,39 @@ enum CareRecorder {
             throw error
         }
     }
+
+    /// Corrects one recorded event's date or note. History-only policy: a
+    /// correction never changes the active routine's due date or interval,
+    /// and the task-title snapshot recorded at completion is preserved.
+    static func update(
+        _ event: CareEvent,
+        completedAt: Date,
+        note: String,
+        in context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        let previousDate = event.completedAt
+        let previousNote = event.note
+        event.completedAt = completedAt
+        event.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        do { try save(context) }
+        catch {
+            event.completedAt = previousDate
+            event.note = previousNote
+            context.rollback()
+            throw error
+        }
+    }
+
+    /// Removes one recorded event. Unrelated events, tasks, plants and
+    /// journal entries are untouched.
+    static func delete(
+        _ event: CareEvent,
+        in context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        context.delete(event)
+        do { try save(context) }
+        catch { context.rollback(); throw error }
+    }
 }
