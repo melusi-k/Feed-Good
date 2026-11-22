@@ -24,6 +24,10 @@ Every feature should help someone understand, notice, learn about or connect wit
 | PRD-008 | Plant Care Guide | [PRD-008-care-guide.md](PRD-008-care-guide.md) · [Issue #23](https://github.com/melusi-k/Feed-Good/issues/23) | Curated, source-backed plant-care learning available offline |
 | PRD-009 | Settings & Data Portability | [PRD-009-settings-data-portability.md](PRD-009-settings-data-portability.md) · [Issue #15](https://github.com/melusi-k/Feed-Good/issues/15) | Transparent settings and safe export/recovery of personal garden data |
 | PRD-010 | Garden Profile | [PRD-010-garden-profile.md](PRD-010-garden-profile.md) · [Issue #42](https://github.com/melusi-k/Feed-Good/issues/42) | A trustworthy, shared overview of the user's existing garden records |
+| PRD-011 | Care History Corrections | [PRD-011-care-history-corrections.md](PRD-011-care-history-corrections.md) · [Issue #63](https://github.com/melusi-k/Feed-Good/issues/63) | Correct mistakes without silently corrupting the active routine |
+| PRD-012 | Growth Review | [PRD-012-growth-review.md](PRD-012-growth-review.md) · [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64) | Make visual change and meaningful plant moments easier to notice |
+| PRD-013 | Weekly Garden Reflection | [PRD-013-weekly-garden-reflection.md](PRD-013-weekly-garden-reflection.md) · [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65) | Turn real local activity into a gentle, non-gamified look-back |
+| PRD-014 | Plant Check-ins & Cautious Troubleshooting | [PRD-014-plant-check-ins.md](PRD-014-plant-check-ins.md) · [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66) | Record observations and learn what to check next without diagnosis |
 
 ## Release scope
 
@@ -43,6 +47,17 @@ Every feature should help someone understand, notice, learn about or connect wit
 - Multiple independently managed gardens or shared spaces.
 - Weather-aware care, sensors and other external data integrations.
 - Shared garden access, social/community features, widgets and Live Activities.
+
+### Next development tranche
+
+The proposed post-MVP sequence is ordered by product trust and relationship value:
+
+1. **PRD-011 — Care History Corrections:** a narrow trust fix for mistakes in recorded care, with an explicit history-only schedule policy.
+2. **PRD-012 — Growth Review:** a derived visual review over existing journal photos and milestones.
+3. **PRD-013 — Weekly Garden Reflection:** a quiet, local recap of real care and observation moments without streaks or scores.
+4. **PRD-014 — Plant Check-ins & Cautious Troubleshooting:** a safety-gated observation flow that extends the reviewed offline learning model.
+
+These proposals are tracked by GitHub issues #63–#66. They are not implementation authorization; each still needs product review, linked implementation work and exact-head verification.
 
 A later opportunity needs its own product decision, PRD and issue before implementation. It must not be treated as implied MVP scope.
 

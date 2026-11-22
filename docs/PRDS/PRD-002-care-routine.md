@@ -96,7 +96,7 @@ Reconciled against the app on main (b5e593f8) on 2026-11-21.
 
 ### Still open
 
-- **Correcting or deleting a wrongly recorded care event is not possible.** History rows are read-only and nothing in the app edits or deletes them (apart from deleting the whole plant). Product decision: allow edit/delete of events? If deleting an event, should it also roll the due date back?
+- **Correcting or deleting a wrongly recorded care event is not possible.** History rows are read-only and nothing in the app edits or deletes them (apart from deleting the whole plant). The scoped follow-up is proposed in [PRD-011 — Care History Corrections](PRD-011-care-history-corrections.md) and [Issue #63](https://github.com/melusi-k/Feed-Good/issues/63). The recommended MVP policy is history-only correction: editing or deleting an event does not silently roll the active due date back; any schedule change is a separate explicit action.
 - **One-off and seasonal care** have no representation yet. A one-off task would need a "does not repeat" option, and seasonal care would need a calendar-based schedule. Decide whether either is in scope for MVP or later.
 - **Recording care without a task** (a spontaneous watering, say). Decide whether to keep tasks mandatory.
 - **Source for species-specific care recommendations.** Unchanged, deferred to PRD-008 (Plant Care Guide).
@@ -104,3 +104,4 @@ Reconciled against the app on main (b5e593f8) on 2026-11-21.
 ## 12. Delivery tracking
 
 - GitHub implementation issue: [#4 — Care Routine: plant-specific care tasks and history](https://github.com/melusi-k/Feed-Good/issues/4).
+- Scoped follow-up proposal: [#63 — Correct or remove recorded care events without corrupting schedule](https://github.com/melusi-k/Feed-Good/issues/63).

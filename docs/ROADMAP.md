@@ -48,17 +48,29 @@ This is an outcome-led sequence, not a promise of calendar dates. Every implemen
 - Tested export and restore for plants, care history, journal entries and required media (#15).
 - Archive validation, explicit restore confirmation and failure recovery.
 
-## Later opportunities — discovery only
+## Next development tranche — proposed post-MVP
 
-These ideas are intentionally outside MVP scope. Each requires a separate product decision, evidence of user value, a PRD and a linked issue before implementation.
+These are the recommended next features after the MVP foundation. They are ordered by trust and relationship value, not by novelty:
 
-- Growth progress: side-by-side photo comparisons and richer visual timelines.
-- Plant health troubleshooting: symptom education and cautious possible-cause exploration; no definitive diagnosis.
+1. **Care History Corrections** ([PRD-011](PRDS/PRD-011-care-history-corrections.md), [Issue #63](https://github.com/melusi-k/Feed-Good/issues/63)) — repair a mistaken event without silently changing the active schedule. Recommended policy: history-only correction by default.
+2. **Growth Review** ([PRD-012](PRDS/PRD-012-growth-review.md), [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64)) — compare existing journal photos for one plant, with source dates and no visual diagnosis.
+3. **Weekly Garden Reflection** ([PRD-013](PRDS/PRD-013-weekly-garden-reflection.md), [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65)) — reflect real care and observation moments without streaks, scores or guilt.
+4. **Plant Check-ins and Cautious Troubleshooting** ([PRD-014](PRDS/PRD-014-plant-check-ins.md), [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66)) — add an observation path and reviewed offline next checks, gated on editorial and safety ownership.
+
+Each item requires its own focused implementation PR, exact-head CI verification, accessibility review, archive compatibility review and physical-device evidence. The PRDs define intended behavior; they do not authorize implementation without product review.
+
+## Later opportunities — explicitly deferred
+
+These ideas remain discovery-only and should not be pulled into the next tranche:
+
 - Plant identification: assisted identification with clear confidence and verification limits.
 - Multiple gardens/spaces: reusable spaces and more advanced collection organisation.
 - Weather-aware care and sensor integrations: only with clear consent, data quality and offline fallback.
-- Shared garden access and community features.
+- Shared garden access and community/social features.
 - Home-screen widgets and Live Activities.
+- Remote or AI diagnosis, including image-based symptom claims.
+
+They require separate product decisions, evidence of user value, privacy/safety review, a PRD and a linked issue before implementation. Their deferral protects Feed Good's relationship-first, local-first direction while the current core loop matures.
 
 ## Release readiness
 
