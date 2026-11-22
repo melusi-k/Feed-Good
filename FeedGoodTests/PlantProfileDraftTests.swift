@@ -3,27 +3,19 @@ import XCTest
 
 final class PlantProfileDraftTests: XCTestCase {
     func testDraftStartsFromPlantValues() {
-        let plant = Plant(name: "Monstera", species: "Monstera deliciosa", notes: "New leaf")
+        let plant = Plant(name: "Monstera", species: "Monstera deliciosa", notes: "New leaf", growingEnvironment: .balcony, lightCondition: .indirect)
         let draft = PlantProfileDraft(plant: plant)
-
         XCTAssertEqual(draft.name, "Monstera")
         XCTAssertEqual(draft.species, "Monstera deliciosa")
         XCTAssertEqual(draft.notes, "New leaf")
+        XCTAssertEqual(draft.growingEnvironment, .balcony)
+        XCTAssertEqual(draft.lightCondition, .indirect)
     }
 
     func testBlankNameIsInvalid() {
-        let draft = PlantProfileDraft(name: "")
-        XCTAssertFalse(draft.isValid)
-    }
-
-    func testWhitespaceOnlyNameIsInvalid() {
-        let draft = PlantProfileDraft(name: "   \n  ")
-        XCTAssertFalse(draft.isValid)
-    }
-
-    func testNameWithContentIsValid() {
-        let draft = PlantProfileDraft(name: " Fern ")
-        XCTAssertTrue(draft.isValid)
+        XCTAssertFalse(PlantProfileDraft(name: "").isValid)
+        XCTAssertFalse(PlantProfileDraft(name: "   \n  ").isValid)
+        XCTAssertTrue(PlantProfileDraft(name: " Fern ").isValid)
     }
 
     func testApplyingTrimsAndWritesBackOntoPlant() {
@@ -32,12 +24,30 @@ final class PlantProfileDraftTests: XCTestCase {
         draft.name = "  Monty  "
         draft.species = "  Monstera deliciosa "
         draft.notes = "\n Moved to the window  \n"
-
+        draft.growingEnvironment = .indoor
+        draft.lightCondition = .direct
         draft.applying(to: plant)
-
         XCTAssertEqual(plant.name, "Monty")
         XCTAssertEqual(plant.species, "Monstera deliciosa")
         XCTAssertEqual(plant.notes, "Moved to the window")
+        XCTAssertEqual(plant.growingEnvironment, .indoor)
+        XCTAssertEqual(plant.lightCondition, .direct)
+    }
+
+    func testDraftInitializerDefaultsGrowingContextToUnspecified() {
+        let draft = PlantProfileDraft(name: "Fern")
+        XCTAssertEqual(draft.growingEnvironment, .unspecified)
+        XCTAssertEqual(draft.lightCondition, .unspecified)
+    }
+
+    func testOptionalContextDefaultsToUnspecifiedAndCanBeCleared() {
+        let plant = Plant(name: "Fern", growingEnvironment: .balcony, lightCondition: .low)
+        var draft = PlantProfileDraft(plant: plant)
+        draft.growingEnvironment = .unspecified
+        draft.lightCondition = .unspecified
+        draft.applying(to: plant)
+        XCTAssertEqual(plant.growingEnvironment, .unspecified)
+        XCTAssertEqual(plant.lightCondition, .unspecified)
     }
 
     func testApplyingBlankSpeciesAndNotesStoresEmptyStrings() {
@@ -45,9 +55,7 @@ final class PlantProfileDraftTests: XCTestCase {
         var draft = PlantProfileDraft(plant: plant)
         draft.species = "   "
         draft.notes = ""
-
         draft.applying(to: plant)
-
         XCTAssertEqual(plant.species, "")
         XCTAssertEqual(plant.notes, "")
     }
