@@ -61,8 +61,7 @@ struct EditPlantView: View {
                         .accessibilityIdentifier("editPlant.notes")
                 }
             }
-            .navigationTitle("Edit plant")
-            .navigationBarTitleDisplayMode(.inline)
+            .feedGoodHeader("Edit plant")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
