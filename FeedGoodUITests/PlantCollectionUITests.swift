@@ -73,10 +73,11 @@ final class PlantCollectionUITests: XCTestCase {
         XCTAssertTrue(archiveConfirmation.waitForExistence(timeout: 5))
         archiveConfirmation.tap()
 
-        XCTAssertTrue(app.staticTexts["plantDetail.archivedStatus"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["plantDetail.care"].exists)
         app.buttons["plantDetail.journal"].tap()
         app.buttons["journal.story"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["story.archivedStatus"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["story.empty"].waitForExistence(timeout: 5))
         app.navigationBars.buttons.firstMatch.tap()
         app.navigationBars.buttons.firstMatch.tap()
@@ -86,13 +87,13 @@ final class PlantCollectionUITests: XCTestCase {
         let archivedRow = app.buttons["plants.archived.row.Archive fern"]
         XCTAssertTrue(archivedRow.waitForExistence(timeout: 5))
         archivedRow.tap()
-        XCTAssertTrue(app.staticTexts["plantDetail.archivedStatus"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
         app.buttons["plantDetail.restore"].tap()
         let restoreConfirmation = app.buttons["plantDetail.restore.confirm"]
         XCTAssertTrue(restoreConfirmation.waitForExistence(timeout: 5))
         restoreConfirmation.tap()
 
-        XCTAssertFalse(app.staticTexts["plantDetail.archivedStatus"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
         XCTAssertTrue(app.buttons["plantDetail.care"].exists)
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertFalse(app.buttons["plants.archived.row.Archive fern"].exists)
