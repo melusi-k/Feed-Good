@@ -38,7 +38,7 @@ struct PlantCareView: View {
                                     .font(.subheadline).foregroundStyle(.secondary)
                                 Text("Every \(task.intervalDays) days · user-defined").font(.caption).foregroundStyle(.secondary)
                             }
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(FeedGoodPressStyle())
                         if task.isEnabled {
                             Button("Record care") { note = ""; completing = task }
                                 .accessibilityIdentifier("care.complete.\(task.title)")
