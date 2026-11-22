@@ -59,8 +59,7 @@ struct PlantDetailView: View {
             .padding(FeedGoodTheme.contentPadding)
         }
         .background(FeedGoodTheme.background.ignoresSafeArea())
-        .navigationTitle(plant.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .feedGoodHeader(plant.name)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { showingEditor = true }
