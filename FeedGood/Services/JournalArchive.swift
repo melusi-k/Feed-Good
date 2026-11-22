@@ -5,13 +5,14 @@ import UniformTypeIdentifiers
 import UIKit
 
 enum JournalArchiveError: LocalizedError {
-    case invalidRecord, unsupportedVersion, tooLarge, conflictingRecord
+    case invalidRecord, unsupportedVersion, tooLarge, conflictingRecord, unsavedChanges
     var errorDescription: String? {
         switch self {
         case .invalidRecord: return "This archive has an invalid record, plant reference or photo. Nothing was imported."
         case .unsupportedVersion: return "This archive version isn't supported. Nothing was imported."
         case .tooLarge: return "This archive exceeds the 25 MB or 1,000-record safety limit. Nothing was imported."
         case .conflictingRecord: return "A record has the same ID but different content. Nothing was imported; existing records are unchanged."
+        case .unsavedChanges: return "Save or discard pending changes before recovering an archive. Your unsaved changes have been preserved."
         }
     }
 }
@@ -206,13 +207,15 @@ struct JournalArchive: Codable {
     @MainActor
     static func preview(_ data: Data, context: ModelContext) throws -> JournalArchivePreview {
         guard data.count <= maxBytes else { throw JournalArchiveError.tooLarge }
+        guard !context.hasChanges else { throw JournalArchiveError.unsavedChanges }
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
         try archive.validate()
 
-        let plantIDs = Set(try context.fetch(FetchDescriptor<Plant>()).map(\.id))
-        let entryIDs = Set(try context.fetch(FetchDescriptor<JournalEntry>()).map(\.id))
-        let taskIDs = Set(try context.fetch(FetchDescriptor<CareTask>()).map(\.id))
-        let eventIDs = Set(try context.fetch(FetchDescriptor<CareEvent>()).map(\.id))
+        let previewContext = ModelContext(context.container)
+        let plantIDs = Set(try previewContext.fetch(FetchDescriptor<Plant>()).map(\.id))
+        let entryIDs = Set(try previewContext.fetch(FetchDescriptor<JournalEntry>()).map(\.id))
+        let taskIDs = Set(try previewContext.fetch(FetchDescriptor<CareTask>()).map(\.id))
+        let eventIDs = Set(try previewContext.fetch(FetchDescriptor<CareEvent>()).map(\.id))
         let tasks = archive.careTasks ?? []
         let events = archive.careEvents ?? []
 
@@ -234,6 +237,7 @@ struct JournalArchive: Codable {
     @MainActor
     static func recover(_ data: Data, context: ModelContext) throws -> Int {
         guard data.count <= maxBytes else { throw JournalArchiveError.tooLarge }
+        guard !context.hasChanges else { throw JournalArchiveError.unsavedChanges }
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
         try archive.validate()
 
