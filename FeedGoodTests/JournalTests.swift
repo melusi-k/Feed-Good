@@ -291,23 +291,60 @@ struct JournalTests {
 
 
 
-    @Test func archiveEnforcesOneThousandRecordsAcrossAllRecordTypes() throws {
+    @Test func archiveEnforcesOneThousandRecordsPerCollection() throws {
         let plants = (0..<JournalArchive.maxRecords).map { index in
             JournalArchive.PlantRecord(
-                id: UUID(), name: "Plant \(index)", species: "", notes: "",
+                id: UUID(), name: "Plant \\(index)", species: "", notes: "",
                 createdAt: Date(timeIntervalSince1970: TimeInterval(index))
             )
         }
-        var archive = JournalArchive(plants: plants, entries: [], careTasks: [], careEvents: [])
-        #expect(archive.plants.count == JournalArchive.maxRecords)
+        let entries = (0..<JournalArchive.maxRecords).map { index in
+            JournalArchive.EntryRecord(
+                id: UUID(), plantID: plants[0].id, date: Date(timeIntervalSince1970: TimeInterval(index)),
+                note: "Entry \\(index)", photoData: nil
+            )
+        }
+        let tasks = (0..<JournalArchive.maxRecords).map { _ in
+            JournalArchive.CareTaskRecord(
+                id: UUID(), plantID: plants[0].id, kindRaw: CareKind.watering.rawValue,
+                customTitle: "", intervalDays: 7, dueDate: .distantFuture,
+                isEnabled: true, reminderEnabled: false
+            )
+        }
+        let events = (0..<JournalArchive.maxRecords).map { _ in
+            JournalArchive.CareEventRecord(
+                id: UUID(), plantID: plants[0].id, taskID: UUID(),
+                taskTitle: "Watering", completedAt: .now, note: ""
+            )
+        }
+        var archive = JournalArchive(plants: plants, entries: entries, careTasks: tasks, careEvents: events)
+
+        archive.entries.removeLast()
+        try archive.validate()
+        archive.entries = entries
         try archive.validate()
 
-        archive.entries = [
-            JournalArchive.EntryRecord(
-                id: UUID(), plantID: plants[0].id, date: .now,
-                note: "One additional record", photoData: nil
-            )
-        ]
+        archive.entries.append(
+            JournalArchive.EntryRecord(id: UUID(), plantID: plants[0].id, date: .now, note: "Entry 1001", photoData: nil)
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+
+        archive.entries = entries
+        archive.plants.append(
+            JournalArchive.PlantRecord(id: UUID(), name: "Plant 1001", species: "", notes: "", createdAt: .now)
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+
+        archive.plants = plants
+        archive.careTasks?.append(
+            JournalArchive.CareTaskRecord(id: UUID(), plantID: plants[0].id, kindRaw: CareKind.watering.rawValue, customTitle: "", intervalDays: 7, dueDate: .distantFuture, isEnabled: true, reminderEnabled: false)
+        )
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+
+        archive.careTasks = tasks
+        archive.careEvents?.append(
+            JournalArchive.CareEventRecord(id: UUID(), plantID: plants[0].id, taskID: UUID(), taskTitle: "Watering", completedAt: .now, note: "")
+        )
         #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
     }
 
