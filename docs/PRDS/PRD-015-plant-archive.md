@@ -1,6 +1,6 @@
 # PRD-015 — Plant Archive and Restore
 
-**Status:** Proposal consistent; implementation not started  
+**Status:** Implementation in progress — stacked archive data, UI and export slices are under review; parent integration remains gated by #63  
 **Priority:** P1 foundation  
 **Release:** Post-MVP foundation; archive compatibility is a prerequisite for dependent features  
 **Primary surfaces:** My Plants, Plant Profile, Plant Story, Settings / Data Portability
@@ -42,8 +42,9 @@ Included in the local-first app. Archive/restore is a data-trust capability, not
 - Archiving never deletes the Plant, CareTask, CareEvent, JournalEntry, milestone, photo or related user content.
 - No care completion can be recorded through active Today/care flows for an archived plant.
 - Restore reactivates the same identity and must not duplicate tasks, events or media.
-- Failed persistence rolls back to the prior usable state.
-- Unknown archive values must be handled safely; never silently convert an archived plant to Active.
+- Failed persistence restores the prior archive state without discarding unrelated pending edits.
+- Persist archive as an optional `archivedAt: Date?` timestamp: nil is Active and a timestamp is Archived. This avoids an extensible raw-value enum; older archive files without the optional field decode as Active.
+- Recovery into an empty destination restores the archived timestamp. Existing same-ID plant records are never overwritten during additive recovery, including their current archive state.
 - Archive is distinct from Dormant, Away, paused care and Quiet Period.
 
 ## 9. Launch plan
@@ -67,5 +68,5 @@ Replaces deletion-or-leave-active as the only ways to manage an inactive plant. 
 
 ## 12. Delivery tracking
 - GitHub issue: [#69 — Archive a plant without deleting its story](https://github.com/melusi-k/Feed-Good/issues/69).
-- Status: proposal consistent; no implementation claim.
+- Implementation stack: [PR #79 — archive state and active-care exclusion](https://github.com/melusi-k/Feed-Good/pull/79), [PR #83 — archived collection and restore flow](https://github.com/melusi-k/Feed-Good/pull/83), and [PR #84 — archive export/recovery compatibility](https://github.com/melusi-k/Feed-Good/pull/84). All are stacked; none is independently releasable.
 - Related data contract: [PRD-009 — Settings & Data Portability](PRD-009-settings-data-portability.md).

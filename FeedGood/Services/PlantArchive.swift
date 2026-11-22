@@ -4,6 +4,7 @@ import SwiftData
 /// Transactional reversible archive for a plant. Archive is a persisted collection
 /// state, never deletion: the plant and every task, event, journal entry, photo and
 /// milestone stay exactly as they were.
+@MainActor
 enum PlantArchive {
     /// Marks the plant archived at `date`. Idempotent: archiving an already-archived
     /// plant keeps its original archive date. A failed save restores only this
