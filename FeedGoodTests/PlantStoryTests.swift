@@ -1,15 +1,16 @@
-import XCTest
+import Foundation
 import SwiftData
+import Testing
 @testable import FeedGood
 
 @MainActor
-final class PlantStoryTests: XCTestCase {
+struct PlantStoryTests {
     private func memory() throws -> ModelContainer {
         let schema = Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self])
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
-    func testMixedSourcesNewestFirstAndPlantIsolation() throws {
+    @Test func mixedSourcesNewestFirstAndPlantIsolation() throws {
         let container = try memory(); let context = ModelContext(container)
         let plant = Plant(name: "Fern"); let other = Plant(name: "Aloe")
         context.insert(plant); context.insert(other)
@@ -22,12 +23,12 @@ final class PlantStoryTests: XCTestCase {
         let excluded = CareEvent(task: otherTask, completedAt: Date(timeIntervalSince1970: 400))
         for entry in [old, newest] { context.insert(entry) }; context.insert(event); context.insert(excluded); try context.save()
         let items = PlantStory.items(plantID: plant.id, careEvents: [excluded, event], journalEntries: [old, newest])
-        XCTAssertEqual(items.map(\.id), ["journal.\(newest.id.uuidString)", "care.\(event.id.uuidString)", "journal.\(old.id.uuidString)"])
-        XCTAssertEqual(items.count, 3)
-        if case .journal(let entry) = items[0] { XCTAssertEqual(entry.milestone, .newLeaf) } else { XCTFail("Expected milestone observation") }
+        #expect(items.map(\.id) == ["journal.\(newest.id.uuidString)", "care.\(event.id.uuidString)", "journal.\(old.id.uuidString)"])
+        #expect(items.count == 3)
+        if case .journal(let entry) = items[0] { #expect(entry.milestone == .newLeaf) } else { Issue.record("Expected milestone observation") }
     }
 
-    func testEqualDatesUseNamespacedStableIDsIndependentOfInputOrder() throws {
+    @Test func equalDatesUseNamespacedStableIDsIndependentOfInputOrder() throws {
         let container = try memory(); let context = ModelContext(container)
         let plant = Plant(name: "Fern"); context.insert(plant)
         let task = CareTask(kind: .watering, intervalDays: 1, dueDate: .now, plant: plant); context.insert(task)
@@ -39,22 +40,22 @@ final class PlantStoryTests: XCTestCase {
         care.id = a.id
         let first = PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: [a, b])
         let second = PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: [b, a])
-        XCTAssertEqual(first.map(\.id), second.map(\.id))
-        XCTAssertEqual(Set(first.map(\.id)).count, 3)
-        XCTAssertEqual(first.map(\.id), first.map(\.id).sorted())
+        #expect(first.map(\.id) == second.map(\.id))
+        #expect(Set(first.map(\.id)).count == 3)
+        #expect(first.map(\.id) == first.map(\.id).sorted())
     }
 
-    func testEmptyAndSingleSourceStories() {
+    @Test func emptyAndSingleSourceStories() {
         let plant = Plant(name: "Fern")
-        XCTAssertTrue(PlantStory.items(plantID: plant.id, careEvents: [], journalEntries: []).isEmpty)
+        #expect(PlantStory.items(plantID: plant.id, careEvents: [], journalEntries: []).isEmpty)
         let entry = JournalEntry(note: "Only note", plant: plant)
         let task = CareTask(kind: .pruning, intervalDays: 5, dueDate: .now, plant: plant)
         let care = CareEvent(task: task)
-        XCTAssertEqual(PlantStory.items(plantID: plant.id, careEvents: [], journalEntries: [entry]).count, 1)
-        XCTAssertEqual(PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: []).count, 1)
+        #expect(PlantStory.items(plantID: plant.id, careEvents: [], journalEntries: [entry]).count == 1)
+        #expect(PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: []).count == 1)
     }
 
-    func testSourceEditAndDeleteReprojectWithoutDuplicatingOrLosingOtherRecords() throws {
+    @Test func sourceEditAndDeleteReprojectWithoutDuplicatingOrLosingOtherRecords() throws {
         let container = try memory(); let context = ModelContext(container)
         let plant = Plant(name: "Fern"); context.insert(plant)
         let other = Plant(name: "Aloe"); context.insert(other)
@@ -65,20 +66,20 @@ final class PlantStoryTests: XCTestCase {
         func project() throws -> [PlantStoryItem] {
             PlantStory.items(plantID: plant.id, careEvents: try context.fetch(FetchDescriptor<CareEvent>()), journalEntries: try context.fetch(FetchDescriptor<JournalEntry>()))
         }
-        XCTAssertEqual(try project().count, 2)
+        #expect(try project().count == 2)
         try JournalStore.save(JournalDraft(date: Date(timeIntervalSince1970: 300), note: "After", milestone: .flowering), plant: plant, entry: entry, context: context)
-        XCTAssertEqual(try project().first?.id, "journal.\(entry.id.uuidString)")
-        XCTAssertEqual(entry.note, "After")
-        XCTAssertEqual(try context.fetch(FetchDescriptor<JournalEntry>()).count, 2)
+        #expect(try project().first?.id == "journal.\(entry.id.uuidString)")
+        #expect(entry.note == "After")
+        #expect(try context.fetch(FetchDescriptor<JournalEntry>()).count == 2)
         try JournalStore.delete(entry, context: context)
-        XCTAssertEqual(try project().map(\.id), ["care.\(event.id.uuidString)"])
+        #expect(try project().map(\.id) == ["care.\(event.id.uuidString)"])
         // The current care UI is read-only. Exercise underlying source changes,
         // without adding or pretending to offer a care-history edit/delete UI.
         event.note = "Corrected source"; event.completedAt = Date(timeIntervalSince1970: 400); try context.save()
-        if case .care(let updated) = try XCTUnwrap(project().first) { XCTAssertEqual(updated.note, "Corrected source") } else { XCTFail("Expected care event") }
+        if case .care(let updated) = try #require(project().first) { #expect(updated.note == "Corrected source") } else { Issue.record("Expected care event") }
         context.delete(event); try context.save()
-        XCTAssertTrue(try project().isEmpty)
-        XCTAssertEqual(try context.fetch(FetchDescriptor<JournalEntry>()).map(\.id), [unrelated.id])
-        XCTAssertEqual(try context.fetch(FetchDescriptor<CareTask>()).count, 1)
+        #expect(try project().isEmpty)
+        #expect(try context.fetch(FetchDescriptor<JournalEntry>()).map(\.id) == [unrelated.id])
+        #expect(try context.fetch(FetchDescriptor<CareTask>()).count == 1)
     }
 }
