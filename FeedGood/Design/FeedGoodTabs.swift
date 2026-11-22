@@ -18,7 +18,7 @@ struct FeedGoodTabs: View {
         .onChange(of: selection) { old, _ in previous = old }
     }
 
-    private func page<Content: View>(_ tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
+    private func page<Content: View>(_ tab: AppTab, @ViewBuilder content: @escaping () -> Content) -> some View {
         FeedGoodTabPage(direction: tab.order < previous.order ? -1 : 1) {
             content().background(FeedGoodTabSwipe(selection: $selection, tab: tab))
         }
