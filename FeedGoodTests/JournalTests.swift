@@ -376,13 +376,24 @@ struct JournalTests {
         let sourceContext = ModelContext(source)
         let plant = Plant(name: "Recovery fern")
         sourceContext.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        sourceContext.insert(task)
+        let event = CareEvent(task: task, note: "Checked soil")
+        sourceContext.insert(event)
         try JournalStore.save(JournalDraft(note: "A new frond"), plant: plant, entry: nil, context: sourceContext)
         let archiveData = try JournalArchive.export(
             plants: [plant],
-            entries: sourceContext.fetch(FetchDescriptor<JournalEntry>())
+            entries: sourceContext.fetch(FetchDescriptor<JournalEntry>()),
+            careTasks: [task],
+            careEvents: [event]
         )
 
         let destination = try memory()
+        let initialContext = ModelContext(destination)
+        let existingPlant = Plant(name: "Existing local plant")
+        initialContext.insert(existingPlant)
+        try initialContext.save()
+
         let recoveryContext = ModelContext(destination)
         #expect(throws: InjectedSaveFailure.self) {
             try JournalArchive.recover(archiveData, context: recoveryContext) { _ in
@@ -391,8 +402,11 @@ struct JournalTests {
         }
 
         let verificationContext = ModelContext(destination)
-        #expect(try verificationContext.fetch(FetchDescriptor<Plant>()).isEmpty)
+        let plants = try verificationContext.fetch(FetchDescriptor<Plant>())
+        #expect(plants.map(\\.id) == [existingPlant.id])
         #expect(try verificationContext.fetch(FetchDescriptor<JournalEntry>()).isEmpty)
+        #expect(try verificationContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
+        #expect(try verificationContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
     }
 
     @Test func plantEditsAndJournalPhotoAndDateChangesPreserveLifecycle() throws {
