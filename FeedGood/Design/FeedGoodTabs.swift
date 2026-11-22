@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 /// Keep the native TabView responsible for tab visibility, selection/reselection,
-/// accessibility and each tab's navigation state. Motion is local to the page.
+/// accessibility and each tab's navigation state. Motion is inside each root.
 struct FeedGoodTabs: View {
     @Binding var selection: AppTab
     @Binding var appearanceRawValue: String
@@ -15,32 +15,53 @@ struct FeedGoodTabs: View {
             page(.journal) { NavigationStack { JournalView() } }
             page(.settings) { SettingsView(appearanceRawValue: $appearanceRawValue) }
         }
+        .tabViewStyle(.tabBarOnly)
+        .environment(\.feedGoodTabMotion, FeedGoodTabMotionContext(selection: selection, direction: selection.order < previous.order ? -1 : 1))
         .onChange(of: selection) { old, _ in previous = old }
     }
 
-    private func page<Content: View>(_ tab: AppTab, @ViewBuilder content: @escaping () -> Content) -> some View {
-        FeedGoodTabPage(direction: tab.order < previous.order ? -1 : 1) {
-            content().background(FeedGoodTabSwipe(selection: $selection, tab: tab))
-        }
-        .tabItem { Label(tab.title, systemImage: selection == tab ? tab.selectedSymbol : tab.symbol) }
-        .tag(tab)
+    private func page<Content: View>(_ tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
+        content()
+            .background(FeedGoodTabSwipe(selection: $selection, tab: tab))
+            .tabItem { Label(tab.title, systemImage: tab.symbol) }
+            .tag(tab)
     }
 }
 
-private struct FeedGoodTabPage<Content: View>: View {
-    let direction: CGFloat
-    @ViewBuilder let content: () -> Content
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
+fileprivate struct FeedGoodTabMotionContext {
+    var selection: AppTab = .today
+    var direction: CGFloat = 1
+}
+fileprivate struct FeedGoodTabMotionKey: EnvironmentKey {
+    static let defaultValue = FeedGoodTabMotionContext()
+}
+extension EnvironmentValues {
+    fileprivate var feedGoodTabMotion: FeedGoodTabMotionContext {
+        get { self[FeedGoodTabMotionKey.self] }
+        set { self[FeedGoodTabMotionKey.self] = newValue }
+    }
+}
 
-    var body: some View {
-        content()
-            .opacity(appeared ? 1 : 0)
-            .offset(x: reduceMotion || appeared ? 0 : direction * 14)
+/// Only the screen content moves, inside its NavigationStack. Native bars and
+/// toolbars never inherit this transform. Native push/pop is left untouched.
+struct FeedGoodTabContentMotion: ViewModifier {
+    let tab: AppTab?
+    @Environment(\.feedGoodTabMotion) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(tab == nil || shown ? 1 : 0)
+            .offset(x: tab == nil || reduceMotion || shown ? 0 : context.direction * 14)
             .onAppear {
-                withAnimation(FeedGoodMotionPolicy(reduceMotion: reduceMotion).animation) { appeared = true }
+                withAnimation(tab == nil ? nil : FeedGoodMotionPolicy(reduceMotion: reduceMotion).animation) { shown = true }
             }
-            .onDisappear { appeared = false }
+            .onChange(of: context.selection) { _, selected in
+                // A push in this tab must not reset root content, otherwise the
+                // native Back transition would receive a second entrance effect.
+                if let tab, selected != tab { shown = false }
+            }
     }
 }
 
