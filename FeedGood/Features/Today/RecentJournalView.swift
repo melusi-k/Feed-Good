@@ -21,7 +21,7 @@ struct RecentJournalView: View {
                         Image(systemName: "arrow.right")
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(FeedGoodPressStyle())
                 .accessibilityIdentifier("today.journal.empty")
             } else {
                 HStack {
@@ -53,7 +53,7 @@ struct RecentJournalView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(FeedGoodPressStyle())
                         .accessibilityIdentifier("today.journal.entry.\(entry.id)")
                         if entry.id != recent.last?.id { Divider() }
                     }

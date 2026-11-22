@@ -1,10 +1,36 @@
 import SwiftUI
 
-enum AppTab: Hashable {
+enum AppTab: Int, Hashable, CaseIterable {
     case today
     case plants
     case journal
     case settings
+
+    var order: Int { rawValue }
+    var title: String {
+        switch self {
+        case .today: "Today"
+        case .plants: "My Plants"
+        case .journal: "Journal"
+        case .settings: "Settings"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .today: "sun.max"
+        case .plants: "leaf"
+        case .journal: "book.closed"
+        case .settings: "slider.horizontal.3"
+        }
+    }
+    var selectedSymbol: String {
+        switch self {
+        case .today: "sun.max.fill"
+        case .plants: "leaf.fill"
+        case .journal: "book.closed.fill"
+        case .settings: symbol
+        }
+    }
 }
 
 struct AppTabView: View {
@@ -16,37 +42,15 @@ struct AppTabView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TodayView(selectedTab: $selectedTab)
-                .tabItem {
-                    Label("Today", systemImage: selectedTab == .today ? "sun.max.fill" : "sun.max")
-                }
-                .tag(AppTab.today)
-
-            PlantListView()
-                .tabItem {
-                    Label("My Plants", systemImage: selectedTab == .plants ? "leaf.fill" : "leaf")
-                }
-                .tag(AppTab.plants)
-
-            NavigationStack { JournalView() }
-                .tabItem {
-                    Label("Journal", systemImage: selectedTab == .journal ? "book.closed.fill" : "book.closed")
-                }
-                .tag(AppTab.journal)
-
-            SettingsView(appearanceRawValue: $appearanceRawValue)
-                .tabItem {
-                    Label("Settings", systemImage: selectedTab == .settings ? "slider.horizontal.3" : "slider.horizontal.3")
-                }
-                .tag(AppTab.settings)
-        }
+        FeedGoodTabs(selection: $selectedTab, appearanceRawValue: $appearanceRawValue)
+        .buttonStyle(FeedGoodPressStyle())
+        .modifier(FeedGoodMotionAccessibility())
         .tint(FeedGoodTheme.leaf)
         .preferredColorScheme(appearance.preferredColorScheme)
     }
 }
 
-private struct SettingsView: View {
+struct SettingsView: View {
     @Binding var appearanceRawValue: String
 
     private var appearance: FeedGoodAppearance {
@@ -90,7 +94,7 @@ private struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(FeedGoodTheme.background)
-            .navigationTitle("Settings")
+            .feedGoodHeader("Settings")
         }
         .tint(FeedGoodTheme.leaf)
     }

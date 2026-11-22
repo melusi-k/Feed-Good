@@ -21,7 +21,7 @@ struct PlantListView: View {
                         Text("Add your first plant and start its growing journey.")
                     } actions: {
                         Button("Add a plant") { showingAddPlant = true }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(FeedGoodPressStyle(surface: .prominent))
                             .tint(FeedGoodTheme.leaf)
                     }
                 } else {
@@ -66,9 +66,10 @@ struct PlantListView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
+            .feedGoodCollectionMotion(value: plants.map(\.id))
             .searchable(text: $query, prompt: "Plant name or species")
             .background(FeedGoodTheme.background)
-            .navigationTitle("Feed Good")
+            .feedGoodHeader("My Plants")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {

@@ -19,8 +19,7 @@ struct AddPlantView: View {
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle("New plant")
-            .navigationBarTitleDisplayMode(.inline)
+            .feedGoodHeader("New plant")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

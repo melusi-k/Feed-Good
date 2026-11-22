@@ -53,10 +53,10 @@ struct PlantStoryView: View {
                 .accessibilityIdentifier("story.row.\(item.id)")
             }
         }
+        .feedGoodCollectionMotion(value: items.map(\.id))
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
-        .navigationTitle("Plant story")
-        .navigationBarTitleDisplayMode(.inline)
+        .feedGoodHeader("Plant story")
         .toolbar { Button("Add observation", systemImage: "plus") { adding = true }.accessibilityIdentifier("story.add") }
         .sheet(isPresented: $adding) { JournalEditor(plants: [plant]) }
         .sheet(item: $editing) { JournalEditor(plants: [plant], entry: $0) }

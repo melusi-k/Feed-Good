@@ -53,14 +53,13 @@ struct PlantDetailView: View {
                     Label("Delete plant", systemImage: "trash")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FeedGoodPressStyle(surface: .bordered))
                 .accessibilityIdentifier("plantDetail.delete")
             }
             .padding(FeedGoodTheme.contentPadding)
         }
         .background(FeedGoodTheme.background.ignoresSafeArea())
-        .navigationTitle(plant.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .feedGoodHeader(plant.name)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { showingEditor = true }

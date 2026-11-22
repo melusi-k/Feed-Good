@@ -43,14 +43,15 @@ struct JournalView: View {
                         Button("Edit") { editing = entry }.accessibilityIdentifier("journal.edit.\(entry.id)")
                         Spacer()
                         Button("Delete", role: .destructive) { deleting = entry }.accessibilityIdentifier("journal.delete.\(entry.id)")
-                    }.buttonStyle(.borderless)
+                    }.buttonStyle(FeedGoodPressStyle())
                 }.padding(.vertical, 6)
             }
 
         }
+        .feedGoodCollectionMotion(value: visibleEntries.map(\.id))
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
-        .navigationTitle(plant == nil ? "Journal" : "Plant journal")
+        .feedGoodHeader(plant == nil ? "Journal" : "Plant journal")
         .toolbar { Button("Add entry", systemImage: "plus") { adding = true }.disabled(plants.isEmpty).accessibilityIdentifier("journal.add") }
         .sheet(isPresented: $adding) { JournalEditor(plants: plant.map { [$0] } ?? plants) }
         .sheet(item: $editing) { JournalEditor(plants: plants, entry: $0) }
@@ -102,7 +103,7 @@ struct JournalEditor: View {
                 } footer: { Text("System photo picker, no library permission needed. Photos are resized and stored locally. Export an archive to keep a recovery copy outside the app.") }
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red).accessibilityIdentifier("journal.error") }
             }
-            .navigationTitle(entry == nil ? "New journal entry" : "Edit journal entry")
+            .feedGoodHeader(entry == nil ? "New journal entry" : "Edit journal entry")
             .interactiveDismissDisabled(importingPhoto)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(importingPhoto) }
