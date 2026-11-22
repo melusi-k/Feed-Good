@@ -1,6 +1,6 @@
 # Feed Good — Product Roadmap
 
-This is an outcome-led sequence, not a promise of calendar dates. Every implementation PR should link to an issue and carry explicit acceptance criteria. MVP scope is deliberately limited to the capabilities below; later opportunities are not implementation commitments.
+This is an outcome-led sequence, not a promise of calendar dates. Every implementation PR must link to an issue and carry explicit acceptance criteria. MVP scope is deliberately limited; post-MVP proposals are not implementation commitments.
 
 ## Foundation — bootstrap
 
@@ -48,20 +48,38 @@ This is an outcome-led sequence, not a promise of calendar dates. Every implemen
 - Tested export and restore for plants, care history, journal entries and required media (#15).
 - Archive validation, explicit restore confirmation and failure recovery.
 
-## Next development tranche — proposed post-MVP
+## Post-MVP proposal portfolio
 
-These are the recommended next features after the MVP foundation. They are ordered by trust and relationship value, not by novelty:
+The following issues are marked **Proposal Consistent**. That status confirms the proposal is coherent; it does not mean implementation is complete, scheduled or approved for release. Prioritisation and capacity are still planning decisions.
 
-1. **Care History Corrections** ([PRD-011](PRDS/PRD-011-care-history-corrections.md), [Issue #63](https://github.com/melusi-k/Feed-Good/issues/63)) — repair a mistaken event without silently changing the active schedule. Recommended policy: history-only correction by default.
-2. **Growth Review** ([PRD-012](PRDS/PRD-012-growth-review.md), [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64)) — compare existing journal photos for one plant, with source dates and no visual diagnosis.
-3. **Weekly Garden Reflection** ([PRD-013](PRDS/PRD-013-weekly-garden-reflection.md), [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65)) — reflect real care and observation moments without streaks, scores or guilt.
-4. **Plant Check-ins and Cautious Troubleshooting** ([PRD-014](PRDS/PRD-014-plant-check-ins.md), [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66)) — add an observation path and reviewed offline next checks, gated on editorial and safety ownership.
+### A. Trust and relationship improvements
+1. **PRD-011 — Care History Corrections** ([#63](https://github.com/melusi-k/Feed-Good/issues/63)) — correct a historical event without silently changing the active routine. PR #68 is merged; remaining Today, reminder and export/recovery verification is outstanding.
+2. **PRD-012 — Growth Review** ([#64](https://github.com/melusi-k/Feed-Good/issues/64)) — compare existing journal photos for one plant, with dates and source observations. PR #76 is open; populated comparison and source-navigation coverage remain.
+3. **PRD-013 — Weekly Garden Reflection** ([#65](https://github.com/melusi-k/Feed-Good/issues/65)) — reflect real care and observation moments without streaks, scores or guilt.
+4. **PRD-014 — Plant Check-ins** ([#66](https://github.com/melusi-k/Feed-Good/issues/66)) — add a distinct observation path and reviewed offline next checks. Troubleshooting content is blocked on accountable editorial/safety ownership and approval.
 
-Each item requires its own focused implementation PR, exact-head CI verification, accessibility review, archive compatibility review and physical-device evidence. The PRDs define intended behavior; they do not authorize implementation without product review.
+### B. Data foundation and dependent collection capabilities
+5. **PRD-015 — Plant Archive and Restore** ([#69](https://github.com/melusi-k/Feed-Good/issues/69)) — reversible collection state that preserves identity, story, media, care history and export/restore. Selected foundation; #63's outstanding verification gates the parent PR merge.
+6. **PRD-016 — Plant Lifecycle States** ([#70](https://github.com/melusi-k/Feed-Good/issues/70)) — define minimal state vocabulary and transition table, reusing archive state from #69. #69 is a hard prerequisite; #70 also blocks #74.
+7. **PRD-018 — Plant Changes Timeline** ([#72](https://github.com/melusi-k/Feed-Good/issues/72)) — capture explicit plant/environment changes. #69 is a hard compatibility prerequisite; choose typed JournalEntry metadata versus a dedicated model before implementation.
+8. **PRD-021 — Optional Plant Tags** ([#75](https://github.com/melusi-k/Feed-Good/issues/75)) — lightweight user-authored collection labels. #69 is a hard compatibility prerequisite; decide multi-tag AND/OR filtering before the UI.
+
+### C. Independent routine and journal capabilities
+9. **PRD-017 — Care Routine Review** ([#71](https://github.com/melusi-k/Feed-Good/issues/71)) — review and explicitly edit existing routine settings using CareTaskEditor; growing context remains owned by Plant Profile. Blocks #74 but is not blocked by #69.
+10. **PRD-019 — Plant Journal Prompts** ([#73](https://github.com/melusi-k/Feed-Good/issues/73)) — optional bundled prompts whose answers create ordinary JournalEntry records. #65 integration is optional.
+
+### D. Coordinated care adjustment
+11. **PRD-020 — Seasonal and Quiet Periods** ([#74](https://github.com/melusi-k/Feed-Good/issues/74)) — user-controlled care pause with preview and explicit resume policy. Requires both #70 lifecycle decisions and #71 routine/reminder behavior; this is an AND dependency.
+
+## Dependency and delivery gates
+
+- **#63 → #69 merge gate:** finish Today consistency, local reminder validity and export/recovery round-trip verification before the #69 parent PR is eligible to merge. Do not bundle #63 into #69.
+- **#69 → #70, #66, #72, #75:** archive identity and relationship preservation must be established before these features are released.
+- **#70 AND #71 → #74:** both lifecycle transition behavior and routine/reminder pause-resume behavior must be approved.
+- **Independent of #69:** #64, #65, #71 and #73 can progress independently while respecting archived visibility and active-care restrictions.
+- **Optional relationship:** #73 may integrate with #65; neither blocks the other.
 
 ## Later opportunities — explicitly deferred
-
-These ideas remain discovery-only and should not be pulled into the next tranche:
 
 - Plant identification: assisted identification with clear confidence and verification limits.
 - Multiple gardens/spaces: reusable spaces and more advanced collection organisation.
@@ -70,7 +88,7 @@ These ideas remain discovery-only and should not be pulled into the next tranche
 - Home-screen widgets and Live Activities.
 - Remote or AI diagnosis, including image-based symptom claims.
 
-They require separate product decisions, evidence of user value, privacy/safety review, a PRD and a linked issue before implementation. Their deferral protects Feed Good's relationship-first, local-first direction while the current core loop matures.
+These require separate product decisions, evidence of user value, privacy/safety review, a PRD and a linked issue before implementation.
 
 ## Release readiness
 
