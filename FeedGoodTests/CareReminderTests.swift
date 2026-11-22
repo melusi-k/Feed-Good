@@ -161,4 +161,17 @@ struct CareReminderTests {
         #expect(scheduler.message.contains("Enable a reminder"))
     }
 
+
+
+    @Test func reminderComponentsPreserveTheSameInstantAcrossTimeZoneChanges() throws {
+        let dueDate = try #require(ISO8601DateFormatter().date(from: "2026-11-22T18:45:30Z"))
+        for identifier in ["Africa/Johannesburg", "America/Los_Angeles"] {
+            let timeZone = try #require(TimeZone(identifier: identifier))
+            let components = CareNotificationTrigger.dateComponents(for: dueDate, timeZone: timeZone)
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = timeZone
+            #expect(calendar.date(from: components) == dueDate)
+        }
+    }
+
 }
