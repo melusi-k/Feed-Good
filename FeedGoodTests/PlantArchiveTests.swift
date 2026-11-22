@@ -65,6 +65,7 @@ struct PlantArchiveTests {
         let plant = Plant(name: "Cactus")
         context.insert(plant)
         try context.save()
+        plant.name = "Pending cactus edit"
 
         #expect(throws: InjectedSaveFailure.self) {
             try PlantArchive.archive(plant, in: context) { _ in
@@ -72,6 +73,8 @@ struct PlantArchiveTests {
             }
         }
         #expect(plant.archivedAt == nil)
+        #expect(plant.name == "Pending cactus edit")
+        #expect(context.hasChanges)
         #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == nil)
     }
 
@@ -82,6 +85,7 @@ struct PlantArchiveTests {
         let plant = Plant(name: "Fern", archivedAt: archivedDate)
         context.insert(plant)
         try context.save()
+        plant.name = "Pending fern edit"
 
         #expect(throws: InjectedSaveFailure.self) {
             try PlantArchive.restore(plant, in: context) { _ in
@@ -89,6 +93,8 @@ struct PlantArchiveTests {
             }
         }
         #expect(plant.archivedAt == archivedDate)
+        #expect(plant.name == "Pending fern edit")
+        #expect(context.hasChanges)
         #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == archivedDate)
     }
     @Test func archivedPlantCannotReceiveCareCompletion() throws {
