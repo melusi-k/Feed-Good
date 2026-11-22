@@ -142,6 +142,12 @@ enum CareRecorder {
     ) throws {
         context.delete(event)
         do { try save(context) }
-        catch { context.rollback(); throw error }
+        catch {
+            // A delete that has not been processed crashes rollback() with
+            // "ModelSnapshot must be initialized with a known-keys dictionary".
+            context.processPendingChanges()
+            context.rollback()
+            throw error
+        }
     }
 }
