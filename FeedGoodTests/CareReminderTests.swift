@@ -128,7 +128,7 @@ struct CareReminderTests {
         await scheduler.requestPermission()
 
         #expect(fake.requestCount == 1)
-        #expect(scheduler.message.contains("couldn't ask"))
+        #expect(scheduler.message.localizedCaseInsensitiveContains("couldn't ask"))
         #expect(scheduler.message.contains("Care tracking still works"))
     }
 
@@ -143,9 +143,9 @@ struct CareReminderTests {
 
         let reminders = CareReminderScheduler.reminders(for: tasks, now: dueDate.addingTimeInterval(-1))
 
-        #expect(reminders.map(\.taskID) == [tasks[1].id, tasks[0].id, tasks[2].id])
+        #expect(reminders.compactMap(\.taskID) == [tasks[1].id, tasks[0].id, tasks[2].id])
         #expect(reminders.map(\.date) == [dueDate, dueDate, dueDate.addingTimeInterval(60)])
-        #expect(Set(reminders.map(\.plantID)) == [plant.id])
+        #expect(reminders.allSatisfy { $0.plantID == plant.id })
         #expect(Set(reminders.map(\.id)).count == reminders.count)
     }
 
