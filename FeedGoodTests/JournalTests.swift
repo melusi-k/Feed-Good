@@ -396,4 +396,75 @@ struct JournalTests {
         #expect(fern.journalEntries?.first?.id == originalID)
     }
 
+
+
+    @Test func duplicatePlantAndJournalArchiveIDsAreRejected() throws {
+        let plantID = UUID()
+        let duplicatePlants = JournalArchive(
+            plants: [
+                JournalArchive.PlantRecord(id: plantID, name: "Fern", species: "", notes: "", createdAt: .now),
+                JournalArchive.PlantRecord(id: plantID, name: "Aloe", species: "", notes: "", createdAt: .now)
+            ],
+            entries: [], careTasks: [], careEvents: []
+        )
+        #expect(throws: JournalArchiveError.invalidRecord) { try duplicatePlants.validate() }
+
+        let plant = Plant(name: "Fern")
+        let entryID = UUID()
+        let duplicateEntries = JournalArchive(
+            plants: [JournalArchive.PlantRecord(id: plant.id, name: plant.name, species: "", notes: "", createdAt: plant.createdAt)],
+            entries: [
+                JournalArchive.EntryRecord(id: entryID, plantID: plant.id, date: .now, note: "First", photoData: nil),
+                JournalArchive.EntryRecord(id: entryID, plantID: plant.id, date: .now, note: "Second", photoData: nil)
+            ],
+            careTasks: [], careEvents: []
+        )
+        #expect(throws: JournalArchiveError.invalidRecord) { try duplicateEntries.validate() }
+    }
+
+    @Test func journalDateEditAcrossLocalMidnightPreservesEntryIdentity() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(identifier: "Africa/Johannesburg"))
+        let beforeMidnight = try #require(ISO8601DateFormatter().date(from: "2026-11-22T23:59:59+02:00"))
+        let afterMidnight = try #require(ISO8601DateFormatter().date(from: "2026-11-23T00:00:00+02:00"))
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        try JournalStore.save(JournalDraft(date: beforeMidnight, note: "Before midnight"), plant: plant, entry: nil, context: context)
+        let entry = try #require(context.fetch(FetchDescriptor<JournalEntry>()).first)
+        let entryID = entry.id
+
+        try JournalStore.save(JournalDraft(date: afterMidnight, note: "After midnight"), plant: plant, entry: entry, context: context)
+
+        #expect(entry.id == entryID)
+        #expect(entry.date == afterMidnight)
+        #expect(calendar.component(.day, from: entry.date) == 23)
+        #expect(entry.note == "After midnight")
+    }
+
+    @Test func multipleJournalEntriesRemainAssociatedAndCascadeWithTheirPlant() throws {
+        let context = ModelContext(try memory())
+        let fern = Plant(name: "Fern")
+        let aloe = Plant(name: "Aloe")
+        context.insert(fern)
+        context.insert(aloe)
+        try JournalStore.save(JournalDraft(note: "Fern entry one"), plant: fern, entry: nil, context: context)
+        try JournalStore.save(JournalDraft(note: "Fern entry two"), plant: fern, entry: nil, context: context)
+        try JournalStore.save(JournalDraft(note: "Aloe entry"), plant: aloe, entry: nil, context: context)
+
+        fern.name = "Renamed fern"
+        try context.save()
+        let entries = try context.fetch(FetchDescriptor<JournalEntry>())
+        #expect(entries.filter { $0.plant?.id == fern.id }.count == 2)
+        #expect(entries.filter { $0.plant?.id == aloe.id }.count == 1)
+        #expect(entries.filter { $0.plant?.name == "Renamed fern" }.count == 2)
+
+        context.delete(fern)
+        try context.save()
+        let remaining = try context.fetch(FetchDescriptor<JournalEntry>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.plant?.id == aloe.id)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).map(\.id) == [aloe.id])
+    }
+
 }
