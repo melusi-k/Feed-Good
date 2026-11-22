@@ -1,6 +1,6 @@
 # Feed Good — Feature PRDs
 
-This directory contains the product requirements for individual Feed Good capabilities. Each PRD uses the agreed 11-part product template, followed by delivery tracking, so product intent, measurable outcomes, behavior, safety and launch criteria remain reviewable independently.
+This directory contains the product requirements for individual Feed Good capabilities. Each PRD uses the agreed 12-part product template, followed by delivery tracking, so product intent, measurable outcomes, behavior, safety, dependencies and launch criteria remain reviewable independently.
 
 ## Product standard
 
@@ -12,22 +12,29 @@ Every feature should help someone understand, notice, learn about or connect wit
 
 ## PRD register
 
-| ID | Feature | Document | Primary outcome |
-| --- | --- | --- | --- |
-| PRD-001 | My Plants | [PRD-001-my-plants.md](PRD-001-my-plants.md) · [Issue #3](https://github.com/melusi-k/Feed-Good/issues/3) | A trusted, personal, searchable collection and profile for every plant |
-| PRD-002 | Care Routine | [PRD-002-care-routine.md](PRD-002-care-routine.md) · [Issue #4](https://github.com/melusi-k/Feed-Good/issues/4) | Understandable, plant-specific care and durable activity history |
-| PRD-003 | Care Reminders | [PRD-003-care-reminders.md](PRD-003-care-reminders.md) · [Issue #5](https://github.com/melusi-k/Feed-Good/issues/5) | Optional, dependable local reminders that respect user control |
-| PRD-004 | Plant Journal | [PRD-004-plant-journal.md](PRD-004-plant-journal.md) · [Issues #12](https://github.com/melusi-k/Feed-Good/issues/12), [#14](https://github.com/melusi-k/Feed-Good/issues/14) | A meaningful record of observations, photos and milestones |
-| PRD-005 | Today | [PRD-005-today.md](PRD-005-today.md) · [Issue #13](https://github.com/melusi-k/Feed-Good/issues/13) | A calm, useful daily check-in for the user's garden |
-| PRD-006 | Feed Good Moments | [PRD-006-feed-good-moments.md](PRD-006-feed-good-moments.md) · [Issue #16](https://github.com/melusi-k/Feed-Good/issues/16) | Encouraging, useful daily reflections and care learning |
-| PRD-007 | Garden Setup & Growing Context | [PRD-007-garden-setup.md](PRD-007-garden-setup.md) · [Issue #22](https://github.com/melusi-k/Feed-Good/issues/22) | Optional context that makes plant records and guidance more relevant |
-| PRD-008 | Plant Care Guide | [PRD-008-care-guide.md](PRD-008-care-guide.md) · [Issue #23](https://github.com/melusi-k/Feed-Good/issues/23) | Curated, source-backed plant-care learning available offline |
-| PRD-009 | Settings & Data Portability | [PRD-009-settings-data-portability.md](PRD-009-settings-data-portability.md) · [Issue #15](https://github.com/melusi-k/Feed-Good/issues/15) | Transparent settings and safe export/recovery of personal garden data |
-| PRD-010 | Garden Profile | [PRD-010-garden-profile.md](PRD-010-garden-profile.md) · [Issue #42](https://github.com/melusi-k/Feed-Good/issues/42) | A trustworthy, shared overview of the user's existing garden records |
-| PRD-011 | Care History Corrections | [PRD-011-care-history-corrections.md](PRD-011-care-history-corrections.md) · [Issue #63](https://github.com/melusi-k/Feed-Good/issues/63) | Correct mistakes without silently corrupting the active routine |
-| PRD-012 | Growth Review | [PRD-012-growth-review.md](PRD-012-growth-review.md) · [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64) | Make visual change and meaningful plant moments easier to notice |
-| PRD-013 | Weekly Garden Reflection | [PRD-013-weekly-garden-reflection.md](PRD-013-weekly-garden-reflection.md) · [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65) | Turn real local activity into a gentle, non-gamified look-back |
-| PRD-014 | Plant Check-ins & Cautious Troubleshooting | [PRD-014-plant-check-ins.md](PRD-014-plant-check-ins.md) · [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66) | Record observations and learn what to check next without diagnosis |
+| ID | Feature | Document | Issue | Primary outcome |
+| --- | --- | --- | --- | --- |
+| PRD-001 | My Plants | [PRD-001-my-plants.md](PRD-001-my-plants.md) | [#3](https://github.com/melusi-k/Feed-Good/issues/3) | A trusted, personal, searchable collection and profile for every plant |
+| PRD-002 | Care Routine | [PRD-002-care-routine.md](PRD-002-care-routine.md) | [#4](https://github.com/melusi-k/Feed-Good/issues/4) | Understandable, plant-specific care and durable activity history |
+| PRD-003 | Care Reminders | [PRD-003-care-reminders.md](PRD-003-care-reminders.md) | [#5](https://github.com/melusi-k/Feed-Good/issues/5) | Optional, dependable local reminders that respect user control |
+| PRD-004 | Plant Journal | [PRD-004-plant-journal.md](PRD-004-plant-journal.md) | [#12](https://github.com/melusi-k/Feed-Good/issues/12), [#14](https://github.com/melusi-k/Feed-Good/issues/14) | A meaningful record of observations, photos and milestones |
+| PRD-005 | Today | [PRD-005-today.md](PRD-005-today.md) | [#13](https://github.com/melusi-k/Feed-Good/issues/13) | A calm, useful daily check-in for the user's garden |
+| PRD-006 | Feed Good Moments | [PRD-006-feed-good-moments.md](PRD-006-feed-good-moments.md) | [#16](https://github.com/melusi-k/Feed-Good/issues/16) | Encouraging, useful daily reflections and care learning |
+| PRD-007 | Garden Setup & Growing Context | [PRD-007-garden-setup.md](PRD-007-garden-setup.md) | [#22](https://github.com/melusi-k/Feed-Good/issues/22) | Optional context that makes plant records and guidance more relevant |
+| PRD-008 | Plant Care Guide | [PRD-008-care-guide.md](PRD-008-care-guide.md) | [#23](https://github.com/melusi-k/Feed-Good/issues/23) | Curated, source-backed plant-care learning available offline |
+| PRD-009 | Settings & Data Portability | [PRD-009-settings-data-portability.md](PRD-009-settings-data-portability.md) | [#15](https://github.com/melusi-k/Feed-Good/issues/15) | Transparent settings and safe export/recovery of personal garden data |
+| PRD-010 | Garden Profile | [PRD-010-garden-profile.md](PRD-010-garden-profile.md) | [#42](https://github.com/melusi-k/Feed-Good/issues/42) | A trustworthy, shared overview of the user's existing garden records |
+| PRD-011 | Care History Corrections | [PRD-011-care-history-corrections.md](PRD-011-care-history-corrections.md) | [#63](https://github.com/melusi-k/Feed-Good/issues/63) | Correct mistakes without silently corrupting the active routine |
+| PRD-012 | Growth Review | [PRD-012-growth-review.md](PRD-012-growth-review.md) | [#64](https://github.com/melusi-k/Feed-Good/issues/64) | Make visual change and meaningful plant moments easier to notice |
+| PRD-013 | Weekly Garden Reflection | [PRD-013-weekly-garden-reflection.md](PRD-013-weekly-garden-reflection.md) | [#65](https://github.com/melusi-k/Feed-Good/issues/65) | Turn real local activity into a gentle, non-gamified look-back |
+| PRD-014 | Plant Check-ins & Cautious Troubleshooting | [PRD-014-plant-check-ins.md](PRD-014-plant-check-ins.md) | [#66](https://github.com/melusi-k/Feed-Good/issues/66) | Record observations and learn what to check next without diagnosis |
+| PRD-015 | Plant Archive and Restore | [PRD-015-plant-archive.md](PRD-015-plant-archive.md) | [#69](https://github.com/melusi-k/Feed-Good/issues/69) | Remove plants from active care without deleting their story |
+| PRD-016 | Plant Lifecycle States | [PRD-016-plant-lifecycle-states.md](PRD-016-plant-lifecycle-states.md) | [#70](https://github.com/melusi-k/Feed-Good/issues/70) | Define a small, explicit plant lifecycle vocabulary |
+| PRD-017 | Care Routine Review | [PRD-017-care-routine-review.md](PRD-017-care-routine-review.md) | [#71](https://github.com/melusi-k/Feed-Good/issues/71) | Make routine changes understandable and safe |
+| PRD-018 | Plant Changes Timeline | [PRD-018-plant-changes-timeline.md](PRD-018-plant-changes-timeline.md) | [#72](https://github.com/melusi-k/Feed-Good/issues/72) | Record meaningful changes alongside a plant's story |
+| PRD-019 | Plant Journal Prompts | [PRD-019-plant-journal-prompts.md](PRD-019-plant-journal-prompts.md) | [#73](https://github.com/melusi-k/Feed-Good/issues/73) | Encourage optional, thoughtful plant observations |
+| PRD-020 | Seasonal and Quiet Periods | [PRD-020-seasonal-quiet-periods.md](PRD-020-seasonal-quiet-periods.md) | [#74](https://github.com/melusi-k/Feed-Good/issues/74) | Let users explicitly adjust care during quiet periods |
+| PRD-021 | Optional Plant Tags | [PRD-021-optional-plant-tags.md](PRD-021-optional-plant-tags.md) | [#75](https://github.com/melusi-k/Feed-Good/issues/75) | Organise a growing collection with lightweight user tags |
 
 ## Release scope
 
@@ -41,35 +48,40 @@ Every feature should help someone understand, notice, learn about or connect wit
 - Settings, privacy transparency and tested data export/restore.
 
 ### Later opportunities — not MVP commitments
-- Side-by-side photo comparisons and richer growth visualisations.
-- Plant health troubleshooting and symptom exploration.
+- The PRD-011–021 proposals below are post-MVP opportunities or trust/compatibility work, each requiring its own delivery planning and acceptance evidence.
 - Plant identification.
 - Multiple independently managed gardens or shared spaces.
 - Weather-aware care, sensors and other external data integrations.
 - Shared garden access, social/community features, widgets and Live Activities.
+- Remote or AI diagnosis.
 
-### Next development tranche
+### Post-MVP proposal portfolio
 
-The proposed post-MVP sequence is ordered by product trust and relationship value:
+The linked issues #63–66 and #69–75 have been reviewed and marked **Proposal Consistent** in their issue bodies. This means their scope, boundaries, acceptance criteria and dependencies are internally aligned; it does not mean implementation is complete or approved for release.
 
-1. **PRD-011 — Care History Corrections:** a narrow trust fix for mistakes in recorded care, with an explicit history-only schedule policy.
-2. **PRD-012 — Growth Review:** a derived visual review over existing journal photos and milestones.
-3. **PRD-013 — Weekly Garden Reflection:** a quiet, local recap of real care and observation moments without streaks or scores.
-4. **PRD-014 — Plant Check-ins & Cautious Troubleshooting:** a safety-gated observation flow that extends the reviewed offline learning model.
+| Sequence | PRD / issue | Proposal | Delivery note |
+| --- | --- | --- | --- |
+| Trust and relationship | [PRD-011 / #63](PRD-011-care-history-corrections.md) | Care History Corrections | PR #68 merged; remaining Today/reminder/export verification is a release gate for #69 |
+| Trust and relationship | [PRD-012 / #64](PRD-012-growth-review.md) | Growth Review | PR #76 is open; comparison/source-navigation coverage remains |
+| Trust and relationship | [PRD-013 / #65](PRD-013-weekly-garden-reflection.md) | Weekly Garden Reflection | Independent local derived experience |
+| Safety-gated | [PRD-014 / #66](PRD-014-plant-check-ins.md) | Plant Check-ins | No troubleshooting content ships before editorial/safety ownership and review |
+| Data foundation | [PRD-015 / #69](PRD-015-plant-archive.md) | Plant Archive and Restore | Selected foundation; #63 verification gates parent merge |
+| Dependent | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Requires #69; blocks #74 |
+| Independent | [PRD-017 / #71](PRD-017-care-routine-review.md) | Care Routine Review | Builds on existing CareTaskEditor and Plant profile editors; blocks #74 |
+| Dependent | [PRD-018 / #72](PRD-018-plant-changes-timeline.md) | Plant Changes Timeline | Requires #69 compatibility; model choice is a design gate |
+| Independent | [PRD-019 / #73](PRD-019-plant-journal-prompts.md) | Plant Journal Prompts | #65 integration optional |
+| Dependent | [PRD-020 / #74](PRD-020-seasonal-quiet-periods.md) | Seasonal and Quiet Periods | Requires both #70 and #71 |
+| Dependent | [PRD-021 / #75](PRD-021-optional-plant-tags.md) | Optional Plant Tags | Requires #69 compatibility; not dependent on #70 |
 
-These proposals are tracked by GitHub issues #63–#66. They are not implementation authorization; each still needs product review, linked implementation work and exact-head verification.
-
-A later opportunity needs its own product decision, PRD and issue before implementation. It must not be treated as implied MVP scope.
+A later opportunity needs its own product decision, PRD and issue before implementation. A proposal's presence in this register is not implementation authorization.
 
 ## How to read targets
-
 - **[measure]** means a baseline must be collected before a numeric target is agreed.
 - **[target]** means product and engineering must agree a threshold before the feature is considered release-ready.
 - **[owner]** and **[date]** are deliberately unassigned until planning.
 - A target is not achieved merely because the app builds. Record automated tests, simulator checks and physical-device evidence separately.
 
 ## Shared product and technical constraints
-
 - Initial release: iOS 18+, SwiftUI and SwiftData.
 - Local-first: core plant records, care history, journal and guide must work without an account or network connection.
 - No mandatory sign-in, cloud sync, subscription, remote diagnosis or precise location collection in the initial release.
@@ -80,5 +92,4 @@ A later opportunity needs its own product decision, PRD and issue before impleme
 - Avoid guilt, shame, unsupported diagnosis and universal watering assumptions.
 
 ## Change control
-
-A PRD describes intended product behavior, not a commitment to implement every item immediately. Scope changes should update the relevant PRD, issue and roadmap together. Unresolved questions remain visible in section 11 rather than being silently converted into assumptions.
+A PRD describes intended product behavior, not a commitment to implement every item immediately. Scope changes should update the relevant PRD, issue and roadmap together. Unresolved questions remain visible as explicit design gates rather than being silently converted into assumptions.
