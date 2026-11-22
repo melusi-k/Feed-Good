@@ -1,9 +1,10 @@
-import XCTest
+import Foundation
 import SwiftData
+import Testing
 @testable import FeedGood
 
 @MainActor
-final class TodayCareTests: XCTestCase {
+struct TodayCareTests {
     private func calendar(_ zone: String) -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: zone)!
@@ -18,7 +19,7 @@ final class TodayCareTests: XCTestCase {
         return ModelContext(container)
     }
 
-    func testGroupsOverdueDueAndUpcomingAndHidesFarFutureAndPaused() throws {
+    @Test func groupsOverdueDueAndUpcomingAndHidesFarFutureAndPaused() throws {
         let context = try makeContext()
         let calendar = calendar("Africa/Johannesburg")
         let now = date("2026-11-21T10:00:00+02:00")
@@ -39,11 +40,11 @@ final class TodayCareTests: XCTestCase {
 
         let tasks = try context.fetch(FetchDescriptor<CareTask>())
         let items = TodayCare.items(from: tasks, now: now, calendar: calendar)
-        XCTAssertEqual(items.map(\.task.title), ["overdue", "today-late", "soon", "edge"])
-        XCTAssertEqual(items.map(\.state), [.overdue, .due, .upcoming, .upcoming])
+        #expect(items.map(\.task.title) == ["overdue", "today-late", "soon", "edge"])
+        #expect(items.map(\.state) == [.overdue, .due, .upcoming, .upcoming])
     }
 
-    func testSameTaskIsDueOrOverdueDependingOnTimeZone() throws {
+    @Test func sameTaskIsDueOrOverdueDependingOnTimeZone() throws {
         let context = try makeContext()
         let plant = Plant(name: "Aloe")
         context.insert(plant)
@@ -51,11 +52,11 @@ final class TodayCareTests: XCTestCase {
         context.insert(task)
         try context.save()
         let now = date("2026-11-21T08:30:00Z")
-        XCTAssertEqual(TodayCare.items(from: [task], now: now, calendar: calendar("Africa/Johannesburg")).first?.state, .due)
-        XCTAssertEqual(TodayCare.items(from: [task], now: now, calendar: calendar("America/Los_Angeles")).first?.state, .overdue)
+        #expect(TodayCare.items(from: [task], now: now, calendar: calendar("Africa/Johannesburg")).first?.state == .due)
+        #expect(TodayCare.items(from: [task], now: now, calendar: calendar("America/Los_Angeles")).first?.state == .overdue)
     }
 
-    func testRecordingCareFromTodayWritesHistoryAndLeavesTodaysList() throws {
+    @Test func recordingCareFromTodayWritesHistoryAndLeavesTodaysList() throws {
         let context = try makeContext()
         let calendar = calendar("UTC")
         let now = date("2026-11-21T10:00:00Z")
@@ -65,23 +66,23 @@ final class TodayCareTests: XCTestCase {
         context.insert(task)
         try context.save()
 
-        XCTAssertEqual(TodayCare.items(from: [task], now: now, calendar: calendar).map(\.state), [.overdue])
+        #expect(TodayCare.items(from: [task], now: now, calendar: calendar).map(\.state) == [.overdue])
         try CareRecorder.complete(task, note: "", at: now, in: context, calendar: calendar)
 
-        XCTAssertEqual(try context.fetch(FetchDescriptor<CareEvent>()).count, 1)
-        XCTAssertEqual(plant.careEvents?.count, 1)
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).count == 1)
+        #expect(plant.careEvents?.count == 1)
         // Next care is 10 days out, past the 7 day window, so Today no longer lists it.
-        XCTAssertTrue(TodayCare.items(from: [task], now: now, calendar: calendar).isEmpty)
+        #expect(TodayCare.items(from: [task], now: now, calendar: calendar).isEmpty)
     }
 
-    func testPlantsWithoutTasksAndOrphanedTasksProduceNoItems() throws {
+    @Test func plantsWithoutTasksAndOrphanedTasksProduceNoItems() throws {
         let context = try makeContext()
         context.insert(Plant(name: "Cactus"))
         try context.save()
-        XCTAssertTrue(TodayCare.items(from: [], now: .now).isEmpty)
+        #expect(TodayCare.items(from: [], now: .now).isEmpty)
     }
 
-    func testOrdersSameDayByPlantName() throws {
+    @Test func ordersSameDayByPlantName() throws {
         let context = try makeContext()
         let calendar = calendar("UTC")
         let now = date("2026-11-21T10:00:00Z")
@@ -93,10 +94,10 @@ final class TodayCareTests: XCTestCase {
         let b = CareTask(kind: .watering, intervalDays: 2, dueDate: due, plant: basil)
         context.insert(a); context.insert(b)
         try context.save()
-        XCTAssertEqual(TodayCare.items(from: [a, b], now: now, calendar: calendar).map(\.plant.name), ["basil", "Zinnia"])
+        #expect(TodayCare.items(from: [a, b], now: now, calendar: calendar).map(\.plant.name) == ["basil", "Zinnia"])
     }
 
-    func testGroupsByPlantCapsShownRowsAndKeepsAllCounted() throws {
+    @Test func groupsByPlantCapsShownRowsAndKeepsAllCounted() throws {
         let context = try makeContext()
         let calendar = calendar("UTC")
         let now = date("2026-11-21T10:00:00Z")
@@ -114,15 +115,15 @@ final class TodayCareTests: XCTestCase {
         try context.save()
 
         let groups = TodayCare.groups(from: TodayCare.items(from: tasks, now: now, calendar: calendar), perPlant: 3)
-        XCTAssertEqual(groups.map(\.plant.name), ["Fern", "Lily"])
-        XCTAssertEqual(groups[0].items.count, 5)
-        XCTAssertEqual(groups[0].shown.map(\.task.title), ["Fern task 0", "Fern task 1", "Fern task 2"])
-        XCTAssertEqual(groups[0].hiddenCount, 2)
-        XCTAssertEqual(groups[1].hiddenCount, 0)
+        #expect(groups.map(\.plant.name) == ["Fern", "Lily"])
+        #expect(groups[0].items.count == 5)
+        #expect(groups[0].shown.map(\.task.title) == ["Fern task 0", "Fern task 1", "Fern task 2"])
+        #expect(groups[0].hiddenCount == 2)
+        #expect(groups[1].hiddenCount == 0)
     }
 
-    func testGroupsOfNoItemsIsEmptyAndCapIsAtLeastOne() throws {
-        XCTAssertTrue(TodayCare.groups(from: []).isEmpty)
+    @Test func groupsOfNoItemsIsEmptyAndCapIsAtLeastOne() throws {
+        #expect(TodayCare.groups(from: []).isEmpty)
         let context = try makeContext()
         let plant = Plant(name: "Aloe")
         context.insert(plant)
@@ -130,6 +131,6 @@ final class TodayCareTests: XCTestCase {
         context.insert(task)
         try context.save()
         let groups = TodayCare.groups(from: TodayCare.items(from: [task]), perPlant: 0)
-        XCTAssertEqual(groups.first?.shown.count, 1)
+        #expect(groups.first?.shown.count == 1)
     }
 }
