@@ -403,7 +403,7 @@ struct JournalTests {
 
         let verificationContext = ModelContext(destination)
         let plants = try verificationContext.fetch(FetchDescriptor<Plant>())
-        #expect(plants.map(\\.id) == [existingPlant.id])
+        #expect(plants.map(\.id) == [existingPlant.id])
         #expect(try verificationContext.fetch(FetchDescriptor<JournalEntry>()).isEmpty)
         #expect(try verificationContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
         #expect(try verificationContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
