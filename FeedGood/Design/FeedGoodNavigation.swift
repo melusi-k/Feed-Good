@@ -1,32 +1,58 @@
 import SwiftUI
+import UIKit
 
-/// One header treatment for app-owned pages and sheets. Native controls remain
-/// in their own toolbar slots; inline titles do not scroll away with content.
+/// Match ate-ios: native large root titles with a leading logo; native inline
+/// titles and Back on pushed pages/sheets. Never transform a NavigationStack.
 private struct FeedGoodHeader: ViewModifier {
     let title: String
+    let tab: AppTab?
 
     func body(content: Content) -> some View {
         content
+            .modifier(FeedGoodTabContentMotion(tab: tab))
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(FeedGoodTheme.surface, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .navigationBarTitleDisplayMode(tab == nil ? .inline : .large)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    HStack(alignment: .center, spacing: 7) {
+                if tab != nil {
+                    ToolbarItem(placement: .topBarLeading) {
                         Image(systemName: "leaf.fill")
+                            .font(.system(size: 25, weight: .semibold))
                             .foregroundStyle(FeedGoodTheme.leaf)
-                            .accessibilityHidden(true)
-                        Text(title)
-                            .font(.headline)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier("app.header.title")
+                            .frame(width: 28, height: 28)
+                            .accessibilityLabel("Feed Good")
+                            .accessibilityIdentifier("app.header.logo")
                     }
-                    .foregroundStyle(FeedGoodTheme.soil)
                 }
             }
+    }
+}
+
+/// Shared UIKit appearance, as in ate-ios. Native bars own large-title collapse,
+/// pinned inline titles, toolbar layout and selected/unselected tab treatment.
+enum FeedGoodNavigationAppearance {
+    static func apply() {
+        let nav = UINavigationBarAppearance()
+        nav.configureWithDefaultBackground()
+        let serif = { (size: CGFloat) -> UIFont in
+            let base = UIFont.systemFont(ofSize: size, weight: .bold)
+            return base.fontDescriptor.withDesign(.serif).map { UIFont(descriptor: $0, size: size) } ?? base
+        }
+        nav.largeTitleTextAttributes = [.font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: serif(32))]
+        nav.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: serif(18))]
+        UINavigationBar.appearance().standardAppearance = nav
+        UINavigationBar.appearance().compactAppearance = nav
+        UINavigationBar.appearance().tintColor = UIColor(FeedGoodTheme.leaf)
+        let bar = UITabBarAppearance()
+        bar.configureWithDefaultBackground()
+        for layout in [bar.stackedLayoutAppearance, bar.inlineLayoutAppearance, bar.compactInlineLayoutAppearance] {
+            layout.selected.iconColor = UIColor(FeedGoodTheme.leaf)
+            layout.selected.titleTextAttributes = [.foregroundColor: UIColor(FeedGoodTheme.leaf), .font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
+            layout.normal.iconColor = UIColor.secondaryLabel
+            layout.normal.titleTextAttributes = [.foregroundColor: UIColor.secondaryLabel, .font: UIFont.systemFont(ofSize: 10, weight: .medium)]
+        }
+        UITabBar.appearance().standardAppearance = bar
+        UITabBar.appearance().scrollEdgeAppearance = bar
+        UITabBar.appearance().unselectedItemTintColor = .secondaryLabel
     }
 }
 
@@ -62,7 +88,7 @@ struct FeedGoodMotionAccessibility: ViewModifier {
 }
 
 extension View {
-    func feedGoodHeader(_ title: String) -> some View { modifier(FeedGoodHeader(title: title)) }
+    func feedGoodHeader(_ title: String, tab: AppTab? = nil) -> some View { modifier(FeedGoodHeader(title: title, tab: tab)) }
     func feedGoodCollectionMotion<Value: Equatable>(value: Value) -> some View {
         modifier(FeedGoodCollectionMotion(value: value))
     }
