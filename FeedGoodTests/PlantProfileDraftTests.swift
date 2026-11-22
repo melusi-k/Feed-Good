@@ -13,12 +13,12 @@ struct PlantProfileDraftTests {
 
     @Test func blankNameIsInvalid() {
         let draft = PlantProfileDraft(name: "")
-        #expect(!draft.isValid)
+        #expect(draft.isValid == false)
     }
 
     @Test func whitespaceOnlyNameIsInvalid() {
         let draft = PlantProfileDraft(name: "   \n  ")
-        #expect(!draft.isValid)
+        #expect(draft.isValid == false)
     }
 
     @Test func nameWithContentIsValid() {
