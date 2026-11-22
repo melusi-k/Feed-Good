@@ -1,0 +1,83 @@
+import Foundation
+import SwiftData
+import Testing
+@testable import FeedGood
+
+@MainActor
+struct PlantArchiveTests {
+    private func makeContext() throws -> ModelContext {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Plant.self, configurations: configuration)
+        return ModelContext(container)
+    }
+
+    @Test func archivePersistsWithoutTouchingRecordsAndRestoreKeepsIdentity() throws {
+        let context = try makeContext()
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .now, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        let archivedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        try PlantArchive.archive(plant, at: archivedDate, in: context)
+
+        let stored = try context.fetch(FetchDescriptor<Plant>())
+        let reloaded = try #require(stored.first)
+        #expect(reloaded.archivedAt == archivedDate)
+        #expect(reloaded.careTasks?.count == 1)
+        #expect(PlantArchive.isArchived(reloaded))
+
+        try PlantArchive.restore(plant, in: context)
+        let restored = try #require(try context.fetch(FetchDescriptor<Plant>()).first)
+        #expect(restored.archivedAt == nil)
+        #expect(restored.id == plant.id)
+        #expect(restored.careTasks?.count == 1)
+    }
+
+    @Test func archiveAndRestoreAreIdempotent() throws {
+        let context = try makeContext()
+        let plant = Plant(name: "Aloe")
+        context.insert(plant)
+        try context.save()
+
+        let first = Date(timeIntervalSince1970: 1_700_000_000)
+        try PlantArchive.archive(plant, at: first, in: context)
+        try PlantArchive.archive(plant, at: .now, in: context)
+        #expect(plant.archivedAt == first)
+
+        try PlantArchive.restore(plant, in: context)
+        try PlantArchive.restore(plant, in: context)
+        #expect(plant.archivedAt == nil)
+        #expect(PlantArchive.isArchived(plant) == false)
+    }
+
+    @Test func failedArchiveSaveRollsBackAndLeavesPlantActive() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, allowsSave: false)
+        let container = try ModelContainer(for: Plant.self, configurations: configuration)
+        let context = ModelContext(container)
+        let plant = Plant(name: "Cactus")
+        context.insert(plant)
+
+        #expect(throws: (any Error).self) {
+            try PlantArchive.archive(plant, in: context)
+        }
+        #expect(plant.archivedAt == nil)
+        #expect(PlantArchive.isArchived(plant) == false)
+    }
+
+    @Test func failedRestoreSaveRollsBackAndLeavesPlantArchived() throws {
+        let archivedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, allowsSave: false)
+        let container = try ModelContainer(for: Plant.self, configurations: configuration)
+        let context = ModelContext(container)
+        let copy = Plant(name: "Fern copy", archivedAt: archivedDate)
+        context.insert(copy)
+
+        #expect(throws: (any Error).self) {
+            try PlantArchive.restore(copy, in: context)
+        }
+        #expect(copy.archivedAt == archivedDate)
+        #expect(PlantArchive.isArchived(copy))
+    }
+}
