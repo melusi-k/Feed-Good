@@ -99,3 +99,161 @@ struct CarePersistenceTests {
     }
 
 }
+
+
+@MainActor
+struct CareEventCorrectionTests {
+    private func memory() throws -> ModelContainer {
+        try ModelContainer(
+            for: Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+    }
+
+    private func fixedDate(_ iso: String) -> Date {
+        ISO8601DateFormatter().date(from: iso)!
+    }
+
+    @Test func correctionChangesDateAndNoteButNeverTheRoutine() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let dueBefore = fixedDate("2026-11-10T08:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: dueBefore, plant: plant)
+        context.insert(task)
+        let completedAt = fixedDate("2026-11-08T08:00:00Z")
+        try CareRecorder.complete(task, note: "First water", at: completedAt, in: context, calendar: Calendar(identifier: .gregorian))
+        let dueAfterCompletion = task.dueDate
+        let event = try #require(plant.careEvents?.first)
+        let corrected = fixedDate("2026-11-09T15:30:00Z")
+
+        try CareRecorder.update(event, completedAt: corrected, note: " Corrected note ", in: context)
+
+        #expect(event.completedAt == corrected)
+        #expect(event.note == "Corrected note")
+        #expect(event.taskTitle == "Watering")
+        #expect(task.dueDate == dueAfterCompletion)
+        #expect(task.intervalDays == 7)
+    }
+
+    @Test func correctingANonLatestEventAlsoLeavesTheRoutineUntouched() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .feeding, intervalDays: 14, dueDate: fixedDate("2026-11-01T08:00:00Z"), plant: plant)
+        context.insert(task)
+        let calendar = Calendar(identifier: .gregorian)
+        try CareRecorder.complete(task, note: "Older", at: fixedDate("2026-10-20T08:00:00Z"), in: context, calendar: calendar)
+        try CareRecorder.complete(task, note: "Latest", at: fixedDate("2026-11-03T08:00:00Z"), in: context, calendar: calendar)
+        let dueAfterBoth = task.dueDate
+        let older = try #require(plant.careEvents?.sorted { $0.completedAt < $1.completedAt }.first)
+
+        try CareRecorder.update(older, completedAt: fixedDate("2026-10-21T08:00:00Z"), note: "Older corrected", in: context)
+
+        #expect(task.dueDate == dueAfterBoth)
+        #expect(older.taskTitle == "Feeding")
+    }
+
+    @Test func deletingOneEventLeavesUnrelatedRecordsIntact() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let watering = CareTask(kind: .watering, intervalDays: 7, dueDate: fixedDate("2026-11-01T08:00:00Z"), plant: plant)
+        let feeding = CareTask(kind: .feeding, intervalDays: 14, dueDate: fixedDate("2026-11-02T08:00:00Z"), plant: plant)
+        context.insert(watering)
+        context.insert(feeding)
+        let calendar = Calendar(identifier: .gregorian)
+        try CareRecorder.complete(watering, note: "W", at: fixedDate("2026-10-28T08:00:00Z"), in: context, calendar: calendar)
+        try CareRecorder.complete(feeding, note: "F", at: fixedDate("2026-10-29T08:00:00Z"), in: context, calendar: calendar)
+        let dueWatering = watering.dueDate
+        let dueFeeding = feeding.dueDate
+        let doomed = try #require(plant.careEvents?.first { $0.taskID == watering.id })
+
+        try CareRecorder.delete(doomed, in: context)
+
+        let remaining = try context.fetch(FetchDescriptor<CareEvent>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.taskID == feeding.id)
+        #expect(watering.dueDate == dueWatering)
+        #expect(feeding.dueDate == dueFeeding)
+        #expect(try context.fetch(FetchDescriptor<CareTask>()).count == 2)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).count == 1)
+    }
+
+    @Test func failedCorrectionSaveRollsBackToTheOriginalRecord() throws {
+        enum InjectedSaveFailure: Error { case failed }
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: fixedDate("2026-11-10T08:00:00Z"), plant: plant)
+        context.insert(task)
+        let originalDate = fixedDate("2026-11-08T08:00:00Z")
+        try CareRecorder.complete(task, note: "Original note", at: originalDate, in: context)
+        let event = try #require(plant.careEvents?.first)
+
+        #expect(throws: InjectedSaveFailure.self) {
+            try CareRecorder.update(event, completedAt: fixedDate("2026-11-09T08:00:00Z"), note: "Changed", in: context) { _ in
+                throw InjectedSaveFailure.failed
+            }
+        }
+
+        #expect(event.completedAt == originalDate)
+        #expect(event.note == "Original note")
+        let persisted = try context.fetch(FetchDescriptor<CareEvent>())
+        #expect(persisted.first?.completedAt == originalDate)
+        #expect(persisted.first?.note == "Original note")
+    }
+
+    @Test func failedDeleteKeepsTheRecord() throws {
+        enum InjectedSaveFailure: Error { case failed }
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: fixedDate("2026-11-10T08:00:00Z"), plant: plant)
+        context.insert(task)
+        try CareRecorder.complete(task, note: "Keep me", at: fixedDate("2026-11-08T08:00:00Z"), in: context)
+        let event = try #require(plant.careEvents?.first)
+
+        #expect(throws: InjectedSaveFailure.self) {
+            try CareRecorder.delete(event, in: context) { _ in
+                throw InjectedSaveFailure.failed
+            }
+        }
+
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).count == 1)
+    }
+
+    @Test func correctedDateSurvivesDiskReopenAcrossTimeZones() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("care-correction.store")
+        let schema = Schema([Plant.self, CareTask.self, CareEvent.self])
+        let configuration = ModelConfiguration(schema: schema, url: url)
+        let corrected = ISO8601DateFormatter().date(from: "2026-03-07T09:30:00-05:00")!
+        let eventID: UUID
+        do {
+            let container = try ModelContainer(for: schema, configurations: configuration)
+            let context = ModelContext(container)
+            let plant = Plant(name: "Fern")
+            context.insert(plant)
+            let task = CareTask(kind: .watering, intervalDays: 7, dueDate: corrected, plant: plant)
+            context.insert(task)
+            try CareRecorder.complete(task, note: "Before DST", at: corrected.addingTimeInterval(-86400), in: context)
+            let event = try #require(plant.careEvents?.first)
+            try CareRecorder.update(event, completedAt: corrected, note: "On the DST boundary", in: context)
+            eventID = event.id
+        }
+        do {
+            var newYork = Calendar(identifier: .gregorian)
+            newYork.timeZone = TimeZone(identifier: "America/New_York")!
+            let container = try ModelContainer(for: schema, configurations: configuration)
+            let context = ModelContext(container)
+            let event = try #require(try context.fetch(FetchDescriptor<CareEvent>()).first)
+            #expect(event.id == eventID)
+            #expect(event.completedAt == corrected)
+            #expect(event.note == "On the DST boundary")
+            #expect(newYork.component(.hour, from: event.completedAt) == 9)
+        }
+    }
+}
