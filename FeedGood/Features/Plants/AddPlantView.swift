@@ -9,6 +9,7 @@ struct AddPlantView: View {
     @State private var notes = ""
     @State private var growingEnvironment: GrowingEnvironment = .unspecified
     @State private var lightCondition: LightCondition = .unspecified
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -42,6 +43,11 @@ struct AddPlantView: View {
                 } footer: {
                     Text("This helps us tailor plant care guidance to your plant’s growing conditions. These are your observations, not measurements. You can leave them unset or change them later. We do not need your location.")
                 }
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier("addPlant.error")
+                }
             }
             .feedGoodHeader("New plant")
             .toolbar {
@@ -66,6 +72,12 @@ struct AddPlantView: View {
             lightCondition: lightCondition
         )
         modelContext.insert(plant)
-        dismiss()
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            errorMessage = "Couldn't save this plant. Your draft is kept here. Try again."
+        }
     }
 }
