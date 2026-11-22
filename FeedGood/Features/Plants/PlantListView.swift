@@ -66,9 +66,10 @@ struct PlantListView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
+            .feedGoodCollectionMotion(value: plants.map(\.id))
             .searchable(text: $query, prompt: "Plant name or species")
             .background(FeedGoodTheme.background)
-            .navigationTitle("Feed Good")
+            .feedGoodHeader("My Plants")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
