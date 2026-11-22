@@ -2,7 +2,7 @@ import XCTest
 
 final class NavigationHeaderUITests: XCTestCase {
     private func header(_ app: XCUIApplication, _ title: String) {
-        let label = app.navigationBars.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "app.header.title", title)).firstMatch
+        let label = app.navigationBars[title].staticTexts[title].firstMatch
         XCTAssertTrue(label.waitForExistence(timeout: 5))
         XCTAssertEqual(label.label, title)
         XCTAssertTrue(label.isHittable)
