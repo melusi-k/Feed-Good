@@ -85,7 +85,6 @@ struct TodayView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 26) {
-                    masthead
                     welcome
                     dailyThought
                     careCheckIn
@@ -97,8 +96,9 @@ struct TodayView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 34)
             }
+            .feedGoodCollectionMotion(value: careItems.map { "\($0.id):\($0.task.dueDate)" })
             .background(FeedGoodTheme.background.ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .feedGoodHeader("Feed Good")
             .sheet(isPresented: $showingAddPlant) {
                 AddPlantView()
             }
@@ -128,31 +128,6 @@ struct TodayView: View {
             try CareRecorder.complete(item.task, note: "", in: modelContext)
         } catch {
             careError = "Couldn’t save this care event. Your routine has not changed. Try again."
-        }
-    }
-
-    private var masthead: some View {
-        HStack(alignment: .center) {
-            HStack(spacing: 9) {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                Text("feed good")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .tracking(-0.6)
-                    .foregroundStyle(FeedGoodTheme.leaf)
-            }
-            Spacer()
-            Button {
-                selectedTab = .plants
-            } label: {
-                Image(systemName: "person.crop.circle")
-                    .font(.system(size: 23, weight: .regular))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                    .frame(width: 42, height: 42)
-                    .background(FeedGoodTheme.surface, in: Circle())
-            }
-            .accessibilityLabel("My plants")
         }
     }
 
