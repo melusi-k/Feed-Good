@@ -27,6 +27,7 @@ final class CareRoutineReviewUITests: XCTestCase {
         XCTAssertTrue(firstPreview.waitForExistence(timeout: 5))
         XCTAssertTrue(firstPreview.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Repeat every 7 days")).firstMatch.exists)
         firstPreview.buttons["Cancel"].tap()
+        app.buttons["Cancel"].tap()
         XCTAssertTrue(app.staticTexts["No care routines yet"].waitForExistence(timeout: 5))
 
         app.buttons["careReview.addTask"].tap()
@@ -48,6 +49,7 @@ final class CareRoutineReviewUITests: XCTestCase {
         XCTAssertTrue(editPreview.waitForExistence(timeout: 5))
         XCTAssertTrue(editPreview.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Repeat every 8 days")).firstMatch.exists)
         editPreview.buttons["Cancel"].tap()
+        app.buttons["Cancel"].tap()
 
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Every 7 days")).firstMatch.waitForExistence(timeout: 5))
     }
