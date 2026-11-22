@@ -1,6 +1,6 @@
 # PRD-012 — Growth Review
 
-**Status:** Proposed for post-MVP product review  
+**Status:** Implementation in progress — PR #76 is open; remaining UI and source-navigation acceptance is outstanding  
 **Priority:** P1/P2 relationship feature  
 **Release:** Post-MVP, after journal/photo lifecycle is release-stable  
 **Primary surfaces:** Plant Profile, Plant Story, Journal
@@ -28,7 +28,7 @@ A user wants to see whether a plant has changed since an earlier observation. A 
 - Add a Growth review entry point from a plant profile and its plant story.
 - Derive the gallery from existing `JournalEntry` records that contain local photos; do not copy image bytes into a second history store.
 - Show eligible photos for the current plant, newest first, with the observation date, milestone label and a concise note preview where available.
-- Let the user select two different entries from the same plant and view them side by side or in a swipe comparison. The comparison is temporary in the first slice and does not need a saved comparison record.
+- Let the user select two different entries from the same plant and view them side by side. Side-by-side is the selected presentation for this slice. The comparison is temporary in the first slice and does not need a saved comparison record.
 - Provide a route from each compared image back to its source journal entry.
 - Show a useful empty state for zero or one photo and a direct route to Add observation.
 - Reflect journal edits and deletions on the next render.
@@ -65,7 +65,7 @@ Included in the local-first app. Existing photos remain on-device and no account
 
 ## 9. Launch plan
 
-1. Confirm the temporary-comparison interaction and whether a swipe or side-by-side layout is clearer at iPhone widths.
+1. Retain the selected temporary side-by-side comparison presentation and verify it at supported iPhone widths.
 2. Implement the eligible-photo projection and deterministic selection rules.
 3. Add unit tests for filtering, ordering, same-plant selection and missing source records.
 4. Add UI coverage for the two-photo journey, empty states and source navigation.
@@ -78,7 +78,7 @@ Replaces the need to manually scroll a mixed plant story to compare individual p
 
 ## 11. Decisions and open questions
 
-The first release should keep comparisons temporary and derived from JournalEntry. Product review should decide between side-by-side and swipe comparison after a quick usability check. The current one-photo-per-entry contract remains sufficient for the proposed slice; multiple photos should not be added as an implicit dependency.
+The first release keeps comparisons temporary and derived from JournalEntry. Side-by-side is the selected presentation and must be documented consistently in UI and tests. The source-observation action must open the corresponding JournalEntry in its intended detail/edit context. The current one-photo-per-entry contract remains sufficient for the proposed slice; multiple photos should not be added as an implicit dependency.
 
 If a later version supports saved comparisons, store references to journal-entry IDs rather than duplicating image bytes and define archive behavior before implementation.
 
@@ -87,3 +87,4 @@ If a later version supports saved comparisons, store references to journal-entry
 - GitHub implementation issue: [#64 — Add a per-plant growth review from journal photos](https://github.com/melusi-k/Feed-Good/issues/64).
 - Existing Plant Journal: [PRD-004 — Plant Journal](PRD-004-plant-journal.md).
 - Existing Plant Story: [PRD-004 — Plant Journal](PRD-004-plant-journal.md).
+- Implementation: [PR #76](https://github.com/melusi-k/Feed-Good/pull/76) is open; populated comparison, two-photo selection and correct source-entry navigation coverage remain before merge.
