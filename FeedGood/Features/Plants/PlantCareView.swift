@@ -32,6 +32,14 @@ struct PlantCareView: View {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 }
             }
+            Section("Routine review") {
+                NavigationLink {
+                    CareRoutineReviewView(plant: plant)
+                } label: {
+                    Label("Review this plant's care routine", systemImage: "calendar.badge.clock")
+                }
+                .accessibilityIdentifier("care.routineReview")
+            }
             Section("Care routine") {
                 if tasks.isEmpty { Text("No care tasks yet. Add a routine that suits this plant.").foregroundStyle(.secondary) }
                 ForEach(tasks) { task in
