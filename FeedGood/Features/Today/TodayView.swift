@@ -106,6 +106,7 @@ struct TodayView: View {
                     ContentUnavailableView("Plant unavailable", systemImage: "leaf", description: Text("This plant may have been removed from your garden."))
                 }
             }
+            .task { openNotificationDestination(notificationRouter.destination) }
             .onChange(of: notificationRouter.destination) { _, destination in
                 openNotificationDestination(destination)
             }
