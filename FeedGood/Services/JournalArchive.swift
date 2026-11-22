@@ -291,10 +291,10 @@ struct JournalArchive: Codable {
             for record in archive.plants where plants[record.id] == nil {
                 let plant = Plant(
                     id: record.id, name: record.name, species: record.species, notes: record.notes,
-                    photoData: record.photoData,
-                    createdAt: record.createdAt,
                     growingEnvironment: GrowingEnvironment(rawValue: record.growingEnvironmentRaw ?? "") ?? .unspecified,
-                    lightCondition: LightCondition(rawValue: record.lightConditionRaw ?? "") ?? .unspecified
+                    lightCondition: LightCondition(rawValue: record.lightConditionRaw ?? "") ?? .unspecified,
+                    photoData: record.photoData,
+                    createdAt: record.createdAt
                 )
                 recoveryContext.insert(plant)
                 plants[plant.id] = plant
