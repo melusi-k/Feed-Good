@@ -40,6 +40,9 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Generate iOS app icon
+        run: bash scripts/generate-app-icon.sh
+
       - name: Stamp build version and generate project
         run: |
           BASE_VERSION=$(grep -E '^    MARKETING_VERSION:' project.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
@@ -105,6 +108,7 @@ jobs:
           [ "$BUILD" = "$BUILD_NUMBER" ] || { echo "::error::Unexpected build number: $BUILD"; exit 1; }
           [ -x "$APP/$EXECUTABLE" ] || { echo "::error::App executable missing"; exit 1; }
           lipo -archs "$APP/$EXECUTABLE" | grep -q arm64 || { echo "::error::IPA does not contain arm64"; exit 1; }
+          [ -s "$APP/Assets.car" ] || { echo "::error::Compiled asset catalog missing"; exit 1; }
           {
             echo "### Feed Good IPA"
             echo
@@ -114,6 +118,7 @@ jobs:
             echo "| Build | $BUILD |"
             echo "| Bundle ID | $BUNDLE_ID |"
             echo "| Package | $IPA_NAME (unsigned) |"
+            echo "| App icon | Included in Assets.car |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload IPA artifact
