@@ -5,41 +5,54 @@ import Testing
 
 @MainActor
 struct PlantPersistenceTests {
-    private func makeContainer() throws -> ModelContainer {
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Plant.self, configurations: configuration)
-    }
+    @Test func profileEditsPhotoAndGrowingContextSurviveStoreReopen() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
 
-    @Test func profileEditsPhotoAndGrowingContextPersistAcrossContexts() throws {
-        let container = try makeContainer()
-        let context = ModelContext(container)
-        let plant = Plant(name: "Monstera")
-        context.insert(plant)
+        let schema = Schema([Plant.self])
+        let configuration = ModelConfiguration(
+            schema: schema,
+            url: folder.appendingPathComponent("plants.store")
+        )
+        let plantID: UUID
 
-        var draft = PlantProfileDraft(plant: plant)
-        draft.name = "  Monty  "
-        draft.species = " Monstera deliciosa "
-        draft.notes = " New leaf unfurling "
-        draft.growingEnvironment = .balcony
-        draft.lightCondition = .indirect
-        draft.applying(to: plant)
-        plant.photoData = Data([0x01, 0x02, 0x03])
-        try context.save()
+        do {
+            let container = try ModelContainer(for: schema, configurations: configuration)
+            let context = ModelContext(container)
+            let plant = Plant(name: "Monstera")
+            plantID = plant.id
+            context.insert(plant)
 
-        let verificationContext = ModelContext(container)
-        let stored = try verificationContext.fetch(FetchDescriptor<Plant>())
-        #expect(stored.count == 1)
-        let reloaded = try #require(stored.first)
-        #expect(reloaded.name == "Monty")
-        #expect(reloaded.species == "Monstera deliciosa")
-        #expect(reloaded.notes == "New leaf unfurling")
-        #expect(reloaded.photoData == Data([0x01, 0x02, 0x03]))
-        #expect(reloaded.growingEnvironment == .balcony)
-        #expect(reloaded.lightCondition == .indirect)
+            var draft = PlantProfileDraft(plant: plant)
+            draft.name = "  Monty  "
+            draft.species = " Monstera deliciosa "
+            draft.notes = " New leaf unfurling "
+            draft.growingEnvironment = .balcony
+            draft.lightCondition = .indirect
+            draft.applying(to: plant)
+            plant.photoData = Data([0x01, 0x02, 0x03])
+            try context.save()
+        }
+
+        do {
+            let reopenedContainer = try ModelContainer(for: schema, configurations: configuration)
+            let reopenedContext = ModelContext(reopenedContainer)
+            let stored = try reopenedContext.fetch(FetchDescriptor<Plant>())
+            #expect(stored.count == 1)
+            let reloaded = try #require(stored.first { $0.id == plantID })
+            #expect(reloaded.name == "Monty")
+            #expect(reloaded.species == "Monstera deliciosa")
+            #expect(reloaded.notes == "New leaf unfurling")
+            #expect(reloaded.photoData == Data([0x01, 0x02, 0x03]))
+            #expect(reloaded.growingEnvironment == .balcony)
+            #expect(reloaded.lightCondition == .indirect)
+        }
     }
 
     @Test func newPlantsHaveNoAssumedGrowingContext() throws {
-        let container = try makeContainer()
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Plant.self, configurations: configuration)
         let context = ModelContext(container)
         let plant = Plant(name: "Fern")
         context.insert(plant)
@@ -51,7 +64,8 @@ struct PlantPersistenceTests {
     }
 
     @Test func deletingPlantRemovesItFromStore() throws {
-        let container = try makeContainer()
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Plant.self, configurations: configuration)
         let context = ModelContext(container)
         let plant = Plant(name: "Fern")
         context.insert(plant)
