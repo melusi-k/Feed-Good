@@ -7,7 +7,7 @@ import Testing
 struct PlantArchiveTests {
     private func makeContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: Plant.self, configurations: configuration)
+        let container = try ModelContainer(for: Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]), configurations: configuration)
         return ModelContext(container)
     }
 
@@ -53,32 +53,36 @@ struct PlantArchiveTests {
     }
 
     @Test func failedArchiveSaveRollsBackAndLeavesPlantActive() throws {
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, allowsSave: false)
-        let container = try ModelContainer(for: Plant.self, configurations: configuration)
-        let context = ModelContext(container)
+        enum InjectedSaveFailure: Error { case failed }
+        let context = try makeContext()
         let plant = Plant(name: "Cactus")
         context.insert(plant)
+        try context.save()
 
-        #expect(throws: (any Error).self) {
-            try PlantArchive.archive(plant, in: context)
+        #expect(throws: InjectedSaveFailure.self) {
+            try PlantArchive.archive(plant, in: context) { _ in
+                throw InjectedSaveFailure.failed
+            }
         }
         #expect(plant.archivedAt == nil)
-        #expect(PlantArchive.isArchived(plant) == false)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == nil)
     }
 
     @Test func failedRestoreSaveRollsBackAndLeavesPlantArchived() throws {
+        enum InjectedSaveFailure: Error { case failed }
+        let context = try makeContext()
         let archivedDate = Date(timeIntervalSince1970: 1_700_000_000)
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, allowsSave: false)
-        let container = try ModelContainer(for: Plant.self, configurations: configuration)
-        let context = ModelContext(container)
-        let copy = Plant(name: "Fern copy", archivedAt: archivedDate)
-        context.insert(copy)
+        let plant = Plant(name: "Fern", archivedAt: archivedDate)
+        context.insert(plant)
+        try context.save()
 
-        #expect(throws: (any Error).self) {
-            try PlantArchive.restore(copy, in: context)
+        #expect(throws: InjectedSaveFailure.self) {
+            try PlantArchive.restore(plant, in: context) { _ in
+                throw InjectedSaveFailure.failed
+            }
         }
-        #expect(copy.archivedAt == archivedDate)
-        #expect(PlantArchive.isArchived(copy))
+        #expect(plant.archivedAt == archivedDate)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == archivedDate)
     }
     @Test func archivedPlantCannotReceiveCareCompletion() throws {
         let context = try makeContext()
