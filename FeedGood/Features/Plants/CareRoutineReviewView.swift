@@ -1,4 +1,5 @@
-import Foundation
+import SwiftUI
+import SwiftData
 
 /// A read-only projection of the selected plant's existing care tasks.
 enum CareRoutineReviewProjection {
