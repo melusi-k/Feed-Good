@@ -151,8 +151,10 @@ struct JournalArchive: Codable {
 
     func validate() throws {
         guard version == 1 || version == 2 else { throw JournalArchiveError.unsupportedVersion }
-        let recordCount = plants.count + entries.count + (careTasks?.count ?? 0) + (careEvents?.count ?? 0)
-        guard recordCount <= Self.maxRecords else {
+        guard plants.count <= Self.maxRecords,
+              entries.count <= Self.maxRecords,
+              (careTasks?.count ?? 0) <= Self.maxRecords,
+              (careEvents?.count ?? 0) <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
         let plantIDs = Set(plants.map(\.id))
