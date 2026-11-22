@@ -2,7 +2,7 @@ import XCTest
 
 final class NavigationHeaderUITests: XCTestCase {
     private func header(_ app: XCUIApplication, _ title: String) {
-        let label = app.navigationBars.staticTexts["app.header.title"].firstMatch
+        let label = app.navigationBars.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "app.header.title", title)).firstMatch
         XCTAssertTrue(label.waitForExistence(timeout: 5))
         XCTAssertEqual(label.label, title)
         XCTAssertTrue(label.isHittable)
@@ -13,6 +13,21 @@ final class NavigationHeaderUITests: XCTestCase {
         image.name = "SIMULATOR - Shared header - \(name)"
         image.lifetime = .keepAlways
         add(image)
+    }
+
+    func testHorizontalTabSwipesKeepNativeNavigationAndScrolling() {
+        let app = XCUIApplication()
+        app.launchArguments = ["FEEDGOOD_UI_TESTING"]
+        app.launch()
+        header(app, "Feed Good")
+        let middle = app.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.3))
+        middle.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.3)))
+        header(app, "My Plants")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.3)).press(forDuration: 0.1, thenDragTo: middle)
+        header(app, "Feed Good")
+        app.swipeUp()
+        header(app, "Feed Good")
+        capture(app, "Tab swipe and vertical scroll")
     }
 
     func testRootHeadersStayVisibleAfterScrollAndInDarkAppearance() {
