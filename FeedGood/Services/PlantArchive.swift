@@ -6,8 +6,8 @@ import SwiftData
 /// milestone stay exactly as they were.
 enum PlantArchive {
     /// Marks the plant archived at `date`. Idempotent: archiving an already-archived
-    /// plant keeps its original archive date. On a failed save the context rolls back
-    /// and the plant stays active.
+    /// plant keeps its original archive date. A failed save restores only this
+    /// property and leaves unrelated pending context edits untouched.
     static func archive(
         _ plant: Plant,
         at date: Date = .now,
@@ -20,14 +20,13 @@ enum PlantArchive {
             try save(context)
         } catch {
             plant.archivedAt = nil
-            context.rollback()
             throw error
         }
     }
 
     /// Returns the same plant identity and records to the active collection.
-    /// Idempotent: restoring an active plant is a no-op. On a failed save the
-    /// context rolls back and the plant stays archived.
+    /// Idempotent: restoring an active plant is a no-op. A failed save restores
+    /// the prior archive timestamp without rolling back unrelated pending edits.
     static func restore(
         _ plant: Plant,
         in context: ModelContext,
@@ -40,7 +39,6 @@ enum PlantArchive {
             try save(context)
         } catch {
             plant.archivedAt = previous
-            context.rollback()
             throw error
         }
     }
