@@ -2,7 +2,7 @@
 
 This repository is Feed Good, an iOS gardening companion app (plant care reminders plus a journal). Follow the guidelines below so changes land cleanly the first time. These rules describe the repo as it actually is; where they and generic advice disagree, these win.
 
-Baseline adapted from [twostraws/SwiftAgents](https://github.com/twostraws/SwiftAgents) (MIT), with review guidance adapted from [twostraws/Swift-Testing-Agent-Skill](https://github.com/twostraws/Swift-Testing-Agent-Skill), [twostraws/Swift-Concurrency-Agent-Skill](https://github.com/twostraws/Swift-Concurrency-Agent-Skill), [twostraws/SwiftUI-Agent-Skill](https://github.com/twostraws/SwiftUI-Agent-Skill), and [Dimillian/Skills swiftui-performance-audit](https://github.com/Dimillian/Skills) (all MIT).
+Baseline structure adapted from [twostraws/SwiftAgents](https://github.com/twostraws/SwiftAgents) (that repository ships no license file; used as reference only, see THIRD_PARTY_NOTICES.md), with review guidance adapted from [twostraws/Swift-Testing-Agent-Skill](https://github.com/twostraws/Swift-Testing-Agent-Skill), [twostraws/Swift-Concurrency-Agent-Skill](https://github.com/twostraws/Swift-Concurrency-Agent-Skill), [twostraws/SwiftUI-Agent-Skill](https://github.com/twostraws/SwiftUI-Agent-Skill), and [Dimillian/Skills swiftui-performance-audit](https://github.com/Dimillian/Skills) (all MIT; copyright and permission notices retained in THIRD_PARTY_NOTICES.md).
 
 ## Ground truth
 
@@ -45,13 +45,13 @@ You are a senior iOS engineer specializing in SwiftUI and SwiftData. Code must f
 
 ## Concurrency review gates
 
-- No `Task {}` inside loops; use `withTaskGroup`/`withThrowingTaskGroup`.
+- `Task {}` inside loops is a smell: for owned child work that shares a lifetime, use `withTaskGroup`/`withThrowingTaskGroup`. Intentional long-lived owned tasks with their own lifecycle are legitimate; task groups cannot replace them.
 - `Task.detached` is suspect; justify shedding isolation and priority or don't use it.
 - Every `withCheckedContinuation`/`withCheckedThrowingContinuation` resumes exactly once on every code path. Audit early returns and error paths.
 - Never add `@unchecked Sendable` to silence a compiler error; fix the isolation with actors or value types.
 - `catch` blocks filter out `CancellationError` before handling other errors; cancellation is a normal lifecycle event, not an alert.
-- Cancel a stored task before replacing it, and cancel it on teardown.
-- Inside an actor, check-then-act across an `await` can race because actor state may change during suspension. Revalidate relevant state after the `await` before committing, or keep the decision and mutation in one synchronous isolated operation.
+- Cancel owned tasks before replacing them, and on their owner's teardown, respecting the existing owner; do not add blanket cancels to tasks another component owns.
+- Audit check-then-act sequences that cross an `await`: state can change during the suspension, so assumptions made before it may no longer hold (WWDC21 session 10133, SE-0306). After the suspension, revalidate invariants and preserve cancellation, generation and identity checks before acting on pre-await state. Not every such sequence is a bug, and capturing results into locals does not by itself prevent publishing stale results; review needs lifecycle reasoning, not a blanket rewrite.
 - Never create a `Task` inside `onAppear()`; use the `.task()` modifier, which cancels on disappear.
 - Handle errors inside throwing `Task` closures; a silently dropped error looks like nothing happened.
 
