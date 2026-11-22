@@ -1,45 +1,47 @@
-import XCTest
+import Foundation
+import Testing
 @testable import FeedGood
 
-final class PlantCollectionTests: XCTestCase {
-    func testSearchNameAndSpeciesIgnoresCaseAccentsAndOuterWhitespace() {
+struct PlantCollectionTests {
+    @Test func searchNameAndSpeciesIgnoresCaseAccentsAndOuterWhitespace() {
         let fern = Plant(name: "Férn by window", species: "Nephrolepis exaltata")
         let aloe = Plant(name: "Kitchen", species: "Aloe vera")
         let all = [fern, aloe]
-        XCTAssertEqual(PlantCollection.plants(from: all, query: " FERN ", sort: .name).map(\.id), [fern.id])
-        XCTAssertEqual(PlantCollection.plants(from: all, query: "ALOE", sort: .name).map(\.id), [aloe.id])
-        XCTAssertEqual(PlantCollection.plants(from: all, query: "exalt", sort: .name).map(\.id), [fern.id])
-        XCTAssertTrue(PlantCollection.plants(from: all, query: "not saved", sort: .name).isEmpty)
-        XCTAssertEqual(PlantCollection.plants(from: all, query: " \n ", sort: .name).count, 2)
-        XCTAssertTrue(PlantCollection.plants(from: [], query: "", sort: .name).isEmpty)
+        #expect(PlantCollection.plants(from: all, query: " FERN ", sort: .name).map(\.id) == [fern.id])
+        #expect(PlantCollection.plants(from: all, query: "ALOE", sort: .name).map(\.id) == [aloe.id])
+        #expect(PlantCollection.plants(from: all, query: "exalt", sort: .name).map(\.id) == [fern.id])
+        #expect(PlantCollection.plants(from: all, query: "not saved", sort: .name).isEmpty)
+        #expect(PlantCollection.plants(from: all, query: " \n ", sort: .name).count == 2)
+        #expect(PlantCollection.plants(from: [], query: "", sort: .name).isEmpty)
     }
 
-    func testNameAndRecentlyAddedOrdersAreDeterministic() {
+    @Test func nameAndRecentlyAddedOrdersAreDeterministic() {
         let older = Plant(name: "Zulu", createdAt: Date(timeIntervalSince1970: 1))
         let newer = Plant(name: "aloe", createdAt: Date(timeIntervalSince1970: 2))
         let same = Plant(name: "Áloe", createdAt: newer.createdAt)
         let all = [older, newer, same]
-        XCTAssertEqual(PlantCollection.plants(from: all, query: "", sort: .name).last?.id, older.id)
-        XCTAssertEqual(PlantCollection.plants(from: all, query: "", sort: .recentlyAdded).last?.id, older.id)
+        #expect(PlantCollection.plants(from: all, query: "", sort: .name).last?.id == older.id)
+        #expect(PlantCollection.plants(from: all, query: "", sort: .recentlyAdded).last?.id == older.id)
+        let tieOrder = [newer.id, same.id].sorted { $0.uuidString < $1.uuidString }
         for sort in PlantCollectionSort.allCases {
             let a = PlantCollection.plants(from: all, query: "", sort: sort).map(\.id)
             let b = PlantCollection.plants(from: all.reversed(), query: "", sort: sort).map(\.id)
-            XCTAssertEqual(a, b)
-            XCTAssertEqual(Set(a).count, 3)
-            XCTAssertEqual(a.prefix(2), [newer.id, same.id].sorted { $0.uuidString < $1.uuidString }[...])
+            #expect(a == b)
+            #expect(Set(a).count == 3)
+            #expect(Array(a.prefix(2)) == tieOrder)
         }
     }
 
-    func testDifferentSortModesAndSourceUpdates() {
+    @Test func differentSortModesAndSourceUpdates() {
         let a = Plant(name: "Aloe", createdAt: Date(timeIntervalSince1970: 1))
         let z = Plant(name: "Zulu", createdAt: Date(timeIntervalSince1970: 2))
-        XCTAssertEqual(PlantCollection.plants(from: [z, a], query: "", sort: .name).map(\.id), [a.id, z.id])
-        XCTAssertEqual(PlantCollection.plants(from: [a, z], query: "", sort: .recentlyAdded).map(\.id), [z.id, a.id])
+        #expect(PlantCollection.plants(from: [z, a], query: "", sort: .name).map(\.id) == [a.id, z.id])
+        #expect(PlantCollection.plants(from: [a, z], query: "", sort: .recentlyAdded).map(\.id) == [z.id, a.id])
         a.species = "Updated species"
-        XCTAssertEqual(PlantCollection.plants(from: [a, z], query: "updated", sort: .name).map(\.id), [a.id])
+        #expect(PlantCollection.plants(from: [a, z], query: "updated", sort: .name).map(\.id) == [a.id])
         a.name = "Zz"
-        XCTAssertEqual(PlantCollection.plants(from: [a, z], query: "", sort: .name).last?.id, a.id)
-        XCTAssertEqual(a.name, "Zz")
-        XCTAssertEqual(a.species, "Updated species")
+        #expect(PlantCollection.plants(from: [a, z], query: "", sort: .name).last?.id == a.id)
+        #expect(a.name == "Zz")
+        #expect(a.species == "Updated species")
     }
 }
