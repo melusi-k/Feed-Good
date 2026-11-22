@@ -80,4 +80,18 @@ struct PlantArchiveTests {
         #expect(copy.archivedAt == archivedDate)
         #expect(PlantArchive.isArchived(copy))
     }
+    @Test func archivedPlantCannotReceiveCareCompletion() throws {
+        let context = try makeContext()
+        let plant = Plant(name: "Fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .now, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        #expect(throws: CareRecorderError.archivedPlant) {
+            try CareRecorder.complete(task, note: "Should not be recorded", in: context)
+        }
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+    }
+
 }
