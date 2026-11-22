@@ -79,7 +79,11 @@ final class JournalTests: XCTestCase {
     func testVersionTwoRoundTripIncludesProfilePhotosCareTasksAndCareHistory() throws {
         let source = try memory()
         let sourceContext = ModelContext(source)
-        let plant = Plant(name: "Fern", species: "Nephrolepis", photoData: samplePhoto())
+        let plant = Plant(
+            name: "Fern", species: "Nephrolepis",
+            growingEnvironment: .balcony, lightCondition: .indirect,
+            photoData: samplePhoto()
+        )
         sourceContext.insert(plant)
         let dueDate = Date(timeIntervalSince1970: 1_800_000_000)
         let task = CareTask(
@@ -114,6 +118,8 @@ final class JournalTests: XCTestCase {
         XCTAssertEqual(restoredPlant.id, plant.id)
         XCTAssertEqual(restoredPlant.name, "Fern")
         XCTAssertEqual(restoredPlant.photoData, plant.photoData)
+        XCTAssertEqual(restoredPlant.growingEnvironment, .balcony)
+        XCTAssertEqual(restoredPlant.lightCondition, .indirect)
 
         let restoredTask = try XCTUnwrap(destinationContext.fetch(FetchDescriptor<CareTask>()).first)
         XCTAssertEqual(restoredTask.id, task.id)
@@ -227,4 +233,49 @@ final class JournalTests: XCTestCase {
         XCTAssertEqual(try context.fetch(FetchDescriptor<CareTask>()).first?.intervalDays, 7)
         XCTAssertEqual(try context.fetch(FetchDescriptor<CareEvent>()).first?.note, "Original")
     }
+
+    func testVersionOneArchiveWithoutGrowingContextFieldsRemainsDecodable() throws {
+        let plant = Plant(name: "Legacy fern")
+        let entry = JournalArchive.EntryRecord(id: UUID(), plantID: plant.id, date: .now, note: "Legacy note", photoData: nil)
+        var legacy = JournalArchive(
+            plants: [JournalArchive.PlantRecord(id: plant.id, name: plant.name, species: "", notes: "", createdAt: plant.createdAt)],
+            entries: [entry], careTasks: nil, careEvents: nil
+        )
+        legacy.version = 1
+        let data = try JSONEncoder().encode(legacy)
+        let decoded = try JSONDecoder().decode(JournalArchive.self, from: data)
+        XCTAssertNil(decoded.plants.first?.growingEnvironmentRaw)
+        XCTAssertNil(decoded.plants.first?.lightConditionRaw)
+
+        let context = ModelContext(try memory())
+        XCTAssertEqual(try JournalArchive.recover(data, context: context), 1)
+        let restored = try XCTUnwrap(context.fetch(FetchDescriptor<Plant>()).first)
+        XCTAssertEqual(restored.growingEnvironment, .unspecified)
+        XCTAssertEqual(restored.lightCondition, .unspecified)
+    }
+
+    func testRecoveryKeepsUnrelatedUnsavedCallerChanges() throws {
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Archive fern", growingEnvironment: .outdoor, lightCondition: .direct)
+        sourceContext.insert(plant)
+        try sourceContext.save()
+        let data = try JournalArchive.export(plants: [plant], entries: [])
+
+        let destination = try memory()
+        let callerContext = ModelContext(destination)
+        let pendingPlant = Plant(name: "Unsaved local plant")
+        callerContext.insert(pendingPlant)
+        XCTAssertTrue(callerContext.hasChanges)
+
+        XCTAssertEqual(try JournalArchive.recover(data, context: callerContext), 0)
+        XCTAssertTrue(callerContext.hasChanges)
+        XCTAssertTrue(try callerContext.fetch(FetchDescriptor<Plant>()).contains { $0.id == pendingPlant.id })
+
+        let verificationContext = ModelContext(destination)
+        let restored = try XCTUnwrap(verificationContext.fetch(FetchDescriptor<Plant>()).first { $0.id == plant.id })
+        XCTAssertEqual(restored.growingEnvironment, .outdoor)
+        XCTAssertEqual(restored.lightCondition, .direct)
+    }
+
 }
