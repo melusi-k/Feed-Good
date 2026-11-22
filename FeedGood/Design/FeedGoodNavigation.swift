@@ -10,6 +10,11 @@ private struct FeedGoodHeader: ViewModifier {
     func body(content: Content) -> some View {
         content
             .modifier(FeedGoodTabContentMotion(tab: tab))
+            .background {
+                // Keep the page canvas opaque while only its contents fade.
+                // Otherwise a tab change exposes NavigationStack's white host.
+                if tab != nil { FeedGoodTheme.background.ignoresSafeArea() }
+            }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(tab == nil ? .inline : .large)
             .toolbar {
