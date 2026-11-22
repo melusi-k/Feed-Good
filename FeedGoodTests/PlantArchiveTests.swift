@@ -17,6 +17,9 @@ struct PlantArchiveTests {
         context.insert(plant)
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .now, plant: plant)
         context.insert(task)
+        let event = CareEvent(task: task, note: "Checked soil")
+        context.insert(event)
+        try JournalStore.save(JournalDraft(note: "A new frond"), plant: plant, entry: nil, context: context)
         try context.save()
 
         let archivedDate = Date(timeIntervalSince1970: 1_700_000_000)
@@ -26,6 +29,8 @@ struct PlantArchiveTests {
         let reloaded = try #require(stored.first)
         #expect(reloaded.archivedAt == archivedDate)
         #expect(reloaded.careTasks?.count == 1)
+        #expect(reloaded.careEvents?.count == 1)
+        #expect(reloaded.journalEntries?.count == 1)
         #expect(PlantArchive.isArchived(reloaded))
 
         try PlantArchive.restore(plant, in: context)
@@ -33,6 +38,8 @@ struct PlantArchiveTests {
         #expect(restored.archivedAt == nil)
         #expect(restored.id == plant.id)
         #expect(restored.careTasks?.count == 1)
+        #expect(restored.careEvents?.count == 1)
+        #expect(restored.journalEntries?.count == 1)
     }
 
     @Test func archiveAndRestoreAreIdempotent() throws {
