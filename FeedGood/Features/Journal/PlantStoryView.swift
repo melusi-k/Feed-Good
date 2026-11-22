@@ -19,6 +19,8 @@ struct PlantStoryView: View {
                     .font(.callout).foregroundStyle(.secondary)
                 NavigationLink("Open plant journal") { JournalView(plant: plant) }
                     .accessibilityIdentifier("story.journal")
+                NavigationLink("Open growth review") { GrowthReviewView(plant: plant) }
+                    .accessibilityIdentifier("story.growth")
             }
             if items.isEmpty {
                 ContentUnavailableView("A story waiting to grow", systemImage: "leaf", description: Text("Record care in this plant's routine, or add an observation, photo or milestone."))
