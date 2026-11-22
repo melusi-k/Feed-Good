@@ -8,14 +8,21 @@
 
 Feed Good already has a strong local-first MVP foundation: plant collection and profiles, optional growing context, care routines and reminders, care history, journal entries and photos, milestones, a combined plant story, Today, daily learning, offline care guidance and local archive/recovery. The product direction is coherent: practical enough to trust, but personal enough to feel like a journal rather than a watering alarm.
 
-The most valuable next work should deepen trust and relationship with existing records before adding more surfaces or integrations. The review therefore recommends four focused follow-ups:
+The most valuable next work should deepen trust and relationship with existing records before adding more surfaces or integrations. The review now recommends eleven focused follow-ups:
 
-1. **Care History Corrections** — let people repair a mistaken record without silently changing schedules.
+1. **Care History Corrections** — repair mistaken records without silently changing schedules.
 2. **Growth Review** — make change easier to notice using existing journal photos.
 3. **Weekly Garden Reflection** — offer a quiet look-back without streaks, scores or guilt.
 4. **Plant Check-ins and Cautious Troubleshooting** — record observations and provide reviewed offline next checks without diagnosis.
+5. **Plant Archive and Restore** — remove inactive plants from active care without deleting their story.
+6. **Care Routine Review** — let users inspect and adjust routines explicitly.
+7. **Plant Changes Timeline** — preserve environmental context alongside observations.
+8. **Plant-Specific Journal Prompts** — make meaningful journaling easier without obligation.
+9. **Seasonal and Quiet Periods** — support intentional pauses without weather assumptions.
+10. **Optional Plant Tags** — improve collection findability without requiring organization.
+11. **Plant Lifecycle States** — evaluate a minimal state vocabulary after archive/restore.
 
-The first three are primarily product and interaction work over existing local data. The fourth is explicitly safety- and editorial-gated.
+The first, second, fifth and sixth are primarily trust and reliability work. Growth, reflection, changes and prompts deepen the relationship loop. Check-ins and lifecycle states need additional safety or product review before implementation.
 
 ## Current strengths
 
@@ -52,6 +59,13 @@ Users can journal observations, but the app does not yet offer a structured way 
 | P1/P2 | [PRD-012 — Growth Review](PRDS/PRD-012-growth-review.md) · [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64) | Turns existing photos and milestones into visible relationship value | Confirm temporary comparison interaction |
 | P2 | [PRD-013 — Weekly Garden Reflection](PRDS/PRD-013-weekly-garden-reflection.md) · [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65) | Makes the journal-like promise visible over time | Validate tone and Today cadence |
 | P2 / safety-gated | [PRD-014 — Plant Check-ins](PRDS/PRD-014-plant-check-ins.md) · [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66) | Helps users learn from observations without claiming diagnosis | Name editorial owner and review process |
+| P1 | [PRD-015 — Plant Archive and Restore](PRDS/PRD-015-plant-archive.md) · [Issue #69](https://github.com/melusi-k/Feed-Good/issues/69) | Protects plant history while reducing active-care clutter | Define reminder restore policy |
+| P1/P2 | [PRD-017 — Care Routine Review](PRDS/PRD-017-care-routine-review.md) · [Issue #71](https://github.com/melusi-k/Feed-Good/issues/71) | Keeps routines understandable as context changes | Reuse task/reminder lifecycle |
+| P2 | [PRD-018 — Plant Changes Timeline](PRDS/PRD-018-plant-changes-timeline.md) · [Issue #72](https://github.com/melusi-k/Feed-Good/issues/72) | Makes context useful in the plant story | Choose model integration |
+| P2 | [PRD-019 — Plant-Specific Journal Prompts](PRDS/PRD-019-plant-journal-prompts.md) · [Issue #73](https://github.com/melusi-k/Feed-Good/issues/73) | Helps users notice without adding obligations | Review bundled prompt set |
+| P2 | [PRD-020 — Seasonal and Quiet Periods](PRDS/PRD-020-seasonal-quiet-periods.md) · [Issue #74](https://github.com/melusi-k/Feed-Good/issues/74) | Supports intentional care pauses | Define due-date pause policy |
+| P2 | [PRD-021 — Optional Plant Tags](PRDS/PRD-021-optional-plant-tags.md) · [Issue #75](https://github.com/melusi-k/Feed-Good/issues/75) | Improves findability without multiple gardens | Choose filtering semantics |
+| P2 / discovery | [PRD-016 — Plant Lifecycle States](PRDS/PRD-016-plant-lifecycle-states.md) · [Issue #70](https://github.com/melusi-k/Feed-Good/issues/70) | Makes plant status legible without a large taxonomy | Gather evidence after archive/restore |
 
 ## Recommended delivery shape
 
@@ -75,4 +89,4 @@ In particular, AI diagnosis is intentionally deferred. Feed Good's strongest dif
 
 ## Conclusion
 
-Feed Good does not need more breadth to prove its direction. It needs a few carefully chosen ways to make existing records more trustworthy, more visible and more emotionally meaningful. The four linked PRDs and issues provide that next development sequence without weakening the product's privacy, offline, accessibility or no-guilt commitments.
+Feed Good does not need more breadth to prove its direction. It needs a few carefully chosen ways to make existing records more trustworthy, more visible and more emotionally meaningful. The eleven linked PRDs and issues provide a staged next development sequence without weakening the product's privacy, offline, accessibility or no-guilt commitments.

@@ -28,6 +28,13 @@ Every feature should help someone understand, notice, learn about or connect wit
 | PRD-012 | Growth Review | [PRD-012-growth-review.md](PRD-012-growth-review.md) · [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64) | Make visual change and meaningful plant moments easier to notice |
 | PRD-013 | Weekly Garden Reflection | [PRD-013-weekly-garden-reflection.md](PRD-013-weekly-garden-reflection.md) · [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65) | Turn real local activity into a gentle, non-gamified look-back |
 | PRD-014 | Plant Check-ins & Cautious Troubleshooting | [PRD-014-plant-check-ins.md](PRD-014-plant-check-ins.md) · [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66) | Record observations and learn what to check next without diagnosis |
+| PRD-015 | Plant Archive and Restore | [PRD-015-plant-archive.md](PRD-015-plant-archive.md) · [Issue #69](https://github.com/melusi-k/Feed-Good/issues/69) | Remove a plant from active care without deleting its story |
+| PRD-016 | Plant Lifecycle States | [PRD-016-plant-lifecycle-states.md](PRD-016-plant-lifecycle-states.md) · [Issue #70](https://github.com/melusi-k/Feed-Good/issues/70) | Make a plant's current place in the garden understandable |
+| PRD-017 | Care Routine Review | [PRD-017-care-routine-review.md](PRD-017-care-routine-review.md) · [Issue #71](https://github.com/melusi-k/Feed-Good/issues/71) | Adjust routines explicitly without inferred schedule changes |
+| PRD-018 | Plant Changes Timeline | [PRD-018-plant-changes-timeline.md](PRD-018-plant-changes-timeline.md) · [Issue #72](https://github.com/melusi-k/Feed-Good/issues/72) | Preserve environmental context alongside plant observations |
+| PRD-019 | Plant-Specific Journal Prompts | [PRD-019-plant-journal-prompts.md](PRD-019-plant-journal-prompts.md) · [Issue #73](https://github.com/melusi-k/Feed-Good/issues/73) | Make meaningful journaling easier without obligation |
+| PRD-020 | Seasonal and Quiet Periods | [PRD-020-seasonal-quiet-periods.md](PRD-020-seasonal-quiet-periods.md) · [Issue #74](https://github.com/melusi-k/Feed-Good/issues/74) | Let users intentionally adjust care expectations for quiet periods |
+| PRD-021 | Optional Plant Tags | [PRD-021-optional-plant-tags.md](PRD-021-optional-plant-tags.md) · [Issue #75](https://github.com/melusi-k/Feed-Good/issues/75) | Organize a collection lightly without requiring tags or multiple gardens |
 
 ## Release scope
 
@@ -56,8 +63,15 @@ The proposed post-MVP sequence is ordered by product trust and relationship valu
 2. **PRD-012 — Growth Review:** a derived visual review over existing journal photos and milestones.
 3. **PRD-013 — Weekly Garden Reflection:** a quiet, local recap of real care and observation moments without streaks or scores.
 4. **PRD-014 — Plant Check-ins & Cautious Troubleshooting:** a safety-gated observation flow that extends the reviewed offline learning model.
+5. **PRD-015 — Plant Archive and Restore:** remove inactive plants from active care without deleting their stories.
+6. **PRD-017 — Care Routine Review:** let users inspect and adjust routines explicitly.
+7. **PRD-018 — Plant Changes Timeline:** preserve environmental context in the plant story.
+8. **PRD-019 — Plant-Specific Journal Prompts:** invite reflection without obligation.
+9. **PRD-020 — Seasonal and Quiet Periods:** support intentional pauses without weather-based assumptions.
+10. **PRD-021 — Optional Plant Tags:** improve findability without requiring tags or multiple gardens.
+11. **PRD-016 — Plant Lifecycle States:** evaluate a minimal state vocabulary after archive/restore; this is deliberately sequenced after PRD-015.
 
-These proposals are tracked by GitHub issues #63–#66. They are not implementation authorization; each still needs product review, linked implementation work and exact-head verification.
+These proposals are tracked by GitHub issues #63–#75. They are not implementation authorization; each still needs product review, linked implementation work and exact-head verification.
 
 A later opportunity needs its own product decision, PRD and issue before implementation. It must not be treated as implied MVP scope.
 

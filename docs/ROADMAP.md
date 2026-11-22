@@ -56,6 +56,13 @@ These are the recommended next features after the MVP foundation. They are order
 2. **Growth Review** ([PRD-012](PRDS/PRD-012-growth-review.md), [Issue #64](https://github.com/melusi-k/Feed-Good/issues/64)) — compare existing journal photos for one plant, with source dates and no visual diagnosis.
 3. **Weekly Garden Reflection** ([PRD-013](PRDS/PRD-013-weekly-garden-reflection.md), [Issue #65](https://github.com/melusi-k/Feed-Good/issues/65)) — reflect real care and observation moments without streaks, scores or guilt.
 4. **Plant Check-ins and Cautious Troubleshooting** ([PRD-014](PRDS/PRD-014-plant-check-ins.md), [Issue #66](https://github.com/melusi-k/Feed-Good/issues/66)) — add an observation path and reviewed offline next checks, gated on editorial and safety ownership.
+5. **Plant Archive and Restore** ([PRD-015](PRDS/PRD-015-plant-archive.md), [Issue #69](https://github.com/melusi-k/Feed-Good/issues/69)) — remove inactive plants from active care without deleting their story.
+6. **Care Routine Review** ([PRD-017](PRDS/PRD-017-care-routine-review.md), [Issue #71](https://github.com/melusi-k/Feed-Good/issues/71)) — help users adjust explicit routines as context changes.
+7. **Plant Changes Timeline** ([PRD-018](PRDS/PRD-018-plant-changes-timeline.md), [Issue #72](https://github.com/melusi-k/Feed-Good/issues/72)) — record environmental context beside observations.
+8. **Plant-Specific Journal Prompts** ([PRD-019](PRDS/PRD-019-plant-journal-prompts.md), [Issue #73](https://github.com/melusi-k/Feed-Good/issues/73)) — make reflection easier without obligation.
+9. **Seasonal and Quiet Periods** ([PRD-020](PRDS/PRD-020-seasonal-quiet-periods.md), [Issue #74](https://github.com/melusi-k/Feed-Good/issues/74)) — support intentional care pauses without weather automation.
+10. **Optional Plant Tags** ([PRD-021](PRDS/PRD-021-optional-plant-tags.md), [Issue #75](https://github.com/melusi-k/Feed-Good/issues/75)) — improve findability while keeping tags optional.
+11. **Plant Lifecycle States** ([PRD-016](PRDS/PRD-016-plant-lifecycle-states.md), [Issue #70](https://github.com/melusi-k/Feed-Good/issues/70)) — evaluate a minimal lifecycle vocabulary after archive/restore.
 
 Each item requires its own focused implementation PR, exact-head CI verification, accessibility review, archive compatibility review and physical-device evidence. The PRDs define intended behavior; they do not authorize implementation without product review.
 
@@ -69,6 +76,7 @@ These ideas remain discovery-only and should not be pulled into the next tranche
 - Shared garden access and community/social features.
 - Home-screen widgets and Live Activities.
 - Remote or AI diagnosis, including image-based symptom claims.
+- Automatic lifecycle inference, automatic seasonal care or tag inference.
 
 They require separate product decisions, evidence of user value, privacy/safety review, a PRD and a linked issue before implementation. Their deferral protects Feed Good's relationship-first, local-first direction while the current core loop matures.
 
