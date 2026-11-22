@@ -195,6 +195,7 @@ struct JournalTests {
         #expect(preview.careTasksToAdd == 1)
         #expect(preview.careEventsToAdd == 1)
         #expect(preview.confirmationMessage.contains("any conflict"))
+        #expect(preview.confirmationMessage.contains("existing same-ID plants keep their current state"))
     }
 
     @Test func archiveConflictAndMalformedReferencesRejectBeforeWrites() throws {
