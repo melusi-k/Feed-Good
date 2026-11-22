@@ -51,7 +51,7 @@ final class ProfileUITests: XCTestCase {
         species.tap()
         species.typeText("Nephrolepis exaltata")
 
-        let notes = app.textViews["plants.notes"]
+        let notes = app.descendants(matching: .any)["plants.notes"]
         XCTAssertTrue(notes.exists)
         notes.tap()
         notes.typeText("Bright indirect light; keep soil lightly moist.")
