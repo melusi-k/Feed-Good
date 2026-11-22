@@ -71,7 +71,7 @@ struct DailyMomentsTests {
 
     @Test func metadataIsCompleteAndKindsAreSeparated() {
         let all = DailyMoments.reflections + DailyMoments.tips
-        #expect(Set(all.map(\\.id)).count == 14)
+        #expect(Set(all.map(\.id)).count == 14)
         for moment in all {
             #expect(!moment.text.isEmpty)
             #expect(!moment.sourceTitle.isEmpty)
