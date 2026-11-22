@@ -455,7 +455,9 @@ struct JournalTests {
         sourceContext.insert(deletedEvent)
         try sourceContext.save()
 
-        let remindersBefore = CareReminderScheduler.reminders(for: [task], now: dueDate.addingTimeInterval(-200_000))
+        let referenceNow = dueDate.addingTimeInterval(-200_000)
+        let remindersBefore = CareReminderScheduler.reminders(for: [task], now: referenceNow)
+        let todayBefore = TodayCare.items(from: [task], now: referenceNow).map(\\.id)
         let correctedDate = dueDate.addingTimeInterval(-43_200)
         try CareRecorder.update(
             correctedEvent,
@@ -463,8 +465,10 @@ struct JournalTests {
             note: " Corrected after task removal ",
             in: sourceContext
         )
-        let remindersAfter = CareReminderScheduler.reminders(for: [task], now: dueDate.addingTimeInterval(-200_000))
+        let remindersAfter = CareReminderScheduler.reminders(for: [task], now: referenceNow)
+        let todayAfterCorrection = TodayCare.items(from: [task], now: referenceNow).map(\\.id)
         #expect(remindersAfter == remindersBefore)
+        #expect(todayAfterCorrection == todayBefore)
         #expect(task.dueDate == dueDate)
         #expect(task.intervalDays == 9)
 
@@ -478,6 +482,8 @@ struct JournalTests {
             in: sourceContext
         )
         try CareRecorder.delete(deletedEvent, in: sourceContext)
+        let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\\.id)
+        #expect(todayAfterDeletion == todayBefore)
 
         let remainingEvents = try sourceContext.fetch(FetchDescriptor<CareEvent>())
         #expect(remainingEvents.map(\.id) == [correctedEvent.id])
