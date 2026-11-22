@@ -146,7 +146,7 @@ struct TodayView: View {
         guard let destination,
               let task = careTasks.first(where: { $0.id == destination.taskID }),
               task.plant?.id == destination.plantID,
-              plants.contains(where: { $0.id == destination.plantID }) else { return }
+              plants.contains(where: { $0.id == destination.plantID && $0.archivedAt == nil }) else { return }
         selectedTab = .today
         navigationPath = [destination.plantID]
         notificationRouter.consume(destination)
