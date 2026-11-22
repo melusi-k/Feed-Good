@@ -63,6 +63,11 @@ struct PlantDetailView: View {
                 }
                 .accessibilityIdentifier("plantDetail.journal")
 
+                NavigationLink { GrowthReviewView(plant: plant) } label: {
+                    Label("Growth review", systemImage: "photo.on.rectangle.angled")
+                }
+                .accessibilityIdentifier("plantDetail.growth")
+
                 notesCard
 
                 Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
