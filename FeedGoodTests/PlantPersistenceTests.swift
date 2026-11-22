@@ -75,4 +75,35 @@ struct PlantPersistenceTests {
 
         #expect(try context.fetch(FetchDescriptor<Plant>()).isEmpty)
     }
+
+    @Test func archivedStateSurvivesStoreReopen() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let schema = Schema([Plant.self])
+        let configuration = ModelConfiguration(
+            schema: schema,
+            url: folder.appendingPathComponent("plants.store")
+        )
+        let plantID: UUID
+        let archivedDate = Date(timeIntervalSince1970: 1_700_000_000)
+
+        do {
+            let container = try ModelContainer(for: schema, configurations: configuration)
+            let context = ModelContext(container)
+            let plant = Plant(name: "Monstera", archivedAt: archivedDate)
+            plantID = plant.id
+            context.insert(plant)
+            try context.save()
+        }
+
+        do {
+            let reopenedContainer = try ModelContainer(for: schema, configurations: configuration)
+            let reopenedContext = ModelContext(reopenedContainer)
+            let stored = try reopenedContext.fetch(FetchDescriptor<Plant>())
+            let reloaded = try #require(stored.first { $0.id == plantID })
+            #expect(reloaded.archivedAt == archivedDate)
+        }
+    }
 }

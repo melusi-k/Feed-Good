@@ -133,4 +133,14 @@ struct TodayCareTests {
         let groups = TodayCare.groups(from: TodayCare.items(from: [task]), perPlant: 0)
         #expect(groups.first?.shown.count == 1)
     }
+
+    @Test func archivedPlantsProduceNoTodayItems() throws {
+        let context = try makeContext()
+        let plant = Plant(name: "Fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .now, plant: plant)
+        context.insert(task)
+        try context.save()
+        #expect(TodayCare.items(from: [task], now: .now, calendar: calendar("Africa/Johannesburg")).isEmpty)
+    }
 }
