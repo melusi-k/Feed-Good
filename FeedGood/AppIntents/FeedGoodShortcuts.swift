@@ -11,7 +11,7 @@ struct OpenTodayIntent: AppIntent {
     }
 }
 
-/// Exposes the app's primary, useful entry point to Siri and the Shortcuts app.
+/// Publishes the app's primary Today entry point as a concise Siri and Shortcuts action.
 struct FeedGoodShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
