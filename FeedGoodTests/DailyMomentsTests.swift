@@ -71,13 +71,13 @@ struct DailyMomentsTests {
 
     @Test func metadataIsCompleteAndKindsAreSeparated() {
         let all = DailyMoments.reflections + DailyMoments.tips
-        #expect(Set(all.map(\.id)).count == 14)
+        #expect(Set(all.map(\\.id)).count == 14)
         for moment in all {
-            #expect(!moment.text.isEmpty)
-            #expect(!moment.sourceTitle.isEmpty)
-            #expect(!moment.sourceSection.isEmpty)
-            #expect(!moment.reviewedOn.isEmpty)
-            #expect(!moment.reviewedBy.isEmpty)
+            #expect(moment.text.isEmpty == false)
+            #expect(moment.sourceTitle.isEmpty == false)
+            #expect(moment.sourceSection.isEmpty == false)
+            #expect(moment.reviewedOn.isEmpty == false)
+            #expect(moment.reviewedBy.isEmpty == false)
         }
         #expect(DailyMoments.reflections.allSatisfy { $0.kind == .reflection && $0.review == .editorialChecked && $0.sourceURL == nil })
         #expect(DailyMoments.tips.allSatisfy { $0.kind == .careTip && $0.review == .sourceChecked && $0.sourceURL?.scheme == "https" })
