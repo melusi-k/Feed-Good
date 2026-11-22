@@ -1,15 +1,16 @@
-import XCTest
+import Foundation
 import SwiftData
+import Testing
 @testable import FeedGood
 
 @MainActor
-final class PlantPersistenceTests: XCTestCase {
+struct PlantPersistenceTests {
     private func makeContainer() throws -> ModelContainer {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(for: Plant.self, configurations: configuration)
     }
 
-    func testProfileEditsAndPhotoPersistAcrossContexts() throws {
+    @Test func profileEditsAndPhotoPersistAcrossContexts() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let plant = Plant(name: "Monstera")
@@ -28,15 +29,15 @@ final class PlantPersistenceTests: XCTestCase {
         let verificationContext = ModelContext(container)
         let stored = try verificationContext.fetch(FetchDescriptor<Plant>())
 
-        XCTAssertEqual(stored.count, 1)
-        let reloaded = try XCTUnwrap(stored.first)
-        XCTAssertEqual(reloaded.name, "Monty")
-        XCTAssertEqual(reloaded.species, "Monstera deliciosa")
-        XCTAssertEqual(reloaded.notes, "New leaf unfurling")
-        XCTAssertEqual(reloaded.photoData, Data([0x01, 0x02, 0x03]))
+        #expect(stored.count == 1)
+        let reloaded = try #require(stored.first)
+        #expect(reloaded.name == "Monty")
+        #expect(reloaded.species == "Monstera deliciosa")
+        #expect(reloaded.notes == "New leaf unfurling")
+        #expect(reloaded.photoData == Data([0x01, 0x02, 0x03]))
     }
 
-    func testDeletingPlantRemovesItFromStore() throws {
+    @Test func deletingPlantRemovesItFromStore() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let plant = Plant(name: "Fern")
@@ -47,6 +48,6 @@ final class PlantPersistenceTests: XCTestCase {
         try context.save()
 
         let stored = try context.fetch(FetchDescriptor<Plant>())
-        XCTAssertTrue(stored.isEmpty)
+        #expect(stored.isEmpty)
     }
 }
