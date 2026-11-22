@@ -9,11 +9,16 @@ struct PlantCareView: View {
     @State private var adding = false
     @State private var editing: CareTask?
     @State private var completing: CareTask?
+    @State private var editingEvent: CareEvent?
     @State private var note = ""
     @State private var errorMessage: String?
 
     private var tasks: [CareTask] { (plant.careTasks ?? []).sorted { $0.dueDate < $1.dueDate } }
     private var events: [CareEvent] { (plant.careEvents ?? []).sorted { $0.completedAt > $1.completedAt } }
+
+    private func isLatestForTask(_ event: CareEvent) -> Bool {
+        events.first { $0.taskID == event.taskID }?.id == event.id
+    }
 
     var body: some View {
         List {
@@ -49,11 +54,15 @@ struct PlantCareView: View {
             Section("Care history") {
                 if events.isEmpty { Text("The care you record will appear here.").foregroundStyle(.secondary) }
                 ForEach(events) { event in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(event.taskTitle).font(.headline)
-                        Text(event.completedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption)
-                        if !event.note.isEmpty { Text(event.note) }
+                    Button { editingEvent = event } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(event.taskTitle).font(.headline)
+                            Text(event.completedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption)
+                            if !event.note.isEmpty { Text(event.note) }
+                        }
                     }
+                    .buttonStyle(FeedGoodPressStyle())
+                    .accessibilityIdentifier("care.eventEdit.\(event.taskTitle)")
                 }
             }
         }
@@ -66,6 +75,9 @@ struct PlantCareView: View {
         }
         .sheet(isPresented: $adding) { CareTaskEditor(plant: plant) }
         .sheet(item: $editing) { CareTaskEditor(plant: plant, task: $0) }
+        .sheet(item: $editingEvent) { event in
+            CareEventEditor(event: event, isLatestForTask: isLatestForTask(event))
+        }
         .sheet(item: $completing) { task in
             NavigationStack {
                 Form {
@@ -163,5 +175,64 @@ struct CareTaskEditor: View {
         record.reminderEnabled = reminders
         do { try context.save(); dismiss() }
         catch { context.rollback(); errorMessage = "Couldn't save this routine. Try again." }
+    }
+}
+
+
+struct CareEventEditor: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    let event: CareEvent
+    let isLatestForTask: Bool
+    @State private var completedAt = Date.now
+    @State private var note = ""
+    @State private var errorMessage: String?
+    @State private var confirmingDelete = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker("Completed", selection: $completedAt)
+                    TextField("Optional note", text: $note).accessibilityIdentifier("care.eventNote")
+                } footer: {
+                    Text("Correcting changes only this history record. Your active routine is never changed here.")
+                }
+                if isLatestForTask {
+                    Section {
+                        Text("This is the latest record for \(event.taskTitle). The active routine stays unchanged; edit the routine to move the next care date.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                }
+                Section {
+                    Button("Delete this record", role: .destructive) { confirmingDelete = true }
+                        .accessibilityIdentifier("care.eventDelete")
+                } footer: {
+                    Text("Deleting removes this record from the on-device history permanently. Exported archives are unchanged.")
+                }
+                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+            }
+            .feedGoodHeader("Correct care record")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        do {
+                            try CareRecorder.update(event, completedAt: completedAt, note: note, in: context)
+                            dismiss()
+                        } catch {
+                            errorMessage = "Couldn't save this correction. The original record is unchanged. Try again."
+                        }
+                    }.accessibilityIdentifier("care.eventSave")
+                }
+            }
+            .onAppear { completedAt = event.completedAt; note = event.note }
+            .confirmationDialog("Delete this care record? This cannot be undone on this device.", isPresented: $confirmingDelete, titleVisibility: .visible) {
+                Button("Delete record", role: .destructive) {
+                    do { try CareRecorder.delete(event, in: context); dismiss() }
+                    catch { errorMessage = "Couldn't delete this record. Nothing was removed. Try again." }
+                }
+            }
+        }
     }
 }
