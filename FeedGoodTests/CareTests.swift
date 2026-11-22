@@ -143,9 +143,10 @@ struct CarePersistenceTests {
             #expect(event.plant?.id == firstPlantID)
             #expect(event.note == "Watered")
             let tasks = try context.fetch(FetchDescriptor<CareTask>())
-            #expect(try #require(tasks.first { $0.id == secondTaskID }).dueDate == originalDueDate)
-            #expect(try context.fetch(FetchDescriptor<Plant>()).map(\.id).sorted { $0.uuidString < $1.uuidString } ==
-                [firstPlantID, secondPlantID].sorted { $0.uuidString < $1.uuidString })
+            let untouchedTask = try #require(tasks.first { $0.id == secondTaskID })
+            #expect(untouchedTask.dueDate == originalDueDate)
+            let storedPlantIDs = try context.fetch(FetchDescriptor<Plant>()).map(\.id).sorted { $0.uuidString < $1.uuidString }
+            #expect(storedPlantIDs == [firstPlantID, secondPlantID].sorted { $0.uuidString < $1.uuidString })
         }
     }
 
