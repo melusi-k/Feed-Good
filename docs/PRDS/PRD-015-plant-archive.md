@@ -42,8 +42,9 @@ Included in the local-first app. Archive/restore is a data-trust capability, not
 - Archiving never deletes the Plant, CareTask, CareEvent, JournalEntry, milestone, photo or related user content.
 - No care completion can be recorded through active Today/care flows for an archived plant.
 - Restore reactivates the same identity and must not duplicate tasks, events or media.
-- Failed persistence rolls back to the prior usable state.
-- Unknown archive values must be handled safely; never silently convert an archived plant to Active.
+- Failed persistence restores the prior archive state without discarding unrelated pending edits.
+- Persist archive as an optional `archivedAt: Date?` timestamp: nil is Active and a timestamp is Archived. This avoids an extensible raw-value enum; older archive files without the optional field decode as Active.
+- Recovery into an empty destination restores the archived timestamp. Existing same-ID plant records are never overwritten during additive recovery, including their current archive state.
 - Archive is distinct from Dormant, Away, paused care and Quiet Period.
 
 ## 9. Launch plan
