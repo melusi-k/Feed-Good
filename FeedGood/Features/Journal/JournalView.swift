@@ -51,7 +51,7 @@ struct JournalView: View {
         .feedGoodCollectionMotion(value: visibleEntries.map(\.id))
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
-        .feedGoodHeader(plant == nil ? "Journal" : "Plant journal")
+        .feedGoodHeader(plant == nil ? "Journal" : "Plant journal", tab: plant == nil ? .journal : nil)
         .toolbar { Button("Add entry", systemImage: "plus") { adding = true }.disabled(plants.isEmpty).accessibilityIdentifier("journal.add") }
         .sheet(isPresented: $adding) { JournalEditor(plants: plant.map { [$0] } ?? plants) }
         .sheet(item: $editing) { JournalEditor(plants: plants, entry: $0) }

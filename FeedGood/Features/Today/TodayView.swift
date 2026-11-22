@@ -98,7 +98,7 @@ struct TodayView: View {
             }
             .feedGoodCollectionMotion(value: careItems.map { "\($0.id):\($0.task.dueDate)" })
             .background(FeedGoodTheme.background.ignoresSafeArea())
-            .feedGoodHeader("Feed Good")
+            .feedGoodHeader("Feed Good", tab: .today)
             .sheet(isPresented: $showingAddPlant) {
                 AddPlantView()
             }
