@@ -70,9 +70,24 @@ extension View {
 
 /// Tap feedback is local to the pressed control, never the surrounding page.
 struct FeedGoodPressStyle: ButtonStyle {
+    enum Surface { case plain, bordered, prominent }
+    var surface: Surface = .plain
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let color: Color = configuration.role == .destructive ? .red : FeedGoodTheme.leaf
+        return configuration.label
+            .padding(.horizontal, surface == .plain ? 0 : 12)
+            .padding(.vertical, surface == .plain ? 0 : 8)
+            .foregroundStyle(surface == .prominent ? FeedGoodTheme.primaryForeground : color)
+            .background {
+                if surface != .plain {
+                    RoundedRectangle(cornerRadius: 10).fill(color.opacity(surface == .prominent ? 1 : 0.08))
+                }
+            }
+            .overlay {
+                if surface == .bordered { RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.35)) }
+            }
+            .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.75 : 1)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
