@@ -268,14 +268,14 @@ final class JournalTests: XCTestCase {
         callerContext.insert(pendingPlant)
         XCTAssertTrue(callerContext.hasChanges)
 
-        XCTAssertEqual(try JournalArchive.recover(data, context: callerContext), 0)
+        XCTAssertThrowsError(try JournalArchive.recover(data, context: callerContext)) { error in
+            XCTAssertEqual(error as? JournalArchiveError, .unsavedChanges)
+        }
         XCTAssertTrue(callerContext.hasChanges)
         XCTAssertTrue(try callerContext.fetch(FetchDescriptor<Plant>()).contains { $0.id == pendingPlant.id })
 
         let verificationContext = ModelContext(destination)
-        let restored = try XCTUnwrap(verificationContext.fetch(FetchDescriptor<Plant>()).first { $0.id == plant.id })
-        XCTAssertEqual(restored.growingEnvironment, .outdoor)
-        XCTAssertEqual(restored.lightCondition, .direct)
+        XCTAssertTrue(try verificationContext.fetch(FetchDescriptor<Plant>()).isEmpty)
     }
 
 }
