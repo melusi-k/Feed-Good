@@ -23,6 +23,22 @@ final class CareRoutineUITests: XCTestCase {
         XCTAssertTrue(note.waitForExistence(timeout: 5)); note.tap(); note.typeText("Checked the soil first")
         app.buttons["care.recordSave"].tap()
         XCTAssertTrue(app.staticTexts["Checked the soil first"].waitForExistence(timeout: 5))
+
+        let historyRow = app.buttons["care.eventEdit.Watering"]
+        XCTAssertTrue(historyRow.waitForExistence(timeout: 5))
+        historyRow.tap()
+        XCTAssertTrue(app.textFields["care.eventNote"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.datePickers["Completed"].exists)
+        app.buttons["care.eventSave"].tap()
+        XCTAssertTrue(app.staticTexts["Checked the soil first"].waitForExistence(timeout: 5))
+
+        app.buttons["care.eventEdit.Watering"].tap()
+        app.buttons["care.eventDelete"].tap()
+        let deleteConfirmation = app.buttons["Delete record"]
+        XCTAssertTrue(deleteConfirmation.waitForExistence(timeout: 5))
+        deleteConfirmation.tap()
+        XCTAssertFalse(app.staticTexts["Checked the soil first"].waitForExistence(timeout: 2))
+
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Care routine and saved history"
         attachment.lifetime = .keepAlways
