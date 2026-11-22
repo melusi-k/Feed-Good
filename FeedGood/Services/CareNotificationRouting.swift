@@ -14,7 +14,7 @@ final class CareNotificationRouter: ObservableObject {
     static let shared = CareNotificationRouter()
     @Published private(set) var destination: CareNotificationDestination?
 
-    private init() {}
+    init() {}
 
     func open(userInfo: [AnyHashable: Any]) {
         guard let value = CareNotificationPayload.destination(from: userInfo) else { return }
