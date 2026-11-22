@@ -17,8 +17,8 @@ struct FeedGoodShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: OpenTodayIntent(),
             phrases: [
-                "Show today's plant care in \.applicationName",
-                "Open today's care in \.applicationName"
+                "Show today's plant care in \(.applicationName)",
+                "Open today's care in \(.applicationName)"
             ],
             shortTitle: "Today's care",
             systemImageName: "leaf"
