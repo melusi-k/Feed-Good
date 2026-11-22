@@ -28,6 +28,12 @@ private struct FeedGoodHeader: ViewModifier {
                             .accessibilityIdentifier("app.header.logo")
                     }
                 }
+                // My Plants appends Profile after Sort and Add in its own group.
+                if let tab, tab != .plants {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        FeedGoodProfileButton()
+                    }
+                }
             }
     }
 }
