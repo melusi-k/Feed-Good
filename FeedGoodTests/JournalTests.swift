@@ -436,4 +436,33 @@ struct JournalTests {
         #expect(throws: JournalArchiveError.invalidRecord) { try duplicateEntries.validate() }
     }
 
+    @Test func olderVersionTwoArchiveWithoutArchivedAtDefaultsToActive() throws {
+        let plant = Plant(name: "Legacy fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let archive = JournalArchive(
+            plants: [
+                JournalArchive.PlantRecord(
+                    id: plant.id, name: plant.name, species: "", notes: "",
+                    createdAt: plant.createdAt, archivedAt: plant.archivedAt
+                )
+            ],
+            entries: [],
+            careTasks: [],
+            careEvents: []
+        )
+        let encoded = try JSONEncoder().encode(archive)
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        var plantRecords = try #require(object["plants"] as? [[String: Any]])
+        plantRecords[0].removeValue(forKey: "archivedAt")
+        object["plants"] = plantRecords
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(JournalArchive.self, from: legacyData)
+        #expect(decoded.version == 2)
+        #expect(decoded.plants.first?.archivedAt == nil)
+
+        let context = ModelContext(try memory())
+        #expect(try JournalArchive.recover(legacyData, context: context) == 0)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == nil)
+    }
+
 }
