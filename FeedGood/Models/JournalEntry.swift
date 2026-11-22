@@ -45,6 +45,7 @@ enum JournalStore {
         guard draft.isValid else { throw JournalArchiveError.invalidRecord }
         let record = entry ?? JournalEntry(note: draft.note, plant: plant)
         if entry == nil { context.insert(record) }
+        record.plant = plant
         record.date = draft.date; record.note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
         record.photoData = draft.photoData
         record.milestoneRaw = draft.milestone?.rawValue

@@ -151,10 +151,8 @@ struct JournalArchive: Codable {
 
     func validate() throws {
         guard version == 1 || version == 2 else { throw JournalArchiveError.unsupportedVersion }
-        guard plants.count <= Self.maxRecords,
-              entries.count <= Self.maxRecords,
-              (careTasks?.count ?? 0) <= Self.maxRecords,
-              (careEvents?.count ?? 0) <= Self.maxRecords else {
+        let recordCount = plants.count + entries.count + (careTasks?.count ?? 0) + (careEvents?.count ?? 0)
+        guard recordCount <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
         let plantIDs = Set(plants.map(\.id))
@@ -235,7 +233,11 @@ struct JournalArchive: Codable {
     /// Additive and idempotent. All archive and conflict checks happen before the
     /// model context is changed; existing user-authored records are never overwritten.
     @MainActor
-    static func recover(_ data: Data, context: ModelContext) throws -> Int {
+    static func recover(
+        _ data: Data,
+        context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws -> Int {
         guard data.count <= maxBytes else { throw JournalArchiveError.tooLarge }
         guard !context.hasChanges else { throw JournalArchiveError.unsavedChanges }
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
@@ -332,7 +334,7 @@ struct JournalArchive: Codable {
                     plant: plant
                 ))
             }
-            try recoveryContext.save()
+            try save(recoveryContext)
         } catch {
             recoveryContext.rollback()
             throw error

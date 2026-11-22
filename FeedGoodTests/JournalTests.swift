@@ -289,4 +289,104 @@ struct JournalTests {
         #expect(try verificationContext.fetch(FetchDescriptor<Plant>()).isEmpty)
     }
 
+
+
+    @Test func archiveEnforcesOneThousandRecordsAcrossAllRecordTypes() throws {
+        let plants = (0..<JournalArchive.maxRecords).map { index in
+            JournalArchive.PlantRecord(
+                id: UUID(), name: "Plant \(index)", species: "", notes: "",
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+        }
+        var archive = JournalArchive(plants: plants, entries: [], careTasks: [], careEvents: [])
+        #expect(archive.plants.count == JournalArchive.maxRecords)
+        try archive.validate()
+
+        archive.entries = [
+            JournalArchive.EntryRecord(
+                id: UUID(), plantID: plants[0].id, date: .now,
+                note: "One additional record", photoData: nil
+            )
+        ]
+        #expect(throws: JournalArchiveError.tooLarge) { try archive.validate() }
+    }
+
+    @Test func archiveAcceptsTwentyFiveMegabytesAndRejectsOneByteMore() throws {
+        let context = ModelContext(try memory())
+        let archive = JournalArchive(plants: [], entries: [], careTasks: [], careEvents: [])
+        let encoded = try JSONEncoder().encode(archive)
+        let exactLimit = encoded + Data(repeating: 0x20, count: JournalArchive.maxBytes - encoded.count)
+        #expect(exactLimit.count == JournalArchive.maxBytes)
+        #expect(try JournalArchive.preview(exactLimit, context: context).plantsToAdd == 0)
+
+        let overLimit = exactLimit + Data([0x20])
+        #expect(throws: JournalArchiveError.tooLarge) {
+            try JournalArchive.preview(overLimit, context: context)
+        }
+    }
+
+    @Test func failedRecoverySaveRollsBackEveryInsertedRecord() throws {
+        enum InjectedSaveFailure: Error { case failed }
+
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Recovery fern")
+        sourceContext.insert(plant)
+        try JournalStore.save(JournalDraft(note: "A new frond"), plant: plant, entry: nil, context: sourceContext)
+        let archiveData = try JournalArchive.export(
+            plants: [plant],
+            entries: sourceContext.fetch(FetchDescriptor<JournalEntry>())
+        )
+
+        let destination = try memory()
+        let recoveryContext = ModelContext(destination)
+        #expect(throws: InjectedSaveFailure.self) {
+            try JournalArchive.recover(archiveData, context: recoveryContext) { _ in
+                throw InjectedSaveFailure.failed
+            }
+        }
+
+        let verificationContext = ModelContext(destination)
+        #expect(try verificationContext.fetch(FetchDescriptor<Plant>()).isEmpty)
+        #expect(try verificationContext.fetch(FetchDescriptor<JournalEntry>()).isEmpty)
+    }
+
+    @Test func plantEditsAndJournalPhotoAndDateChangesPreserveLifecycle() throws {
+        let container = try memory()
+        let context = ModelContext(container)
+        let fern = Plant(name: "Fern", species: "Nephrolepis")
+        context.insert(fern)
+        let initialDate = Date(timeIntervalSince1970: 1_800_000_000)
+        try JournalStore.save(
+            JournalDraft(date: initialDate, note: "First growth", photoData: samplePhoto()),
+            plant: fern, entry: nil, context: context
+        )
+        let entry = try #require(context.fetch(FetchDescriptor<JournalEntry>()).first)
+        let originalID = entry.id
+
+        fern.name = "Kitchen fern"
+        fern.species = "Nephrolepis exaltata"
+        try context.save()
+        #expect(entry.plant?.id == fern.id)
+        #expect(entry.plant?.name == "Kitchen fern")
+
+        let replacementDate = Date(timeIntervalSince1970: 1_800_086_400)
+        try JournalStore.save(
+            JournalDraft(date: replacementDate, note: "Moved into brighter light", photoData: samplePhoto()),
+            plant: fern, entry: entry, context: context
+        )
+        #expect(entry.id == originalID)
+        #expect(entry.date == replacementDate)
+        #expect(entry.photoData != nil)
+
+        try JournalStore.save(
+            JournalDraft(date: replacementDate.addingTimeInterval(86_400), note: "Photo cleared"),
+            plant: fern, entry: entry, context: context
+        )
+        #expect(entry.photoData == nil)
+        #expect(entry.note == "Photo cleared")
+        #expect(try context.fetch(FetchDescriptor<JournalEntry>()).count == 1)
+        #expect(fern.journalEntries?.first?.id == originalID)
+    }
+
 }
