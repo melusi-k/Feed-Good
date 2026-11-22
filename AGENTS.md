@@ -63,7 +63,7 @@ You are a senior iOS engineer specializing in SwiftUI and SwiftData. Code must f
 
 ## Testing
 
-Unit tests are mid-migration from XCTest to Swift Testing (tracking issue #30):
+Unit tests use Swift Testing; the XCTest migration is complete (tracking issue #30, see docs/TESTING.md):
 
 - Write all new unit tests in Swift Testing (`import Testing`, `@Test`, `#expect`, `#require`). Suites are structs; no `@Suite` annotation unless you need a name or traits.
 - Migrate existing XCTest unit tests incrementally, one small PR at a time, preserving test counts and assertion strength one-to-one. `XCTAssertEqual(a, b)` -> `#expect(a == b)`; `XCTUnwrap(x)` -> `try #require(x)`; `XCTFail(msg)` -> `Issue.record(msg)`; `XCTAssertThrowsError` -> `#expect(throws:)` with the specific error, not `Error.self`.
