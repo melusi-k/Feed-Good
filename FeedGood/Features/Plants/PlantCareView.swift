@@ -38,7 +38,7 @@ struct PlantCareView: View {
                                     .font(.subheadline).foregroundStyle(.secondary)
                                 Text("Every \(task.intervalDays) days · user-defined").font(.caption).foregroundStyle(.secondary)
                             }
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(FeedGoodPressStyle())
                         if task.isEnabled {
                             Button("Record care") { note = ""; completing = task }
                                 .accessibilityIdentifier("care.complete.\(task.title)")
@@ -57,9 +57,10 @@ struct PlantCareView: View {
                 }
             }
         }
+        .feedGoodCollectionMotion(value: tasks.map { "\($0.id):\($0.dueDate):\($0.isEnabled)" } + events.map { $0.id.uuidString })
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
-        .navigationTitle("Care routine")
+        .feedGoodHeader("Care routine")
         .toolbar {
             Button("Add task", systemImage: "plus") { adding = true }.accessibilityIdentifier("care.add")
         }
@@ -71,7 +72,7 @@ struct PlantCareView: View {
                     Text(task.title)
                     TextField("Optional note", text: $note).accessibilityIdentifier("care.note")
                 }
-                .navigationTitle("Record care")
+                .feedGoodHeader("Record care")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { completing = nil } }
                     ToolbarItem(placement: .confirmationAction) {
@@ -127,7 +128,7 @@ struct CareTaskEditor: View {
                 }
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
             }
-            .navigationTitle(task == nil ? "Add care task" : "Edit care task")
+            .feedGoodHeader(task == nil ? "Add care task" : "Edit care task")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

@@ -10,6 +10,8 @@ struct FeedGoodApp: App {
         ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
     }
 
+    init() { FeedGoodNavigationAppearance.apply() }
+
     var body: some Scene {
         WindowGroup {
             AppTabView()

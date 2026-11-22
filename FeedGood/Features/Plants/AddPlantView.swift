@@ -15,12 +15,13 @@ struct AddPlantView: View {
                     TextField("Plant name", text: $name)
                         .accessibilityIdentifier("plants.name")
                     TextField("Species or variety (optional)", text: $species)
+                        .accessibilityIdentifier("plants.species")
                     TextField("Notes (optional)", text: $notes, axis: .vertical)
                         .lineLimit(3...6)
+                        .accessibilityIdentifier("plants.notes")
                 }
             }
-            .navigationTitle("New plant")
-            .navigationBarTitleDisplayMode(.inline)
+            .feedGoodHeader("New plant")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

@@ -35,6 +35,31 @@ enum TodayCare {
     }
 }
 
+/// One plant's care work on Today. `shown` is capped so a plant with many tasks cannot take over the screen.
+struct TodayCareGroup: Identifiable {
+    let plant: Plant
+    let items: [TodayCareItem]
+    let shown: [TodayCareItem]
+    var id: UUID { plant.id }
+    var hiddenCount: Int { items.count - shown.count }
+}
+
+extension TodayCare {
+    /// Groups already-ordered items by plant, keeping the order in which each plant first appears.
+    static func groups(from items: [TodayCareItem], perPlant: Int = 3) -> [TodayCareGroup] {
+        var order: [UUID] = []
+        var byPlant: [UUID: [TodayCareItem]] = [:]
+        for item in items {
+            if byPlant[item.plant.id] == nil { order.append(item.plant.id) }
+            byPlant[item.plant.id, default: []].append(item)
+        }
+        return order.compactMap { id in
+            guard let list = byPlant[id], let plant = list.first?.plant else { return nil }
+            return TodayCareGroup(plant: plant, items: list, shown: Array(list.prefix(max(1, perPlant))))
+        }
+    }
+}
+
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Plant.createdAt, order: .reverse) private var plants: [Plant]
@@ -54,12 +79,12 @@ struct TodayView: View {
     }
 
     private var careItems: [TodayCareItem] { TodayCare.items(from: careTasks) }
+    private var careGroups: [TodayCareGroup] { TodayCare.groups(from: careItems) }
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 26) {
-                    masthead
                     welcome
                     dailyThought
                     careCheckIn
@@ -71,8 +96,9 @@ struct TodayView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 34)
             }
+            .feedGoodCollectionMotion(value: careItems.map { "\($0.id):\($0.task.dueDate)" })
             .background(FeedGoodTheme.background.ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .feedGoodHeader("Feed Good", tab: .today)
             .sheet(isPresented: $showingAddPlant) {
                 AddPlantView()
             }
@@ -105,31 +131,6 @@ struct TodayView: View {
         }
     }
 
-    private var masthead: some View {
-        HStack(alignment: .center) {
-            HStack(spacing: 9) {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                Text("feed good")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .tracking(-0.6)
-                    .foregroundStyle(FeedGoodTheme.leaf)
-            }
-            Spacer()
-            Button {
-                selectedTab = .plants
-            } label: {
-                Image(systemName: "person.crop.circle")
-                    .font(.system(size: 23, weight: .regular))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                    .frame(width: 42, height: 42)
-                    .background(FeedGoodTheme.surface, in: Circle())
-            }
-            .accessibilityLabel("My plants")
-        }
-    }
-
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(greeting.uppercased())
@@ -153,42 +154,7 @@ struct TodayView: View {
     }
 
     private var dailyThought: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("A THOUGHT FOR TODAY")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(1.2)
-                    .foregroundStyle(FeedGoodTheme.leaf.opacity(0.72))
-
-                Text("Growth happens\none small moment\nat a time.")
-                    .font(.system(size: 21, weight: .medium, design: .serif))
-                    .lineSpacing(1)
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                    .accessibilityIdentifier("today.dailyThought")
-
-                Text("Take a moment to notice something new.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(FeedGoodTheme.leaf.opacity(0.78))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-            ZStack {
-                Circle()
-                    .fill(FeedGoodTheme.sage.opacity(0.32))
-                    .frame(width: 88, height: 88)
-                Image(systemName: "leaf")
-                    .font(.system(size: 39, weight: .light))
-                    .rotationEffect(.degrees(-28))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                Image(systemName: "sparkle")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(FeedGoodTheme.moss)
-                    .offset(x: 32, y: -30)
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(FeedGoodTheme.mist.opacity(0.82), in: RoundedRectangle(cornerRadius: FeedGoodTheme.cardRadius, style: .continuous))
+        DailyMomentsView()
     }
 
     private var careCheckIn: some View {
@@ -208,9 +174,9 @@ struct TodayView: View {
                     action: "Visit your plants"
                 ) { selectedTab = .plants }
             } else {
-                VStack(spacing: 10) {
-                    ForEach(careItems) { item in
-                        careRow(item)
+                VStack(spacing: 12) {
+                    ForEach(careGroups) { group in
+                        careGroup(group)
                     }
                 }
             }
@@ -265,34 +231,66 @@ struct TodayView: View {
         }
     }
 
-    private func careRow(_ item: TodayCareItem) -> some View {
-        HStack(spacing: 12) {
+    private func careGroup(_ group: TodayCareGroup) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             NavigationLink {
-                PlantDetailView(plant: item.plant)
+                PlantDetailView(plant: group.plant)
             } label: {
-                HStack(spacing: 12) {
-                    PlantPhotoView(photoData: item.plant.photoData)
-                        .frame(width: 46, height: 46)
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(item.task.title)
+                HStack(spacing: 10) {
+                    PlantPhotoView(photoData: group.plant.photoData)
+                        .frame(width: 38, height: 38)
+                        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(group.plant.name)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(FeedGoodTheme.soil)
                             .lineLimit(1)
-                        Text(item.plant.name)
-                            .font(.system(size: 12))
+                        Text(group.items.count == 1 ? "1 task" : "\(group.items.count) tasks")
+                            .font(.system(size: 11))
                             .foregroundStyle(FeedGoodTheme.muted)
-                            .lineLimit(1)
-                        Text(dueLabel(item))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(item.state == .overdue ? Color.red : FeedGoodTheme.leaf)
                     }
                     Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(FeedGoodTheme.muted)
                 }
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("today.care.row.\(item.plant.name).\(item.task.title)")
+            .buttonStyle(FeedGoodPressStyle())
+            .accessibilityIdentifier("today.care.plant.\(group.plant.name)")
 
+            ForEach(group.shown) { item in
+                careRow(item)
+            }
+
+            if group.hiddenCount > 0 {
+                NavigationLink {
+                    PlantCareView(plant: group.plant)
+                } label: {
+                    Text("\(group.hiddenCount) more in \(group.plant.name)’s care routine")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(FeedGoodTheme.leaf)
+                }
+                .accessibilityIdentifier("today.care.more.\(group.plant.name)")
+            }
+        }
+        .padding(13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FeedGoodTheme.mist.opacity(0.55), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func careRow(_ item: TodayCareItem) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.task.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(FeedGoodTheme.soil)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(dueLabel(item))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(item.state == .overdue ? Color.red : FeedGoodTheme.leaf)
+            }
+            Spacer(minLength: 0)
             Button("Done") { completing = item }
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(FeedGoodTheme.surface)
@@ -302,6 +300,7 @@ struct TodayView: View {
                 .accessibilityLabel("Record \(item.task.title) for \(item.plant.name)")
                 .accessibilityIdentifier("today.care.done.\(item.plant.name).\(item.task.title)")
         }
+        .accessibilityIdentifier("today.care.row.\(item.plant.name).\(item.task.title)")
     }
 
     private var myGarden: some View {
@@ -344,7 +343,7 @@ struct TodayView: View {
                     .padding(13)
                     .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(FeedGoodPressStyle())
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -383,7 +382,7 @@ struct TodayView: View {
             }
             .frame(width: 142, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FeedGoodPressStyle())
         .accessibilityIdentifier("today.plant.\(plant.name)")
     }
 
@@ -406,37 +405,11 @@ struct TodayView: View {
                     .foregroundStyle(FeedGoodTheme.leaf)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FeedGoodPressStyle())
     }
 
     private var journalPrompt: some View {
-        Button {
-            selectedTab = .journal
-        } label: {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: "book.closed")
-                    .font(.system(size: 21, weight: .light))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-                    .frame(width: 44, height: 44)
-                    .background(FeedGoodTheme.mist, in: RoundedRectangle(cornerRadius: 14))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("A little something to remember")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(FeedGoodTheme.soil)
-                    Text("What have you noticed in your garden lately?")
-                        .font(.system(size: 12))
-                        .foregroundStyle(FeedGoodTheme.muted)
-                        .multilineTextAlignment(.leading)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(FeedGoodTheme.leaf)
-            }
-            .padding(15)
-            .background(FeedGoodTheme.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        }
-        .buttonStyle(.plain)
+        RecentJournalView(selectedTab: $selectedTab)
     }
 
     private var footer: some View {

@@ -95,4 +95,41 @@ final class TodayCareTests: XCTestCase {
         try context.save()
         XCTAssertEqual(TodayCare.items(from: [a, b], now: now, calendar: calendar).map(\.plant.name), ["basil", "Zinnia"])
     }
+
+    func testGroupsByPlantCapsShownRowsAndKeepsAllCounted() throws {
+        let context = try makeContext()
+        let calendar = calendar("UTC")
+        let now = date("2026-11-21T10:00:00Z")
+        let due = date("2026-11-21T12:00:00Z")
+        let fern = Plant(name: "Fern")
+        let lily = Plant(name: "Lily")
+        context.insert(fern); context.insert(lily)
+        var tasks: [CareTask] = []
+        for index in 0..<5 {
+            let task = CareTask(kind: .custom, customTitle: "Fern task \(index)", intervalDays: 7, dueDate: due.addingTimeInterval(Double(index)), plant: fern)
+            context.insert(task); tasks.append(task)
+        }
+        let lilyTask = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: lily)
+        context.insert(lilyTask); tasks.append(lilyTask)
+        try context.save()
+
+        let groups = TodayCare.groups(from: TodayCare.items(from: tasks, now: now, calendar: calendar), perPlant: 3)
+        XCTAssertEqual(groups.map(\.plant.name), ["Fern", "Lily"])
+        XCTAssertEqual(groups[0].items.count, 5)
+        XCTAssertEqual(groups[0].shown.map(\.task.title), ["Fern task 0", "Fern task 1", "Fern task 2"])
+        XCTAssertEqual(groups[0].hiddenCount, 2)
+        XCTAssertEqual(groups[1].hiddenCount, 0)
+    }
+
+    func testGroupsOfNoItemsIsEmptyAndCapIsAtLeastOne() throws {
+        XCTAssertTrue(TodayCare.groups(from: []).isEmpty)
+        let context = try makeContext()
+        let plant = Plant(name: "Aloe")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 2, dueDate: .now, plant: plant)
+        context.insert(task)
+        try context.save()
+        let groups = TodayCare.groups(from: TodayCare.items(from: [task]), perPlant: 0)
+        XCTAssertEqual(groups.first?.shown.count, 1)
+    }
 }

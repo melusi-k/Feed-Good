@@ -28,7 +28,7 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -39,6 +39,9 @@ jobs:
 
       - name: Install XcodeGen
         run: brew install xcodegen
+
+      - name: Generate iOS app icon
+        run: bash scripts/generate-app-icon.sh
 
       - name: Stamp build version and generate project
         run: |
@@ -105,6 +108,7 @@ jobs:
           [ "$BUILD" = "$BUILD_NUMBER" ] || { echo "::error::Unexpected build number: $BUILD"; exit 1; }
           [ -x "$APP/$EXECUTABLE" ] || { echo "::error::App executable missing"; exit 1; }
           lipo -archs "$APP/$EXECUTABLE" | grep -q arm64 || { echo "::error::IPA does not contain arm64"; exit 1; }
+          [ -s "$APP/Assets.car" ] || { echo "::error::Compiled asset catalog missing"; exit 1; }
           {
             echo "### Feed Good IPA"
             echo
@@ -114,10 +118,11 @@ jobs:
             echo "| Build | $BUILD |"
             echo "| Bundle ID | $BUNDLE_ID |"
             echo "| Package | $IPA_NAME (unsigned) |"
+            echo "| App icon | Included in Assets.car |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FeedGood-IPA-${{ github.run_number }}
           path: dist/*.ipa

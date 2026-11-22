@@ -41,7 +41,7 @@ struct JournalArchivePreview: Equatable {
     }
 }
 
-/// Version 1 is journal-only. Version 2 includes the complete local garden record.
+/// Version 1 is journal-only. Version 2 covers milestones plus the complete local garden record; care routines and history are optional extension keys.
 struct JournalArchive: Codable {
     var version = 2
     var plants: [PlantRecord]
@@ -64,6 +64,7 @@ struct JournalArchive: Codable {
         var date: Date
         var note: String
         var photoData: Data?
+        var milestoneRaw: String? = nil
     }
 
     struct CareTaskRecord: Codable, Equatable {
@@ -98,7 +99,7 @@ struct JournalArchive: Codable {
     ) throws -> Data {
         let entryRecords = try entries.map { entry -> EntryRecord in
             guard let plantID = entry.plant?.id else { throw JournalArchiveError.invalidRecord }
-            return EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData)
+            return EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw)
         }
         let taskRecords = try careTasks.map { task -> CareTaskRecord in
             guard let plantID = task.plant?.id else { throw JournalArchiveError.invalidRecord }
@@ -147,10 +148,6 @@ struct JournalArchive: Codable {
               (careEvents?.count ?? 0) <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
-        if version == 2 && (careTasks == nil || careEvents == nil) {
-            throw JournalArchiveError.invalidRecord
-        }
-
         let plantIDs = Set(plants.map(\.id))
         guard plantIDs.count == plants.count,
               Set(entries.map(\.id)).count == entries.count,
@@ -166,8 +163,10 @@ struct JournalArchive: Codable {
             }
         }
         for entry in entries {
+            if version == 1, entry.milestoneRaw != nil { throw JournalArchiveError.invalidRecord }
+            if let raw = entry.milestoneRaw, JournalMilestone(rawValue: raw) == nil { throw JournalArchiveError.invalidRecord }
             guard plantIDs.contains(entry.plantID),
-                  !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.photoData != nil else {
+                  !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.photoData != nil || entry.milestoneRaw != nil else {
                 throw JournalArchiveError.invalidRecord
             }
             if let data = entry.photoData, UIImage(data: data) == nil {
@@ -238,7 +237,7 @@ struct JournalArchive: Codable {
         for record in archive.entries {
             if let entry = entries[record.id] {
                 guard let plantID = entry.plant?.id,
-                      EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData) == record else {
+                      EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw) == record else {
                     throw JournalArchiveError.conflictingRecord
                 }
             }
@@ -279,7 +278,7 @@ struct JournalArchive: Codable {
             }
             for record in archive.entries where entries[record.id] == nil {
                 guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
-                context.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, plant: plant))
+                context.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, plant: plant))
                 restoredEntries += 1
             }
             for record in archive.careTasks ?? [] where tasks[record.id] == nil {
