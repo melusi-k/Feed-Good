@@ -67,3 +67,14 @@ extension View {
         modifier(FeedGoodCollectionMotion(value: value))
     }
 }
+
+/// Tap feedback is local to the pressed control, never the surrounding page.
+struct FeedGoodPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.75 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
