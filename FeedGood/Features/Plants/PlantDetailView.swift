@@ -10,6 +10,7 @@ struct PlantDetailView: View {
 
     @State private var showingEditor = false
     @State private var showingDeleteConfirmation = false
+    @State private var deleteError: String?
 
     var body: some View {
         ScrollView {
@@ -96,6 +97,11 @@ struct PlantDetailView: View {
         } message: {
             Text("This permanently deletes \(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
         }
+        .alert("Plant not deleted", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
+            Button("OK") { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
     }
 
     private var notesCard: some View {
@@ -125,6 +131,12 @@ struct PlantDetailView: View {
 
     private func deletePlant() {
         modelContext.delete(plant)
-        dismiss()
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            deleteError = "Couldn't delete \(plant.name). Nothing was removed. Try again."
+        }
     }
 }

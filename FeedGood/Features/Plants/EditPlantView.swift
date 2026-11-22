@@ -7,6 +7,7 @@ import PhotosUI
 /// resized by PlantPhotoService and stored on-device only.
 struct EditPlantView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     let plant: Plant
 
@@ -14,6 +15,7 @@ struct EditPlantView: View {
     @State private var photoData: Data?
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingPhotoError = false
+    @State private var errorMessage: String?
 
     init(plant: Plant) {
         self.plant = plant
@@ -80,6 +82,11 @@ struct EditPlantView: View {
                 } footer: {
                     Text("This helps us tailor plant care guidance to your plant’s growing conditions. These are your observations, not measurements. You can leave them unset or change them later. We do not need your location.")
                 }
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier("editPlant.error")
+                }
             }
             .feedGoodHeader("Edit plant")
             .toolbar {
@@ -119,6 +126,12 @@ struct EditPlantView: View {
     private func save() {
         draft.applying(to: plant)
         plant.photoData = photoData
-        dismiss()
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            errorMessage = "Couldn't save these changes. The stored plant is unchanged. Try again."
+        }
     }
 }
