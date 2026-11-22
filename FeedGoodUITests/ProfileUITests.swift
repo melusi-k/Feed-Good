@@ -26,7 +26,9 @@ final class ProfileUITests: XCTestCase {
             button.tap()
             XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
             XCTAssertTrue(app.staticTexts["Your garden"].exists)
-            XCTAssertTrue(app.descendants(matching: .any)["profile.stats.plants"].exists)
+            XCTAssertEqual(app.descendants(matching: .any)["profile.stats.plants"].label, "0 Plants")
+            XCTAssertEqual(app.descendants(matching: .any)["profile.stats.care"].label, "0 Care records")
+            XCTAssertEqual(app.descendants(matching: .any)["profile.stats.journal"].label, "0 Journal entries")
             if tab == "Today" { capture(app, "Shared sheet light") }
             app.buttons["profile.done"].tap()
             XCTAssertTrue(app.tabBars.buttons[tab].isSelected)
@@ -38,17 +40,34 @@ final class ProfileUITests: XCTestCase {
         let app = launch()
         app.tabBars.buttons["My Plants"].tap()
         app.buttons["plants.add"].tap()
+
         let name = app.textFields["plants.name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
         name.typeText("Profile fern")
+
+        let species = app.textFields["plants.species"]
+        XCTAssertTrue(species.exists)
+        species.tap()
+        species.typeText("Nephrolepis exaltata")
+
+        let notes = app.textViews["plants.notes"]
+        XCTAssertTrue(notes.exists)
+        notes.tap()
+        notes.typeText("Bright indirect light; keep soil lightly moist.")
+
         app.buttons["plants.save"].tap()
         app.buttons["profile.open"].tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.descendants(matching: .any)["profile.stats.plants"].label, "1 Plants")
+        XCTAssertEqual(app.descendants(matching: .any)["profile.stats.care"].label, "0 Care records")
+        XCTAssertEqual(app.descendants(matching: .any)["profile.stats.journal"].label, "0 Journal entries")
         capture(app, "Populated sheet")
+
         app.buttons["profile.context"].tap()
         XCTAssertTrue(app.staticTexts["Profile fern"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Nephrolepis exaltata"].exists)
+        XCTAssertTrue(app.staticTexts["Bright indirect light; keep soil lightly moist."].exists)
         app.navigationBars["Growing context"].buttons["Profile"].tap()
         app.buttons["profile.done"].tap()
         app.buttons["plants.row.Profile fern"].tap()
