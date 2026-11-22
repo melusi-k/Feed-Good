@@ -7,6 +7,8 @@ struct AddPlantView: View {
     @State private var name = ""
     @State private var species = ""
     @State private var notes = ""
+    @State private var growingEnvironment: GrowingEnvironment = .unspecified
+    @State private var lightCondition: LightCondition = .unspecified
 
     var body: some View {
         NavigationStack {
@@ -19,6 +21,26 @@ struct AddPlantView: View {
                     TextField("Notes (optional)", text: $notes, axis: .vertical)
                         .lineLimit(3...6)
                         .accessibilityIdentifier("plants.notes")
+                }
+
+                Section {
+                    Picker("Where does it grow?", selection: $growingEnvironment) {
+                        ForEach(GrowingEnvironment.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                    .accessibilityIdentifier("plants.growingEnvironment")
+
+                    Picker("Observed light", selection: $lightCondition) {
+                        ForEach(LightCondition.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                    .accessibilityIdentifier("plants.lightCondition")
+                } header: {
+                    Text("Growing context (optional)")
+                } footer: {
+                    Text("These are your observations, not measurements. You can leave them unset or change them later. Feed Good does not need your location.")
                 }
             }
             .feedGoodHeader("New plant")
@@ -39,7 +61,9 @@ struct AddPlantView: View {
         let plant = Plant(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             species: species.trimmingCharacters(in: .whitespacesAndNewlines),
-            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
+            growingEnvironment: growingEnvironment,
+            lightCondition: lightCondition
         )
         modelContext.insert(plant)
         dismiss()
