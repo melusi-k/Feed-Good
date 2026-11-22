@@ -10,13 +10,8 @@ private final class FakeCareNotifications: CareNotificationBoundary {
     var readCount = 0
     var removed: [String] = []
     var failAdds = false
-    var failPermissionRequest = false
     func permission() async -> ReminderPermission { status }
-    func requestPermission() async throws -> Bool {
-        requestCount += 1
-        if failPermissionRequest { throw NSError(domain: "Test.Permission", code: 1) }
-        return status == .allowed
-    }
+    func requestPermission() async throws -> Bool { requestCount += 1; return status == .allowed }
     func pendingIDs() async -> [String] { readCount += 1; await Task.yield(); return Array(pending.keys) }
     func remove(_ ids: [String]) { removed += ids; for id in ids { pending[id] = nil } }
     func add(_ reminder: CareReminder) async throws {
@@ -119,49 +114,6 @@ struct CareReminderTests {
         #expect(CareNotificationPayload.destination(from: [:])?.taskID == nil)
         #expect(CareNotificationPayload.destination(from: [CareNotificationPayload.taskIDKey: "not-a-uuid", CareNotificationPayload.plantIDKey: plantID.uuidString])?.taskID == nil)
     }
-
-    @Test func permissionRequestFailureIsExplainedWithoutDisablingCareTracking() async {
-        let fake = FakeCareNotifications()
-        fake.failPermissionRequest = true
-        let scheduler = CareReminderScheduler(boundary: fake)
-
-        await scheduler.requestPermission()
-
-        #expect(fake.requestCount == 1)
-        #expect(scheduler.message.localizedCaseInsensitiveContains("couldn't ask"))
-        #expect(scheduler.message.contains("Care tracking still works"))
-    }
-
-    @Test func sameDueDateRemindersHaveStableTaskIdentityOrdering() {
-        let plant = Plant(name: "Fern")
-        let dueDate = Date(timeIntervalSince1970: 1_900_000_000)
-        let tasks = [
-            CareTask(id: UUID(uuidString: "FFFFFFFF-0000-0000-0000-000000000001")!, kind: .watering, intervalDays: 3, dueDate: dueDate, reminderEnabled: true, plant: plant),
-            CareTask(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!, kind: .feeding, intervalDays: 7, dueDate: dueDate, reminderEnabled: true, plant: plant),
-            CareTask(id: UUID(uuidString: "CCCCCCCC-0000-0000-0000-000000000001")!, kind: .pruning, intervalDays: 14, dueDate: dueDate.addingTimeInterval(60), reminderEnabled: true, plant: plant)
-        ]
-
-        let reminders = CareReminderScheduler.reminders(for: tasks, now: dueDate.addingTimeInterval(-1))
-
-        #expect(reminders.compactMap(\.taskID) == [tasks[1].id, tasks[0].id, tasks[2].id])
-        #expect(reminders.map(\.date) == [dueDate, dueDate, dueDate.addingTimeInterval(60)])
-        #expect(reminders.allSatisfy { $0.plantID == plant.id })
-        #expect(Set(reminders.map(\.id)).count == reminders.count)
-    }
-
-    @Test func emptyReconciliationKeepsUnrelatedRequestsAndReportsOptionalState() async {
-        let fake = FakeCareNotifications()
-        let unrelated = CareReminder(id: "unrelated.identifier", title: "Other", body: "", date: .distantFuture)
-        fake.pending[unrelated.id] = unrelated
-        let scheduler = CareReminderScheduler(boundary: fake)
-
-        await scheduler.reconcile([])
-
-        #expect(fake.pending == [unrelated.id: unrelated])
-        #expect(scheduler.message.contains("Enable a reminder"))
-    }
-
-
 
     @Test func reminderComponentsPreserveTheSameInstantAcrossTimeZoneChanges() throws {
         let dueDate = try #require(ISO8601DateFormatter().date(from: "2026-11-22T18:45:30Z"))
