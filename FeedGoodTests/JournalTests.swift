@@ -457,7 +457,7 @@ struct JournalTests {
 
         let referenceNow = dueDate.addingTimeInterval(-200_000)
         let remindersBefore = CareReminderScheduler.reminders(for: [task], now: referenceNow)
-        let todayBefore = TodayCare.items(from: [task], now: referenceNow).map(\\.id)
+        let todayBefore = TodayCare.items(from: [task], now: referenceNow).map(\.id)
         let correctedDate = dueDate.addingTimeInterval(-43_200)
         try CareRecorder.update(
             correctedEvent,
@@ -466,7 +466,7 @@ struct JournalTests {
             in: sourceContext
         )
         let remindersAfter = CareReminderScheduler.reminders(for: [task], now: referenceNow)
-        let todayAfterCorrection = TodayCare.items(from: [task], now: referenceNow).map(\\.id)
+        let todayAfterCorrection = TodayCare.items(from: [task], now: referenceNow).map(\.id)
         #expect(remindersAfter == remindersBefore)
         #expect(todayAfterCorrection == todayBefore)
         #expect(task.dueDate == dueDate)
@@ -482,7 +482,7 @@ struct JournalTests {
             in: sourceContext
         )
         try CareRecorder.delete(deletedEvent, in: sourceContext)
-        let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\\.id)
+        let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\.id)
         #expect(todayAfterDeletion == todayBefore)
 
         let remainingEvents = try sourceContext.fetch(FetchDescriptor<CareEvent>())
