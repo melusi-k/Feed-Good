@@ -56,6 +56,9 @@ struct JournalArchive: Codable {
         var notes: String
         var createdAt: Date
         var photoData: Data? = nil
+        // Optional keys keep archives created before growing context decodable.
+        var growingEnvironmentRaw: String? = nil
+        var lightConditionRaw: String? = nil
     }
 
     struct EntryRecord: Codable, Equatable {
@@ -126,7 +129,12 @@ struct JournalArchive: Codable {
             )
         }
         let plantRecords = plants.map {
-            PlantRecord(id: $0.id, name: $0.name, species: $0.species, notes: $0.notes, createdAt: $0.createdAt, photoData: $0.photoData)
+            PlantRecord(
+                id: $0.id, name: $0.name, species: $0.species, notes: $0.notes,
+                createdAt: $0.createdAt, photoData: $0.photoData,
+                growingEnvironmentRaw: $0.growingEnvironmentRaw,
+                lightConditionRaw: $0.lightConditionRaw
+            )
         }
         let archive = JournalArchive(
             plants: plantRecords,
@@ -159,6 +167,12 @@ struct JournalArchive: Codable {
 
         for plant in plants {
             if let data = plant.photoData, UIImage(data: data) == nil {
+                throw JournalArchiveError.invalidRecord
+            }
+            if let raw = plant.growingEnvironmentRaw, GrowingEnvironment(rawValue: raw) == nil {
+                throw JournalArchiveError.invalidRecord
+            }
+            if let raw = plant.lightConditionRaw, LightCondition(rawValue: raw) == nil {
                 throw JournalArchiveError.invalidRecord
             }
         }
@@ -223,10 +237,12 @@ struct JournalArchive: Codable {
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
         try archive.validate()
 
-        let existingPlants = try context.fetch(FetchDescriptor<Plant>())
-        let existingEntries = try context.fetch(FetchDescriptor<JournalEntry>())
-        let existingTasks = try context.fetch(FetchDescriptor<CareTask>())
-        let existingEvents = try context.fetch(FetchDescriptor<CareEvent>())
+        // Isolate writes so a failed import cannot roll back unrelated unsaved UI edits.
+        let recoveryContext = ModelContext(context.container)
+        let existingPlants = try recoveryContext.fetch(FetchDescriptor<Plant>())
+        let existingEntries = try recoveryContext.fetch(FetchDescriptor<JournalEntry>())
+        let existingTasks = try recoveryContext.fetch(FetchDescriptor<CareTask>())
+        let existingEvents = try recoveryContext.fetch(FetchDescriptor<CareEvent>())
 
         var plants = Dictionary(uniqueKeysWithValues: existingPlants.map { ($0.id, $0) })
         let entries = Dictionary(uniqueKeysWithValues: existingEntries.map { ($0.id, $0) })
@@ -271,14 +287,17 @@ struct JournalArchive: Codable {
             for record in archive.plants where plants[record.id] == nil {
                 let plant = Plant(
                     id: record.id, name: record.name, species: record.species, notes: record.notes,
-                    photoData: record.photoData, createdAt: record.createdAt
+                    photoData: record.photoData,
+                    createdAt: record.createdAt,
+                    growingEnvironment: GrowingEnvironment(rawValue: record.growingEnvironmentRaw ?? "") ?? .unspecified,
+                    lightCondition: LightCondition(rawValue: record.lightConditionRaw ?? "") ?? .unspecified
                 )
-                context.insert(plant)
+                recoveryContext.insert(plant)
                 plants[plant.id] = plant
             }
             for record in archive.entries where entries[record.id] == nil {
                 guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
-                context.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, plant: plant))
+                recoveryContext.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, plant: plant))
                 restoredEntries += 1
             }
             for record in archive.careTasks ?? [] where tasks[record.id] == nil {
@@ -296,11 +315,11 @@ struct JournalArchive: Codable {
                     reminderEnabled: record.reminderEnabled,
                     plant: plant
                 )
-                context.insert(task)
+                recoveryContext.insert(task)
             }
             for record in archive.careEvents ?? [] where events[record.id] == nil {
                 guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
-                context.insert(CareEvent(
+                recoveryContext.insert(CareEvent(
                     id: record.id,
                     taskID: record.taskID,
                     taskTitle: record.taskTitle,
@@ -309,9 +328,9 @@ struct JournalArchive: Codable {
                     plant: plant
                 ))
             }
-            try context.save()
+            try recoveryContext.save()
         } catch {
-            context.rollback()
+            recoveryContext.rollback()
             throw error
         }
         return restoredEntries
