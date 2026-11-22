@@ -36,6 +36,7 @@ enum AppTab: Int, Hashable, CaseIterable {
 struct AppTabView: View {
     @AppStorage("feedGood.appearance") private var appearanceRawValue = FeedGoodAppearance.system.rawValue
     @State private var selectedTab: AppTab = .today
+    @State private var showingProfile = false
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
@@ -47,6 +48,13 @@ struct AppTabView: View {
         .modifier(FeedGoodMotionAccessibility())
         .tint(FeedGoodTheme.leaf)
         .preferredColorScheme(appearance.preferredColorScheme)
+        .environment(\.showFeedGoodProfile, { showingProfile = true })
+        .sheet(isPresented: $showingProfile) {
+            ProfileView {
+                showingProfile = false
+                selectedTab = .settings
+            }
+        }
     }
 }
 
