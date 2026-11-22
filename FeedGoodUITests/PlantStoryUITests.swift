@@ -35,6 +35,9 @@ final class PlantStoryUITests: XCTestCase {
         app.buttons["plantDetail.care"].tap()
         app.buttons["care.add"].tap()
         app.buttons["care.taskSave"].tap()
+        let careSavePreview = app.alerts["Review care changes"]
+        XCTAssertTrue(careSavePreview.waitForExistence(timeout: 5))
+        careSavePreview.buttons["Save changes"].tap()
         app.buttons["care.complete.Watering"].tap()
         let careNote = app.textFields["care.note"]
         XCTAssertTrue(careNote.waitForExistence(timeout: 5)); careNote.tap(); careNote.typeText("Checked before recording")
