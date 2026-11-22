@@ -21,7 +21,7 @@ struct PlantListView: View {
                         Text("Add your first plant and start its growing journey.")
                     } actions: {
                         Button("Add a plant") { showingAddPlant = true }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(FeedGoodPressStyle(surface: .prominent))
                             .tint(FeedGoodTheme.leaf)
                     }
                 } else {
