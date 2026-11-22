@@ -2,7 +2,7 @@
 
 This repository is Feed Good, an iOS gardening companion app (plant care reminders plus a journal). Follow the guidelines below so changes land cleanly the first time. These rules describe the repo as it actually is; where they and generic advice disagree, these win.
 
-Baseline adapted from [twostraws/SwiftAgents](https://github.com/twostraws/SwiftAgents) (MIT), with Swift Testing rules from [twostraws/Swift-Testing-Agent-Skill](https://github.com/twostraws/Swift-Testing-Agent-Skill) (MIT).
+Baseline structure adapted from [twostraws/SwiftAgents](https://github.com/twostraws/SwiftAgents) (that repository ships no license file; used as reference only, see THIRD_PARTY_NOTICES.md), with review guidance adapted from [twostraws/Swift-Testing-Agent-Skill](https://github.com/twostraws/Swift-Testing-Agent-Skill), [twostraws/Swift-Concurrency-Agent-Skill](https://github.com/twostraws/Swift-Concurrency-Agent-Skill), [twostraws/SwiftUI-Agent-Skill](https://github.com/twostraws/SwiftUI-Agent-Skill), and [Dimillian/Skills swiftui-performance-audit](https://github.com/Dimillian/Skills) (all MIT; copyright and permission notices retained in THIRD_PARTY_NOTICES.md).
 
 ## Ground truth
 
@@ -20,12 +20,40 @@ You are a senior iOS engineer specializing in SwiftUI and SwiftData. Code must f
 - SwiftUI for all UI. Shared state currently uses `ObservableObject`/`@Published` (see `CareReminderScheduler`); new observable types should use `@Observable` marked `@MainActor`, and existing types migrate only as a deliberate, separately reviewed change.
 - Prefer async/await over closure-based APIs. Never use GCD (`DispatchQueue.main.async` and friends); use Swift concurrency.
 - Avoid force unwraps and force `try` in app code unless failure is unrecoverable.
-- Use `foregroundStyle()`, not `foregroundColor()`; `clipShape(.rect(cornerRadius:))`, not `cornerRadius()`; `NavigationStack` with `navigationDestination(for:)`, not `NavigationView`.
+- Use `foregroundStyle()`, not `foregroundColor()`; `clipShape(.rect(cornerRadius:))`, not `cornerRadius()`; `NavigationStack` with `navigationDestination(for:)`, not `NavigationView`; `.scrollIndicators(.hidden)` rather than `showsIndicators: false`; interpolate inside `Text("...\(value)...")`, never add strings to build a `Text`.
+- Never use the one-parameter `onChange(of:)` variant; use the two-parameter or zero-parameter form.
 - Don't force specific font sizes; use Dynamic Type.
 - Put view logic in testable types (services, models, drafts) rather than in views, so it can be unit tested. Views stay thin.
 - User-facing search/filter text uses `localizedStandardContains()`.
 - Keep the feature-folder layout: `App`, `Design`, `Features/{Today,Plants,Journal}`, `Models`, `Services`. One primary type per file; match the existing naming style.
 - Never commit secrets.
+
+### View structure review gates
+
+- Extract subviews into their own `View` structs instead of long `body` implementations or computed properties returning `some View`.
+- Button actions and business logic live in methods or model types, not inline in `body`, `task()`, or `onAppear()`.
+- `@State` is always `private` and initialized in exactly one place.
+- In `ForEach`/`List`, identity comes from the element (stable `Identifiable` id), never from indices, offsets, or `id: \.self` on mutable collections.
+- Keep view initializers trivial; defer real work to `task()`.
+
+### Accessibility review gates
+
+- No forced font sizes; Dynamic Type everywhere.
+- Use `Button`, not `onTapGesture()`, unless tap location or count is genuinely needed.
+- Image-labelled buttons and menus keep a text label (`.labelStyle(.iconOnly)` when it must look icon-only) so VoiceOver has something to read.
+- Interactive targets stay at least 44x44 points.
+
+## Concurrency review gates
+
+- `Task {}` inside loops is a smell: for owned child work that shares a lifetime, use `withTaskGroup`/`withThrowingTaskGroup`. Intentional long-lived owned tasks with their own lifecycle are legitimate; task groups cannot replace them.
+- `Task.detached` is suspect; justify shedding isolation and priority or don't use it.
+- Every `withCheckedContinuation`/`withCheckedThrowingContinuation` resumes exactly once on every code path. Audit early returns and error paths.
+- Never add `@unchecked Sendable` to silence a compiler error; fix the isolation with actors or value types.
+- `catch` blocks filter out `CancellationError` before handling other errors; cancellation is a normal lifecycle event, not an alert.
+- Cancel owned tasks before replacing them, and on their owner's teardown, respecting the existing owner; do not add blanket cancels to tasks another component owns.
+- Audit check-then-act sequences that cross an `await`: state can change during the suspension, so assumptions made before it may no longer hold (WWDC21 session 10133, SE-0306). After the suspension, revalidate invariants and preserve cancellation, generation and identity checks before acting on pre-await state. Not every such sequence is a bug, and capturing results into locals does not by itself prevent publishing stale results; review needs lifecycle reasoning, not a blanket rewrite.
+- Never create a `Task` inside `onAppear()`; use the `.task()` modifier, which cancels on disappear.
+- Handle errors inside throwing `Task` closures; a silently dropped error looks like nothing happened.
 
 ## SwiftData
 
@@ -39,6 +67,7 @@ Unit tests are mid-migration from XCTest to Swift Testing (tracking issue #30):
 
 - Write all new unit tests in Swift Testing (`import Testing`, `@Test`, `#expect`, `#require`). Suites are structs; no `@Suite` annotation unless you need a name or traits.
 - Migrate existing XCTest unit tests incrementally, one small PR at a time, preserving test counts and assertion strength one-to-one. `XCTAssertEqual(a, b)` -> `#expect(a == b)`; `XCTUnwrap(x)` -> `try #require(x)`; `XCTFail(msg)` -> `Issue.record(msg)`; `XCTAssertThrowsError` -> `#expect(throws:)` with the specific error, not `Error.self`.
+- Use `#require` for preconditions (it throws and stops the test) and `#expect` for assertions.
 - Never negate with `!` inside `#expect`/`#require` (`#expect(x == false)`, not `#expect(!x)`); it defeats macro expansion diagnostics.
 - Swift Testing runs tests in parallel and in random order. Every test must be isolated: own SwiftData container, own temp directory, deterministic dates and calendars, no shared mutable state, no order dependence.
 - Known pitfalls, do not make these mistakes:
@@ -47,9 +76,19 @@ Unit tests are mid-migration from XCTest to Swift Testing (tracking issue #30):
   - `confirmation()` only works when the tested code has fully finished by the time the closure ends. If the code spawns an untracked `Task`, the confirmation cannot wait for it; make the code `async` or return the `Task` so the test can await it.
   - If a test reaches no `#expect`/`#require`, it passes. Always assert something.
   - `@available` goes on individual tests, not on suites.
+- No timing-based tests: never `Task.sleep` to "wait for something to happen". Await the real async work, or wrap callbacks with `withCheckedContinuation` or `confirmation()`.
 - UI tests (`FeedGoodUITests`, `XCUIApplication`) stay XCTest. Swift Testing does not support UI tests; do not attempt to migrate them.
 - Both frameworks coexist in the same unit-test target and the same CI run; that is expected.
-- Parameterized tests are welcome where they replace repetition, but remember two argument collections form a Cartesian product, not a zip.
+- Parameterized tests are welcome where they replace repetition, but remember two argument collections form a Cartesian product, not a zip. (Optional later work: parameterize the date/DST/timezone cases in DailyMoments and CareSchedule after the mechanical migration finishes.)
+
+## Performance review guidance
+
+Review in this triage order: broad invalidation first, then unstable identity, then main-thread render work, then image cost, then layout/animation complexity.
+
+- Smells to flag: expensive formatters created in `body`; sorting or filtering in `body` or inline in a `ForEach`; `id: \.self` identity on non-stable values; top-level `if`/`else` that swaps whole view trees; image decode on the main thread (see `PlantPhotoService` for the approved off-render downscale pattern); many views reading one broad observable when they need one field.
+- `equatable()` is not a blanket fix: only when equality is cheaper than recomputing the subtree and inputs are value-semantic.
+- `@State` is not a generic cache for expensive computation; precompute in the model or a helper with defined invalidation.
+- For any performance investigation that code review cannot settle, ask for profiling evidence before claiming a cause: Release build, device vs simulator named, SwiftUI Instruments template with Time Profiler, the exact interaction captured. Report findings as symptom / likely cause / evidence / fix / validation, with before-and-after metrics where available, and say explicitly when a conclusion is still a hypothesis.
 
 ## CI and pull requests
 
