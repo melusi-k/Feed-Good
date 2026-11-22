@@ -466,4 +466,21 @@ struct JournalTests {
         #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == nil)
     }
 
+    @Test func archiveRecoveryPreservesExistingSameIDPlantState() throws {
+        let archivedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let source = Plant(name: "Archived source", archivedAt: archivedAt)
+        let data = try JournalArchive.export(plants: [source], entries: [])
+
+        let context = ModelContext(try memory())
+        let existing = Plant(id: source.id, name: "Existing local plant")
+        context.insert(existing)
+        try context.save()
+
+        #expect(try JournalArchive.recover(data, context: context) == 0)
+        let unchanged = try #require(context.fetch(FetchDescriptor<Plant>()).first)
+        #expect(unchanged.id == source.id)
+        #expect(unchanged.name == "Existing local plant")
+        #expect(unchanged.archivedAt == nil)
+    }
+
 }
