@@ -37,7 +37,7 @@ struct JournalArchivePreview: Equatable {
         Care routines: \(careTasksToAdd) to add, \(careTasksAlreadyPresent) already present
         Care history: \(careEventsToAdd) to add, \(careEventsAlreadyPresent) already present
 
-        Existing plant records are preserved. Existing journal and care records are checked for identical content; any conflict stops recovery before changes are saved.
+        Existing plant records are preserved. Archive timestamps are restored for new plants; existing same-ID plants keep their current state. Existing journal and care records are checked for identical content; any conflict stops recovery before changes are saved.
         """
     }
 }
@@ -170,6 +170,7 @@ struct JournalArchive: Codable {
         }
 
         for plant in plants {
+            if version == 1, plant.archivedAt != nil { throw JournalArchiveError.invalidRecord }
             if let data = plant.photoData, UIImage(data: data) == nil {
                 throw JournalArchiveError.invalidRecord
             }
