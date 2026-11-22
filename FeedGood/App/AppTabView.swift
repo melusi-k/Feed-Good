@@ -41,6 +41,7 @@ struct AppTabView: View {
                 }
                 .tag(AppTab.settings)
         }
+        .modifier(FeedGoodMotionAccessibility())
         .tint(FeedGoodTheme.leaf)
         .preferredColorScheme(appearance.preferredColorScheme)
     }
@@ -90,7 +91,7 @@ private struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(FeedGoodTheme.background)
-            .navigationTitle("Settings")
+            .feedGoodHeader("Settings")
         }
         .tint(FeedGoodTheme.leaf)
     }
