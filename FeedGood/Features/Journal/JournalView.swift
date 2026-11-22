@@ -43,7 +43,7 @@ struct JournalView: View {
                         Button("Edit") { editing = entry }.accessibilityIdentifier("journal.edit.\(entry.id)")
                         Spacer()
                         Button("Delete", role: .destructive) { deleting = entry }.accessibilityIdentifier("journal.delete.\(entry.id)")
-                    }.buttonStyle(.borderless)
+                    }.buttonStyle(FeedGoodPressStyle())
                 }.padding(.vertical, 6)
             }
 
