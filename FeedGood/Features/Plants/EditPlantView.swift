@@ -60,6 +60,21 @@ struct EditPlantView: View {
                         .lineLimit(3...6)
                         .accessibilityIdentifier("editPlant.notes")
                 }
+
+                Section {
+                    Picker("Where does it grow?", selection: $draft.growingEnvironment) {
+                        ForEach(GrowingEnvironment.allCases) { option in Text(option.title).tag(option) }
+                    }
+                    .accessibilityIdentifier("editPlant.growingEnvironment")
+                    Picker("Observed light", selection: $draft.lightCondition) {
+                        ForEach(LightCondition.allCases) { option in Text(option.title).tag(option) }
+                    }
+                    .accessibilityIdentifier("editPlant.lightCondition")
+                } header: {
+                    Text("Growing context (optional)")
+                } footer: {
+                    Text("These are your observations, not measurements. You can leave them unset or change them later. Feed Good does not need your location.")
+                }
             }
             .feedGoodHeader("Edit plant")
             .toolbar {
