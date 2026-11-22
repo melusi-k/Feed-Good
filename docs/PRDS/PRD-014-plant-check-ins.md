@@ -1,6 +1,6 @@
 # PRD-014 — Plant Check-ins and Cautious Troubleshooting
 
-**Status:** Proposed for post-MVP product review  
+**Status:** Proposal consistent; implementation not started; troubleshooting release is safety-gated  
 **Priority:** P2, contingent on editorial and safety ownership  
 **Release:** Post-MVP, after the Care Guide review process is established  
 **Primary surfaces:** Plant Profile, Today, Plant Story, offline Care Guide
@@ -64,7 +64,7 @@ Included in the local-first app if the reviewed content ships. No account or rem
 
 ## 9. Launch plan
 
-1. Assign editorial and safety ownership before selecting the initial symptom set.
+1. Assign editorial and safety ownership before selecting the initial symptom set; do not ship troubleshooting content before the owner, source hierarchy and review process are approved.
 2. Decide whether typed observation metadata extends `JournalEntry` or uses a small `PlantCheckIn` model; preserve the current story projection and archive guarantees.
 3. Write and source-check the first 3–5 offline observation paths and their neutral fallback.
 4. Add content validation for stable IDs, provenance, review status and safe wording.

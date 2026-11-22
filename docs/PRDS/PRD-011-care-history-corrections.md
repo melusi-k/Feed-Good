@@ -1,6 +1,6 @@
 # PRD-011 — Care History Corrections
 
-**Status:** Proposed for post-MVP product review  
+**Status:** Implementation in progress — PR #68 is merged; remaining acceptance verification is outstanding  
 **Priority:** P1 trust improvement  
 **Release:** First follow-up after the MVP foundation  
 **Primary surfaces:** Plant Care history, Today, local reminder reconciliation
@@ -28,7 +28,7 @@ A user records care against the wrong plant or task and needs to remove the mist
 - Add Edit and Delete actions to each recorded care event.
 - Editing a care event changes only its completion date and optional note. The task-title snapshot remains the title recorded at the time.
 - Deleting an event requires explicit confirmation and explains that the deletion is permanent for the on-device history; an exported archive is unchanged.
-- **Recommended MVP schedule policy:** event correction is history-only by default. Editing or deleting an event never silently changes the task's active `dueDate` or interval. If the user wants a different next-care date, they use the existing routine editor as a separate, explicit action.
+- **Approved policy:** event correction is history-only. Editing or deleting an event never silently changes the task's active `dueDate` or interval. If the user wants a different next-care date, they use the existing routine editor as a separate, explicit action.
 - If the edited event is the latest completion for its task, show the user that the active routine remains unchanged and offer a clear route to edit the routine. Do not guess whether the event date was biologically correct.
 - After a successful change, derived Today content and local reminders continue to reflect the active task state. A correction must not create or leave a stale notification route.
 - Failed saves roll back the event and preserve the original record.
@@ -64,7 +64,7 @@ Included in the local-first app. No account, subscription or network service is 
 
 ## 9. Launch plan
 
-1. Confirm the history-only schedule policy with product review.
+1. Preserve the approved history-only schedule policy; no schedule preview is required for a history correction.
 2. Add transactional domain methods for edit and delete, including rollback behavior.
 3. Verify latest versus non-latest events, removed tasks, time zones and DST boundaries.
 4. Verify Today, plant story, archive export/recovery and reminder reconciliation.
@@ -77,11 +77,12 @@ Replaces a read-only history that forces users to keep mistakes or delete an ent
 
 ## 11. Decisions and open questions
 
-The proposed default is history-only correction with no implicit due-date change. Product review must decide whether a later version should offer an explicit “use this as the latest completion” action. If that action is approved, it must preview the resulting next due date, be opt-in, and be covered by a separate schedule policy and migration-safe tests.
+History-only correction is the approved policy for this scope. A future explicit “use this as the latest completion” action would require a separate product decision, preview of the resulting due date and its own acceptance criteria. If that action is approved, it must preview the resulting next due date, be opt-in, and be covered by a separate schedule policy and migration-safe tests.
 
 The existing append-oriented `CareEvent` model, archive records and plant-story projection should remain the source of truth. No new entity is expected for the MVP slice.
 
 ## 12. Delivery tracking
 
 - GitHub implementation issue: [#63 — Correct or remove recorded care events without corrupting schedule](https://github.com/melusi-k/Feed-Good/issues/63).
+- Implementation: [PR #68](https://github.com/melusi-k/Feed-Good/pull/68) merged; Today consistency, local reminder validity and export/recovery round-trip remain outstanding verification.
 - Parent feature: [PRD-002 — Care Routine](PRD-002-care-routine.md).

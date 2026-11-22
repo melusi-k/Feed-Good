@@ -1,6 +1,6 @@
 # PRD-013 — Weekly Garden Reflection
 
-**Status:** Proposed for post-MVP product review  
+**Status:** Proposal consistent; implementation not started  
 **Priority:** P2 relationship feature  
 **Release:** Post-MVP, after a baseline review of Today engagement and tone  
 **Primary surface:** Today
@@ -30,7 +30,7 @@ A returning user wants to remember what happened in the garden this week. A begi
 - Derive a small summary from existing `CareEvent`, `JournalEntry` and `Plant` records: recorded care count, journal observation count, up to three real moments/photos and the plants involved.
 - Offer one gentle observation prompt and routes to the source plant or story.
 - Handle empty weeks, no-photo weeks, deleted records and offline use without inventing progress.
-- A small local preference may remember a dismissed or seen week so the card does not repeatedly interrupt the user. This is transient UI state, not garden history, and is excluded from the garden archive.
+- A small local preference may remember a dismissed or seen week so the card does not repeatedly interrupt the user. Dismissal is reversible and the user can reopen the reflection during the same local calendar week. This is transient UI state, not garden history, and is excluded from the garden archive.
 - The reflection must be quiet and opt-in through the Today surface; it is not a scheduled push notification.
 
 ## 5. Out of scope
@@ -62,7 +62,7 @@ Included in the local-first app. No account, network service or subscription is 
 
 ## 9. Launch plan
 
-1. Measure current Today usage and conduct a short tone/usability review before committing to a weekly cadence.
+1. Confirm the Today entry point and tone; cadence remains a product decision before implementation.
 2. Define the deterministic selection and local-week rules.
 3. Implement the derived summary without adding an analytics store.
 4. Add unit tests for week boundaries, DST, empty/no-photo states and source accuracy.
