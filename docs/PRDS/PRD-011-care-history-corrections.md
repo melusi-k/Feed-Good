@@ -28,7 +28,7 @@ A user records care against the wrong plant or task and needs to remove the mist
 - Add Edit and Delete actions to each recorded care event.
 - Editing a care event changes only its completion date and optional note. The task-title snapshot remains the title recorded at the time.
 - Deleting an event requires explicit confirmation and explains that the deletion is permanent for the on-device history; an exported archive is unchanged.
-- **Approved policy:** event correction is history-only. Editing or deleting an event never silently changes the task's active `dueDate` or interval. If the user wants a different next-care date, they use the existing routine editor as a separate, explicit action. Editing or deleting an event never silently changes the task's active `dueDate` or interval. If the user wants a different next-care date, they use the existing routine editor as a separate, explicit action.
+- **Approved policy:** event correction is history-only. Editing or deleting an event never silently changes the task's active `dueDate` or interval. If the user wants a different next-care date, they use the existing routine editor as a separate, explicit action.
 - If the edited event is the latest completion for its task, show the user that the active routine remains unchanged and offer a clear route to edit the routine. Do not guess whether the event date was biologically correct.
 - After a successful change, derived Today content and local reminders continue to reflect the active task state. A correction must not create or leave a stale notification route.
 - Failed saves roll back the event and preserve the original record.
