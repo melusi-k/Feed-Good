@@ -34,4 +34,15 @@ struct CareNotificationRoutingTests {
         ])
         #expect(router.destination == nil)
     }
+
+    @Test func malformedNotificationClearsAnOlderPendingDestination() {
+        let router = CareNotificationRouter()
+        let taskID = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
+        let plantID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+        router.open(userInfo: CareNotificationPayload.make(taskID: taskID, plantID: plantID))
+        #expect(router.destination == CareNotificationDestination(taskID: taskID, plantID: plantID))
+
+        router.open(userInfo: [:])
+        #expect(router.destination == nil)
+    }
 }
