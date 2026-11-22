@@ -110,8 +110,8 @@ struct CareReminderTests {
         let destination = CareNotificationPayload.destination(from: payload)
         #expect(destination?.taskID == taskID)
         #expect(destination?.plantID == plantID)
-        #expect(CareNotificationPayload.destination(from: [:]) == nil)
-        #expect(CareNotificationPayload.destination(from: [CareNotificationPayload.taskIDKey: "not-a-uuid", CareNotificationPayload.plantIDKey: plantID.uuidString]) == nil)
+        #expect(CareNotificationPayload.destination(from: [:])?.taskID == nil)
+        #expect(CareNotificationPayload.destination(from: [CareNotificationPayload.taskIDKey: "not-a-uuid", CareNotificationPayload.plantIDKey: plantID.uuidString])?.taskID == nil)
     }
 
 }
