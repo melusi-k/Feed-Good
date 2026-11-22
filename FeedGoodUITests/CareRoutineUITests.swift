@@ -27,17 +27,22 @@ final class CareRoutineUITests: XCTestCase {
         let historyRow = app.buttons["care.eventEdit.Watering"]
         XCTAssertTrue(historyRow.waitForExistence(timeout: 5))
         historyRow.tap()
-        XCTAssertTrue(app.textFields["care.eventNote"].waitForExistence(timeout: 5))
+        let eventNote = app.textFields["care.eventNote"]
+        XCTAssertTrue(eventNote.waitForExistence(timeout: 5))
         XCTAssertTrue(app.datePickers["Completed"].exists)
+        let originalNote = eventNote.value as? String ?? ""
+        eventNote.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        eventNote.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: originalNote.count))
+        eventNote.typeText("Corrected care note")
         app.buttons["care.eventSave"].tap()
-        XCTAssertTrue(app.staticTexts["Checked the soil first"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Corrected care note"].waitForExistence(timeout: 5))
 
         app.buttons["care.eventEdit.Watering"].tap()
         app.buttons["care.eventDelete"].tap()
         let deleteConfirmation = app.buttons["Delete record"]
         XCTAssertTrue(deleteConfirmation.waitForExistence(timeout: 5))
         deleteConfirmation.tap()
-        XCTAssertFalse(app.staticTexts["Checked the soil first"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.staticTexts["Corrected care note"].waitForExistence(timeout: 2))
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Care routine and saved history"
