@@ -10,7 +10,9 @@ struct PlantDetailView: View {
 
     @State private var showingEditor = false
     @State private var showingDeleteConfirmation = false
-    @State private var deleteError: String?
+    @State private var showingArchiveConfirmation = false
+    @State private var showingRestoreConfirmation = false
+    @State private var actionError: String?
 
     var body: some View {
         ScrollView {
@@ -20,6 +22,16 @@ struct PlantDetailView: View {
                     .frame(height: 260)
                     .clipShape(RoundedRectangle(cornerRadius: FeedGoodTheme.cardRadius, style: .continuous))
                     .accessibilityIdentifier("plantDetail.photo")
+
+                if let archivedAt = plant.archivedAt {
+                    Label("Archived \(archivedAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "archivebox")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(FeedGoodTheme.muted)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .accessibilityIdentifier("plantDetail.archivedStatus")
+                }
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(plant.name)
@@ -53,13 +65,15 @@ struct PlantDetailView: View {
                     .accessibilityIdentifier("plantDetail.growingContext")
                 }
 
-                NavigationLink { PlantCareView(plant: plant) } label: {
-                    Label("Care routine and history", systemImage: "drop")
+                if plant.archivedAt == nil {
+                    NavigationLink { PlantCareView(plant: plant) } label: {
+                        Label("Care routine and history", systemImage: "drop")
+                    }
+                    .accessibilityIdentifier("plantDetail.care")
                 }
-                .accessibilityIdentifier("plantDetail.care")
 
                 NavigationLink { JournalView(plant: plant) } label: {
-                    Label("Plant journal", systemImage: "book.closed")
+                    Label(plant.archivedAt == nil ? "Plant journal" : "Plant journal and story", systemImage: "book.closed")
                 }
                 .accessibilityIdentifier("plantDetail.journal")
 
@@ -73,6 +87,27 @@ struct PlantDetailView: View {
                 Label("Added \(plant.createdAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
                     .font(.caption)
                     .foregroundStyle(FeedGoodTheme.muted)
+
+                if plant.archivedAt == nil {
+                    Button {
+                        showingArchiveConfirmation = true
+                    } label: {
+                        Label("Archive plant", systemImage: "archivebox")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(FeedGoodPressStyle(surface: .bordered))
+                    .accessibilityIdentifier("plantDetail.archive")
+                } else {
+                    Button {
+                        showingRestoreConfirmation = true
+                    } label: {
+                        Label("Restore plant", systemImage: "arrow.uturn.backward")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(FeedGoodPressStyle(surface: .prominent))
+                    .tint(FeedGoodTheme.leaf)
+                    .accessibilityIdentifier("plantDetail.restore")
+                }
 
                 Button(role: .destructive) {
                     showingDeleteConfirmation = true
@@ -102,10 +137,22 @@ struct PlantDetailView: View {
         } message: {
             Text("This permanently deletes \(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
         }
-        .alert("Plant not deleted", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
-            Button("OK") { deleteError = nil }
+        .alert("Plant not updated", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
+            Button("OK") { actionError = nil }
         } message: {
-            Text(deleteError ?? "")
+            Text(actionError ?? "")
+        }
+        .confirmationDialog("Archive \(plant.name)?", isPresented: $showingArchiveConfirmation, titleVisibility: .visible) {
+            Button("Archive plant", role: .destructive) { archivePlant() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the plant from your active collection and care reminders. Its story, photos and care history stay safe. You can restore it at any time.")
+        }
+        .confirmationDialog("Restore \(plant.name)?", isPresented: $showingRestoreConfirmation, titleVisibility: .visible) {
+            Button("Restore plant") { restorePlant() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This returns the same plant and its existing records to your active collection. Eligible future reminders will be restored if notifications are allowed.")
         }
     }
 
@@ -134,6 +181,22 @@ struct PlantDetailView: View {
         .accessibilityIdentifier("plantDetail.notes")
     }
 
+    private func archivePlant() {
+        do {
+            try PlantArchive.archive(plant, in: modelContext)
+        } catch {
+            actionError = "Couldn't archive \(plant.name). Nothing was changed. Try again."
+        }
+    }
+
+    private func restorePlant() {
+        do {
+            try PlantArchive.restore(plant, in: modelContext)
+        } catch {
+            actionError = "Couldn't restore \(plant.name). It remains archived. Try again."
+        }
+    }
+
     private func deletePlant() {
         modelContext.delete(plant)
         do {
@@ -141,7 +204,7 @@ struct PlantDetailView: View {
             dismiss()
         } catch {
             modelContext.rollback()
-            deleteError = "Couldn't delete \(plant.name). Nothing was removed. Try again."
+            actionError = "Couldn't delete \(plant.name). Nothing was removed. Try again."
         }
     }
 }
