@@ -69,9 +69,9 @@ struct PlantListView: View {
             .feedGoodCollectionMotion(value: plants.map(\.id))
             .searchable(text: $query, prompt: "Plant name or species")
             .background(FeedGoodTheme.background)
-            .feedGoodHeader("My Plants")
+            .feedGoodHeader("My Plants", tab: .plants)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Picker("Sort plants", selection: $sortRaw) {
                             ForEach(PlantCollectionSort.allCases) { option in Text(option.title).tag(option.rawValue) }

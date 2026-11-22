@@ -94,7 +94,7 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(FeedGoodTheme.background)
-            .feedGoodHeader("Settings")
+            .feedGoodHeader("Settings", tab: .settings)
         }
         .tint(FeedGoodTheme.leaf)
     }
