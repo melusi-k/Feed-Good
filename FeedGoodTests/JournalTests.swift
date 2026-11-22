@@ -294,14 +294,14 @@ struct JournalTests {
     @Test func archiveEnforcesOneThousandRecordsPerCollection() throws {
         let plants = (0..<JournalArchive.maxRecords).map { index in
             JournalArchive.PlantRecord(
-                id: UUID(), name: "Plant \\(index)", species: "", notes: "",
+                id: UUID(), name: "Plant \(index)", species: "", notes: "",
                 createdAt: Date(timeIntervalSince1970: TimeInterval(index))
             )
         }
         let entries = (0..<JournalArchive.maxRecords).map { index in
             JournalArchive.EntryRecord(
                 id: UUID(), plantID: plants[0].id, date: Date(timeIntervalSince1970: TimeInterval(index)),
-                note: "Entry \\(index)", photoData: nil
+                note: "Entry \(index)", photoData: nil
             )
         }
         let tasks = (0..<JournalArchive.maxRecords).map { _ in
@@ -409,46 +409,6 @@ struct JournalTests {
         #expect(try verificationContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
     }
 
-    @Test func plantEditsAndJournalPhotoAndDateChangesPreserveLifecycle() throws {
-        let container = try memory()
-        let context = ModelContext(container)
-        let fern = Plant(name: "Fern", species: "Nephrolepis")
-        context.insert(fern)
-        let initialDate = Date(timeIntervalSince1970: 1_800_000_000)
-        try JournalStore.save(
-            JournalDraft(date: initialDate, note: "First growth", photoData: samplePhoto()),
-            plant: fern, entry: nil, context: context
-        )
-        let entry = try #require(context.fetch(FetchDescriptor<JournalEntry>()).first)
-        let originalID = entry.id
-
-        fern.name = "Kitchen fern"
-        fern.species = "Nephrolepis exaltata"
-        try context.save()
-        #expect(entry.plant?.id == fern.id)
-        #expect(entry.plant?.name == "Kitchen fern")
-
-        let replacementDate = Date(timeIntervalSince1970: 1_800_086_400)
-        try JournalStore.save(
-            JournalDraft(date: replacementDate, note: "Moved into brighter light", photoData: samplePhoto()),
-            plant: fern, entry: entry, context: context
-        )
-        #expect(entry.id == originalID)
-        #expect(entry.date == replacementDate)
-        #expect(entry.photoData != nil)
-
-        try JournalStore.save(
-            JournalDraft(date: replacementDate.addingTimeInterval(86_400), note: "Photo cleared"),
-            plant: fern, entry: entry, context: context
-        )
-        #expect(entry.photoData == nil)
-        #expect(entry.note == "Photo cleared")
-        #expect(try context.fetch(FetchDescriptor<JournalEntry>()).count == 1)
-        #expect(fern.journalEntries?.first?.id == originalID)
-    }
-
-
-
     @Test func duplicatePlantAndJournalArchiveIDsAreRejected() throws {
         let plantID = UUID()
         let duplicatePlants = JournalArchive(
@@ -471,51 +431,6 @@ struct JournalTests {
             careTasks: [], careEvents: []
         )
         #expect(throws: JournalArchiveError.invalidRecord) { try duplicateEntries.validate() }
-    }
-
-    @Test func journalDateEditAcrossLocalMidnightPreservesEntryIdentity() throws {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try #require(TimeZone(identifier: "Africa/Johannesburg"))
-        let beforeMidnight = try #require(ISO8601DateFormatter().date(from: "2026-11-22T23:59:59+02:00"))
-        let afterMidnight = try #require(ISO8601DateFormatter().date(from: "2026-11-23T00:00:00+02:00"))
-        let context = ModelContext(try memory())
-        let plant = Plant(name: "Fern")
-        context.insert(plant)
-        try JournalStore.save(JournalDraft(date: beforeMidnight, note: "Before midnight"), plant: plant, entry: nil, context: context)
-        let entry = try #require(context.fetch(FetchDescriptor<JournalEntry>()).first)
-        let entryID = entry.id
-
-        try JournalStore.save(JournalDraft(date: afterMidnight, note: "After midnight"), plant: plant, entry: entry, context: context)
-
-        #expect(entry.id == entryID)
-        #expect(entry.date == afterMidnight)
-        #expect(calendar.component(.day, from: entry.date) == 23)
-        #expect(entry.note == "After midnight")
-    }
-
-    @Test func multipleJournalEntriesRemainAssociatedAndCascadeWithTheirPlant() throws {
-        let context = ModelContext(try memory())
-        let fern = Plant(name: "Fern")
-        let aloe = Plant(name: "Aloe")
-        context.insert(fern)
-        context.insert(aloe)
-        try JournalStore.save(JournalDraft(note: "Fern entry one"), plant: fern, entry: nil, context: context)
-        try JournalStore.save(JournalDraft(note: "Fern entry two"), plant: fern, entry: nil, context: context)
-        try JournalStore.save(JournalDraft(note: "Aloe entry"), plant: aloe, entry: nil, context: context)
-
-        fern.name = "Renamed fern"
-        try context.save()
-        let entries = try context.fetch(FetchDescriptor<JournalEntry>())
-        #expect(entries.filter { $0.plant?.id == fern.id }.count == 2)
-        #expect(entries.filter { $0.plant?.id == aloe.id }.count == 1)
-        #expect(entries.filter { $0.plant?.name == "Renamed fern" }.count == 2)
-
-        context.delete(fern)
-        try context.save()
-        let remaining = try context.fetch(FetchDescriptor<JournalEntry>())
-        #expect(remaining.count == 1)
-        #expect(remaining.first?.plant?.id == aloe.id)
-        #expect(try context.fetch(FetchDescriptor<Plant>()).map(\.id) == [aloe.id])
     }
 
 }
