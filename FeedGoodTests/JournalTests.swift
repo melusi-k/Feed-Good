@@ -480,7 +480,7 @@ struct JournalTests {
         try CareRecorder.delete(deletedEvent, in: sourceContext)
 
         let remainingEvents = try sourceContext.fetch(FetchDescriptor<CareEvent>())
-        #expect(remainingEvents.map(\\.id) == [correctedEvent.id])
+        #expect(remainingEvents.map(\.id) == [correctedEvent.id])
         #expect(try sourceContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
 
         let data = try JournalArchive.export(
