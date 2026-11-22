@@ -109,6 +109,7 @@ struct CarePersistenceTests {
         let originalDueDate = completedAt.addingTimeInterval(-86_400)
         let firstPlantID: UUID
         let secondPlantID: UUID
+        let firstTaskID: UUID
         let secondTaskID: UUID
 
         do {
@@ -122,6 +123,7 @@ struct CarePersistenceTests {
             context.insert(secondPlant)
             let firstTask = CareTask(kind: .watering, intervalDays: 3, dueDate: originalDueDate, plant: firstPlant)
             let secondTask = CareTask(kind: .feeding, intervalDays: 7, dueDate: originalDueDate, plant: secondPlant)
+            firstTaskID = firstTask.id
             secondTaskID = secondTask.id
             context.insert(firstTask)
             context.insert(secondTask)
@@ -141,8 +143,11 @@ struct CarePersistenceTests {
             let event = try #require(events.first)
             #expect(events.count == 1)
             #expect(event.plant?.id == firstPlantID)
+            #expect(event.taskID == firstTaskID)
             #expect(event.note == "Watered")
             let tasks = try context.fetch(FetchDescriptor<CareTask>())
+            let completedTask = try #require(tasks.first { $0.id == firstTaskID })
+            #expect(completedTask.dueDate == CareSchedule.nextDate(after: completedAt, intervalDays: 3))
             let untouchedTask = try #require(tasks.first { $0.id == secondTaskID })
             #expect(untouchedTask.dueDate == originalDueDate)
             let storedPlantIDs = try context.fetch(FetchDescriptor<Plant>()).map(\.id).sorted { $0.uuidString < $1.uuidString }
