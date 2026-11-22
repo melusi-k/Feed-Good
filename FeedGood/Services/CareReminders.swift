@@ -157,7 +157,7 @@ struct CareRemindersLifecycle: ViewModifier {
             "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)"
         }.joined(separator: ";")
         let plantState = plants.sorted { $0.id.uuidString < $1.id.uuidString }.map {
-            "\($0.id)|\($0.archivedAt?.timeIntervalSince1970 ?? 0)"
+            "\($0.id)|\($0.name)|\($0.archivedAt?.timeIntervalSince1970 ?? 0)"
         }.joined(separator: ";")
         return taskState + "#" + plantState
     }
