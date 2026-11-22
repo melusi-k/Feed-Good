@@ -100,7 +100,7 @@ final class CareReminderScheduler: ObservableObject {
         tasks.filter { $0.isEnabled && $0.reminderEnabled && $0.plant != nil && $0.dueDate > now }
             .sorted { $0.dueDate == $1.dueDate ? $0.id.uuidString < $1.id.uuidString : $0.dueDate < $1.dueDate }
             .map {
-                CareReminder(id: prefix + $0.id.uuidString, title: "A moment with \($0.plant!.name)", body: "\($0.title): check what your plant needs before following your own routine.", date: $0.dueDate)
+                CareReminder(id: prefix + $0.id.uuidString, title: "A moment with \($0.plant!.name)", body: "\($0.title): check what your plant needs before following your own routine.", date: $0.dueDate, taskID: $0.id, plantID: $0.plant!.id)
             }
     }
 
