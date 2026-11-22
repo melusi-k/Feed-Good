@@ -1,6 +1,6 @@
 # PRD-015 — Plant Archive and Restore
 
-**Status:** Proposal consistent; implementation not started  
+**Status:** Implementation in progress — stacked archive data, UI and export slices are under review; parent integration remains gated by #63  
 **Priority:** P1 foundation  
 **Release:** Post-MVP foundation; archive compatibility is a prerequisite for dependent features  
 **Primary surfaces:** My Plants, Plant Profile, Plant Story, Settings / Data Portability
@@ -68,5 +68,5 @@ Replaces deletion-or-leave-active as the only ways to manage an inactive plant. 
 
 ## 12. Delivery tracking
 - GitHub issue: [#69 — Archive a plant without deleting its story](https://github.com/melusi-k/Feed-Good/issues/69).
-- Status: proposal consistent; no implementation claim.
+- Implementation stack: [PR #79 — archive state and active-care exclusion](https://github.com/melusi-k/Feed-Good/pull/79), [PR #83 — archived collection and restore flow](https://github.com/melusi-k/Feed-Good/pull/83), and [PR #84 — archive export/recovery compatibility](https://github.com/melusi-k/Feed-Good/pull/84). All are stacked; none is independently releasable.
 - Related data contract: [PRD-009 — Settings & Data Portability](PRD-009-settings-data-portability.md).
