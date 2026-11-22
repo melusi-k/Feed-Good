@@ -60,6 +60,8 @@ struct JournalArchive: Codable {
         // Optional keys keep archives created before growing context decodable.
         var growingEnvironmentRaw: String? = nil
         var lightConditionRaw: String? = nil
+        // Optional so version 1 and pre-archive version 2 files decode as active plants.
+        var archivedAt: Date? = nil
     }
 
     struct EntryRecord: Codable, Equatable {
@@ -134,7 +136,8 @@ struct JournalArchive: Codable {
                 id: $0.id, name: $0.name, species: $0.species, notes: $0.notes,
                 createdAt: $0.createdAt, photoData: $0.photoData,
                 growingEnvironmentRaw: $0.growingEnvironmentRaw,
-                lightConditionRaw: $0.lightConditionRaw
+                lightConditionRaw: $0.lightConditionRaw,
+                archivedAt: $0.archivedAt
             )
         }
         let archive = JournalArchive(
@@ -298,7 +301,8 @@ struct JournalArchive: Codable {
                     growingEnvironment: GrowingEnvironment(rawValue: record.growingEnvironmentRaw ?? "") ?? .unspecified,
                     lightCondition: LightCondition(rawValue: record.lightConditionRaw ?? "") ?? .unspecified,
                     photoData: record.photoData,
-                    createdAt: record.createdAt
+                    createdAt: record.createdAt,
+                    archivedAt: record.archivedAt
                 )
                 recoveryContext.insert(plant)
                 plants[plant.id] = plant
