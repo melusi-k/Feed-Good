@@ -102,4 +102,16 @@ struct CareReminderTests {
         #expect(fake.pending.count == 1)
         #expect(fake.pending[unrelated.id] == unrelated)
     }
+
+    @Test func notificationPayloadRoundTripsPlantAndTaskIdentityAndRejectsMalformedValues() {
+        let taskID = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
+        let plantID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+        let payload = CareNotificationPayload.make(taskID: taskID, plantID: plantID)
+        let destination = CareNotificationPayload.destination(from: payload)
+        #expect(destination?.taskID == taskID)
+        #expect(destination?.plantID == plantID)
+        #expect(CareNotificationPayload.destination(from: [:]) == nil)
+        #expect(CareNotificationPayload.destination(from: [CareNotificationPayload.taskIDKey: "not-a-uuid", CareNotificationPayload.plantIDKey: plantID.uuidString]) == nil)
+    }
+
 }
