@@ -16,12 +16,12 @@ enum PlantCollection {
 
     /// Active (non-archived) plants: the collection's default care surface.
     static func active(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
-        plants(from: plants.filter { $0.archivedAt == nil }, query: query, sort: sort)
+        return self.plants(from: plants.filter { $0.archivedAt == nil }, query: query, sort: sort)
     }
 
     /// Archived plants only, for the archived collection view.
     static func archived(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
-        plants(from: plants.filter { $0.archivedAt != nil }, query: query, sort: sort)
+        return self.plants(from: plants.filter { $0.archivedAt != nil }, query: query, sort: sort)
     }
 
     static func plants(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
