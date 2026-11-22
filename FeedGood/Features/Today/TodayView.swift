@@ -62,12 +62,14 @@ extension TodayCare {
 
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var notificationRouter: CareNotificationRouter
     @Query(sort: \Plant.createdAt, order: .reverse) private var plants: [Plant]
     @Query(sort: \CareTask.dueDate) private var careTasks: [CareTask]
     @Binding var selectedTab: AppTab
     @State private var showingAddPlant = false
     @State private var completing: TodayCareItem?
     @State private var careError: String?
+    @State private var navigationPath: [UUID] = []
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: .now)
@@ -82,7 +84,7 @@ struct TodayView: View {
     private var careGroups: [TodayCareGroup] { TodayCare.groups(from: careItems) }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 26) {
                     welcome
@@ -97,6 +99,23 @@ struct TodayView: View {
                 .padding(.bottom, 34)
             }
             .feedGoodCollectionMotion(value: careItems.map { "\($0.id):\($0.task.dueDate)" })
+            .navigationDestination(for: UUID.self) { plantID in
+                if let plant = plants.first(where: { $0.id == plantID }) {
+                    PlantDetailView(plant: plant)
+                } else {
+                    ContentUnavailableView("Plant unavailable", systemImage: "leaf", description: Text("This plant may have been removed from your garden."))
+                }
+            }
+            .task { openNotificationDestination(notificationRouter.destination) }
+            .onChange(of: notificationRouter.destination) { _, destination in
+                openNotificationDestination(destination)
+            }
+            .onChange(of: careTasks.map(\.id)) { _, _ in
+                openNotificationDestination(notificationRouter.destination)
+            }
+            .onChange(of: plants.map(\.id)) { _, _ in
+                openNotificationDestination(notificationRouter.destination)
+            }
             .background(FeedGoodTheme.background.ignoresSafeArea())
             .feedGoodHeader("Feed Good", tab: .today)
             .sheet(isPresented: $showingAddPlant) {
@@ -121,6 +140,16 @@ struct TodayView: View {
             }
         }
         .tint(FeedGoodTheme.leaf)
+    }
+
+    private func openNotificationDestination(_ destination: CareNotificationDestination?) {
+        guard let destination,
+              let task = careTasks.first(where: { $0.id == destination.taskID }),
+              task.plant?.id == destination.plantID,
+              plants.contains(where: { $0.id == destination.plantID }) else { return }
+        selectedTab = .today
+        navigationPath = [destination.plantID]
+        notificationRouter.consume(destination)
     }
 
     private func record(_ item: TodayCareItem) {
