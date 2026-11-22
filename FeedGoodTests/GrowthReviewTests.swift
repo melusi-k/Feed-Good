@@ -32,29 +32,34 @@ struct GrowthReviewTests {
         let date = Date(timeIntervalSince1970: 10)
         let a = JournalEntry(date: date, note: "A", photoData: photo(), plant: plant)
         let b = JournalEntry(date: date, note: "B", photoData: photo(), plant: plant)
-        let first = GrowthReview.entries(plantID: plant.id, from: [a, b])
-        let second = GrowthReview.entries(plantID: plant.id, from: [b, a])
-        #expect(first.map(\.id) == second.map(\.id))
-        #expect(first.map(\.id) == [a.id, b.id].sorted { $0.uuidString < $1.uuidString })
+        let first = GrowthReview.entries(plantID: plant.id, from: [a, b]).map(\.id)
+        let second = GrowthReview.entries(plantID: plant.id, from: [b, a]).map(\.id)
+        let expected = [a.id, b.id].sorted { $0.uuidString < $1.uuidString }
+        #expect(first == second)
+        #expect(first == expected)
     }
 
     @Test func comparisonOrdersEarlierThenLaterAndRejectsInvalidSelection() throws {
         let plant = Plant(name: "Fern")
         let older = JournalEntry(date: Date(timeIntervalSince1970: 100), note: "Older", photoData: photo(), plant: plant)
         let newer = JournalEntry(date: Date(timeIntervalSince1970: 200), note: "Newer", photoData: photo(), plant: plant)
-        let comparison = GrowthReview.comparison([newer, older])
-        #expect(comparison?.earlier.id == older.id)
-        #expect(comparison?.later.id == newer.id)
-        #expect(GrowthReview.comparison([older]) == nil)
-        #expect(GrowthReview.comparison([]) == nil)
-        #expect(GrowthReview.comparison([older, older]) == nil)
+        let comparison = try #require(GrowthReview.comparison([newer, older]))
+        #expect(comparison.earlier.id == older.id)
+        #expect(comparison.later.id == newer.id)
+        let single = GrowthReview.comparison([older])
+        #expect(single == nil)
+        let empty = GrowthReview.comparison([])
+        #expect(empty == nil)
+        let duplicate = GrowthReview.comparison([older, older])
+        #expect(duplicate == nil)
     }
 
     @Test func comparisonRejectsEntriesFromDifferentPlants() throws {
         let fern = Plant(name: "Fern"); let aloe = Plant(name: "Aloe")
         let a = JournalEntry(date: Date(timeIntervalSince1970: 100), note: "A", photoData: photo(), plant: fern)
         let b = JournalEntry(date: Date(timeIntervalSince1970: 200), note: "B", photoData: photo(), plant: aloe)
-        #expect(GrowthReview.comparison([a, b]) == nil)
+        let cross = GrowthReview.comparison([a, b])
+        #expect(cross == nil)
     }
 
     @Test func photoRemovalAndDeletionReprojectWithoutLosingUnrelatedEntries() throws {
