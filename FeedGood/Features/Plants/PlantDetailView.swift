@@ -53,7 +53,7 @@ struct PlantDetailView: View {
                     Label("Delete plant", systemImage: "trash")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FeedGoodPressStyle(surface: .bordered))
                 .accessibilityIdentifier("plantDetail.delete")
             }
             .padding(FeedGoodTheme.contentPadding)
