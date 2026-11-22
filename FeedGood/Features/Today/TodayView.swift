@@ -255,7 +255,7 @@ struct TodayView: View {
                         .foregroundStyle(FeedGoodTheme.muted)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FeedGoodPressStyle())
             .accessibilityIdentifier("today.care.plant.\(group.plant.name)")
 
             ForEach(group.shown) { item in
@@ -343,7 +343,7 @@ struct TodayView: View {
                     .padding(13)
                     .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(FeedGoodPressStyle())
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -382,7 +382,7 @@ struct TodayView: View {
             }
             .frame(width: 142, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FeedGoodPressStyle())
         .accessibilityIdentifier("today.plant.\(plant.name)")
     }
 
@@ -405,7 +405,7 @@ struct TodayView: View {
                     .foregroundStyle(FeedGoodTheme.leaf)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FeedGoodPressStyle())
     }
 
     private var journalPrompt: some View {
