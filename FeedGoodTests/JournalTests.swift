@@ -462,7 +462,7 @@ struct JournalTests {
         try CareRecorder.update(
             correctedEvent,
             completedAt: correctedDate,
-            note: " Corrected after task removal ",
+            note: "Corrected history",
             in: sourceContext
         )
         let remindersAfter = CareReminderScheduler.reminders(for: [task], now: referenceNow)
@@ -471,6 +471,10 @@ struct JournalTests {
         #expect(todayAfterCorrection == todayBefore)
         #expect(task.dueDate == dueDate)
         #expect(task.intervalDays == 9)
+
+        try CareRecorder.delete(deletedEvent, in: sourceContext)
+        let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\.id)
+        #expect(todayAfterDeletion == todayBefore)
 
         // Historical events remain independently editable after their routine is removed.
         sourceContext.delete(task)
@@ -481,9 +485,6 @@ struct JournalTests {
             note: "Final corrected history",
             in: sourceContext
         )
-        try CareRecorder.delete(deletedEvent, in: sourceContext)
-        let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\.id)
-        #expect(todayAfterDeletion == todayBefore)
 
         let remainingEvents = try sourceContext.fetch(FetchDescriptor<CareEvent>())
         #expect(remainingEvents.map(\.id) == [correctedEvent.id])
