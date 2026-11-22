@@ -8,8 +8,17 @@ struct CareReminder: Equatable {
     let title: String
     let body: String
     let date: Date
-    let taskID: UUID? = nil
-    let plantID: UUID? = nil
+    let taskID: UUID?
+    let plantID: UUID?
+
+    init(id: String, title: String, body: String, date: Date, taskID: UUID? = nil, plantID: UUID? = nil) {
+        self.id = id
+        self.title = title
+        self.body = body
+        self.date = date
+        self.taskID = taskID
+        self.plantID = plantID
+    }
 }
 
 enum CareNotificationPayload {
