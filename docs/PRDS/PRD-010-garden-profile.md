@@ -91,7 +91,7 @@ Replaces the absence of a consistent, garden-wide overview and a shared Profile 
 
 ## 11. Decisions and open questions
 
-Reconciled against PR #41 head `8e801afbba1ff784e7fae659e2294117b4dba1ee` on 2026-11-22. This records the proposed first-release behavior; automated CI and simulator verification remain outstanding until recorded against the final PR head.
+Reconciled against the Profile implementation and test changes in PR #41 on 2026-11-22. Automated CI and simulator verification remain outstanding until recorded against the final PR head.
 
 ### Settled for this slice
 
@@ -108,7 +108,7 @@ Reconciled against PR #41 head `8e801afbba1ff784e7fae659e2294117b4dba1ee` on 202
 - Exact-head CI must build and execute the Swift Testing and XCTest suites successfully.
 - Retained simulator screenshots must be inspected for all four roots, empty/populated Profile, and light/dark appearance.
 - Larger Dynamic Type, VoiceOver order/labels, narrow widths and longer notes need explicit simulator/device verification.
-- UI automation currently verifies the shared entry points, Done/swipe dismissal, Settings route, dark appearance, a populated plant count, Growing context and pushed-page scope. Care-event and journal-entry counts are directly asserted in the summary unit test; UI-level count presentation can be added if simulator evidence reveals a need.
+- UI automation verifies the shared entry points, Done/swipe dismissal, Settings route, dark appearance, empty-garden counts, a populated plant count, Growing context name/species/notes and pushed-page scope. Care-event and journal-entry counts are also directly asserted for linked records in the summary unit test. The UI test exposes stable accessibility identifiers for the optional species and notes fields.
 
 ## 12. Delivery tracking
 
