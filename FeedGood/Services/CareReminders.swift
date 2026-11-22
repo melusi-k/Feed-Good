@@ -87,6 +87,10 @@ final class CareReminderScheduler: ObservableObject {
             case .denied:
                 message = "Notifications are off in iPhone Settings. Your routines and care history still work."
             case .allowed:
+                if reminders.isEmpty {
+                    message = "Notifications are allowed. Enable a reminder on a care task if you'd like an alert."
+                    return
+                }
                 // iOS permits 64 pending notifications per app. Preserve any non-care requests.
                 let capacity = max(0, 64 - (pending.count - ours.count))
                 var failed = false

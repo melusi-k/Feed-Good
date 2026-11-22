@@ -6,29 +6,50 @@ struct JournalArchiveSection: View {
     @Environment(\.modelContext) private var context
     @Query private var entries: [JournalEntry]
     @Query private var plants: [Plant]
+    @Query private var careTasks: [CareTask]
+    @Query private var careEvents: [CareEvent]
     @State private var errorMessage: String?
     @State private var exporting = false
     @State private var importing = false
     @State private var archive: JournalArchiveDocument?
     @State private var statusMessage: String?
+    @State private var pendingRecoveryData: Data?
+    @State private var recoveryPreview: JournalArchivePreview?
+    @State private var showingRecoveryConfirmation = false
 
     var body: some View {
         Group {
-            if let statusMessage { Text(statusMessage).font(.callout).accessibilityIdentifier("journal.status") }
-                Section("Local journal archive") {
-                    Text("Export includes all journal notes/photos and plant identity, not care records, profile photos or settings. Save outside the app before deletion. Archives contain private text and photos.").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("journal.archiveScope")
-                    Button("Export journal") { export() }.accessibilityIdentifier("journal.export")
-                    Button("Recover journal") { importing = true }.accessibilityIdentifier("journal.recover")
-                    Text("Recovery adds missing entries, recreates missing plants and skips identical entries. Existing details are never overwritten. Conflicting IDs reject the import. Recovering an old archive can restore deleted entries.").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("journal.recoveryPolicy")
-                }
+            if let statusMessage {
+                Text(statusMessage)
+                    .font(.callout)
+                    .accessibilityIdentifier("journal.status")
+            }
+            Section("Local garden archive") {
+                Text("Version 2 exports plant details and profile photos, care routines and history, plus journal notes and photos. It excludes app settings and notification permissions. Save the archive outside the app; it contains private text and photos.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("journal.archiveScope")
+                Button("Export garden data") { export() }
+                    .accessibilityIdentifier("journal.export")
+                Button("Recover garden data") { importing = true }
+                    .accessibilityIdentifier("journal.recover")
+                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Version 1 journal archives remain supported.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("journal.recoveryPolicy")
+            }
         }
-        .alert("Journal archive", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+        .alert("Garden archive", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK") { errorMessage = nil }
-        } message: { Text(errorMessage ?? "") }
-        .fileExporter(isPresented: $exporting, document: archive, contentType: .json, defaultFilename: "FeedGood-Journal") { result in
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        .fileExporter(isPresented: $exporting, document: archive, contentType: .json, defaultFilename: "FeedGood-Garden") { result in
             switch result {
-            case .success: statusMessage = "Journal exported. Keep the archive somewhere safe outside the app."
-            case .failure(let error): errorMessage = "Export failed: \(error.localizedDescription)"
+            case .success:
+                statusMessage = "Garden data exported. Keep the archive somewhere safe outside the app."
+            case .failure(let error):
+                errorMessage = "Export failed: \(error.localizedDescription)"
             }
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
@@ -38,14 +59,54 @@ struct JournalArchiveSection: View {
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                 guard size <= JournalArchive.maxBytes else { throw JournalArchiveError.tooLarge }
-                let count = try JournalArchive.recover(Data(contentsOf: url), context: context)
-                statusMessage = "Recovered \(count) entries. Existing entries were kept. Review your journal and save a fresh export."
-            } catch { errorMessage = "Recovery failed: \(error.localizedDescription)" }
+                let data = try Data(contentsOf: url)
+                recoveryPreview = try JournalArchive.preview(data, context: context)
+                pendingRecoveryData = data
+                showingRecoveryConfirmation = true
+            } catch {
+                errorMessage = "Recovery preview failed: \(error.localizedDescription)"
+            }
+        }
+        .confirmationDialog(
+            "Review garden recovery",
+            isPresented: $showingRecoveryConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Recover garden data", role: .destructive) { recoverPendingArchive() }
+                .accessibilityIdentifier("journal.recover.confirm")
+            Button("Cancel", role: .cancel) { clearPendingRecovery() }
+        } message: {
+            Text(recoveryPreview?.confirmationMessage ?? "Review the archive before recovering your garden.")
         }
     }
 
     private func export() {
-        do { archive = JournalArchiveDocument(data: try JournalArchive.export(plants: plants, entries: entries)); exporting = true }
-        catch { errorMessage = "Export failed: \(error.localizedDescription)" }
+        do {
+            archive = JournalArchiveDocument(data: try JournalArchive.export(
+                plants: plants,
+                entries: entries,
+                careTasks: careTasks,
+                careEvents: careEvents
+            ))
+            exporting = true
+        } catch {
+            errorMessage = "Export failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func recoverPendingArchive() {
+        guard let data = pendingRecoveryData, let preview = recoveryPreview else { return }
+        do {
+            _ = try JournalArchive.recover(data, context: context)
+            statusMessage = "Recovered \(preview.plantsToAdd) plants, \(preview.entriesToAdd) journal entries, \(preview.careTasksToAdd) care routines and \(preview.careEventsToAdd) care-history records. Existing records were kept."
+        } catch {
+            errorMessage = "Recovery failed: \(error.localizedDescription)"
+        }
+        clearPendingRecovery()
+    }
+
+    private func clearPendingRecovery() {
+        pendingRecoveryData = nil
+        recoveryPreview = nil
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum AppTab: Int, Hashable, CaseIterable {
     case today
@@ -60,6 +61,16 @@ struct AppTabView: View {
 
 struct SettingsView: View {
     @Binding var appearanceRawValue: String
+    @EnvironmentObject private var reminderScheduler: CareReminderScheduler
+    @Environment(\.openURL) private var openURL
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Not available"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Not available"
+    }
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
@@ -82,8 +93,6 @@ struct SettingsView: View {
                     Text("Choose the look that feels right. System follows your iPhone setting.")
                 }
 
-                JournalArchiveSection()
-
                 Section {
                     HStack(spacing: 12) {
                         Image(systemName: appearance == .dark ? "moon.stars.fill" : "sun.max.fill")
@@ -99,6 +108,34 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 4)
                 }
+
+                Section("Privacy & data") {
+                    Text("Your plants, care routines and journal are stored on this device. Feed Good does not require an account or upload your garden to a service. If you export an archive, the file contains private plant details and photos; choose a secure place to keep it.")
+                        .font(.callout)
+                        .foregroundStyle(FeedGoodTheme.muted)
+                        .accessibilityIdentifier("settings.privacy")
+                }
+
+                JournalArchiveSection()
+
+                Section("Notifications") {
+                    Text(reminderScheduler.message)
+                        .font(.callout)
+                        .foregroundStyle(FeedGoodTheme.muted)
+                        .accessibilityIdentifier("settings.notificationStatus")
+                    Button("Manage Feed Good notifications") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            openURL(url)
+                        }
+                    }
+                    .accessibilityIdentifier("settings.notificationSettings")
+                }
+
+                Section("About") {
+                    LabeledContent("Version", value: appVersion)
+                    LabeledContent("Build", value: buildNumber)
+                }
+
             }
             .scrollContentBackground(.hidden)
             .background(FeedGoodTheme.background)
