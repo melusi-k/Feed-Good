@@ -68,7 +68,7 @@ struct DailyMomentsView: View {
                             Text("Content version \(DailyMoments.contentVersion). Source checks compare these general tips with the cited guidance. They do not replace expert horticultural review or advice for a particular plant.")
                         }
                     }
-                    .navigationTitle("Source and review")
+                    .feedGoodHeader("Source and review")
                     .toolbar { Button("Done") { showingSource = false }.accessibilityIdentifier("today.sourceDone") }
                 }
             }
