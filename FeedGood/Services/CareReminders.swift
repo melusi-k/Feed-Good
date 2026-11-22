@@ -8,6 +8,34 @@ struct CareReminder: Equatable {
     let title: String
     let body: String
     let date: Date
+    let taskID: UUID?
+    let plantID: UUID?
+
+    init(id: String, title: String, body: String, date: Date, taskID: UUID? = nil, plantID: UUID? = nil) {
+        self.id = id
+        self.title = title
+        self.body = body
+        self.date = date
+        self.taskID = taskID
+        self.plantID = plantID
+    }
+}
+
+enum CareNotificationPayload {
+    static let taskIDKey = "feedgood.care.task-id"
+    static let plantIDKey = "feedgood.care.plant-id"
+
+    static func make(taskID: UUID, plantID: UUID) -> [AnyHashable: Any] {
+        [taskIDKey: taskID.uuidString, plantIDKey: plantID.uuidString]
+    }
+
+    static func destination(from userInfo: [AnyHashable: Any]) -> (taskID: UUID, plantID: UUID)? {
+        guard let taskValue = userInfo[taskIDKey] as? String,
+              let plantValue = userInfo[plantIDKey] as? String,
+              let taskID = UUID(uuidString: taskValue),
+              let plantID = UUID(uuidString: plantValue) else { return nil }
+        return (taskID, plantID)
+    }
 }
 
 enum ReminderPermission { case notDetermined, allowed, denied }
@@ -41,6 +69,9 @@ final class LocalCareNotifications: CareNotificationBoundary {
         content.title = reminder.title
         content.body = reminder.body
         content.sound = .default
+        if let taskID = reminder.taskID, let plantID = reminder.plantID {
+            content.userInfo = CareNotificationPayload.make(taskID: taskID, plantID: plantID)
+        }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .current
         var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: reminder.date)
@@ -69,7 +100,7 @@ final class CareReminderScheduler: ObservableObject {
         tasks.filter { $0.isEnabled && $0.reminderEnabled && $0.plant != nil && $0.dueDate > now }
             .sorted { $0.dueDate == $1.dueDate ? $0.id.uuidString < $1.id.uuidString : $0.dueDate < $1.dueDate }
             .map {
-                CareReminder(id: prefix + $0.id.uuidString, title: "A moment with \($0.plant!.name)", body: "\($0.title): check what your plant needs before following your own routine.", date: $0.dueDate)
+                CareReminder(id: prefix + $0.id.uuidString, title: "A moment with \($0.plant!.name)", body: "\($0.title): check what your plant needs before following your own routine.", date: $0.dueDate, taskID: $0.id, plantID: $0.plant!.id)
             }
     }
 

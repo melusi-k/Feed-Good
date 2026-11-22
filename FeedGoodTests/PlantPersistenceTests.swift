@@ -1,15 +1,15 @@
-import XCTest
 import SwiftData
+import Testing
 @testable import FeedGood
 
 @MainActor
-final class PlantPersistenceTests: XCTestCase {
+struct PlantPersistenceTests {
     private func makeContainer() throws -> ModelContainer {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(for: Plant.self, configurations: configuration)
     }
 
-    func testProfileEditsPhotoAndGrowingContextPersistAcrossContexts() throws {
+    @Test func profileEditsPhotoAndGrowingContextPersistAcrossContexts() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let plant = Plant(name: "Monstera")
@@ -27,29 +27,29 @@ final class PlantPersistenceTests: XCTestCase {
 
         let verificationContext = ModelContext(container)
         let stored = try verificationContext.fetch(FetchDescriptor<Plant>())
-        XCTAssertEqual(stored.count, 1)
-        let reloaded = try XCTUnwrap(stored.first)
-        XCTAssertEqual(reloaded.name, "Monty")
-        XCTAssertEqual(reloaded.species, "Monstera deliciosa")
-        XCTAssertEqual(reloaded.notes, "New leaf unfurling")
-        XCTAssertEqual(reloaded.photoData, Data([0x01, 0x02, 0x03]))
-        XCTAssertEqual(reloaded.growingEnvironment, .balcony)
-        XCTAssertEqual(reloaded.lightCondition, .indirect)
+        #expect(stored.count == 1)
+        let reloaded = try #require(stored.first)
+        #expect(reloaded.name == "Monty")
+        #expect(reloaded.species == "Monstera deliciosa")
+        #expect(reloaded.notes == "New leaf unfurling")
+        #expect(reloaded.photoData == Data([0x01, 0x02, 0x03]))
+        #expect(reloaded.growingEnvironment == .balcony)
+        #expect(reloaded.lightCondition == .indirect)
     }
 
-    func testNewPlantsHaveNoAssumedGrowingContext() throws {
+    @Test func newPlantsHaveNoAssumedGrowingContext() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let plant = Plant(name: "Fern")
         context.insert(plant)
         try context.save()
 
-        let stored = try XCTUnwrap(context.fetch(FetchDescriptor<Plant>()).first)
-        XCTAssertEqual(stored.growingEnvironment, .unspecified)
-        XCTAssertEqual(stored.lightCondition, .unspecified)
+        let stored = try #require(context.fetch(FetchDescriptor<Plant>()).first)
+        #expect(stored.growingEnvironment == .unspecified)
+        #expect(stored.lightCondition == .unspecified)
     }
 
-    func testDeletingPlantRemovesItFromStore() throws {
+    @Test func deletingPlantRemovesItFromStore() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let plant = Plant(name: "Fern")
@@ -57,6 +57,7 @@ final class PlantPersistenceTests: XCTestCase {
         try context.save()
         context.delete(plant)
         try context.save()
-        XCTAssertTrue(try context.fetch(FetchDescriptor<Plant>()).isEmpty)
+
+        #expect(try context.fetch(FetchDescriptor<Plant>()).isEmpty)
     }
 }

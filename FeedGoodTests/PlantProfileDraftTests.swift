@@ -1,24 +1,31 @@
-import XCTest
+import Testing
 @testable import FeedGood
 
-final class PlantProfileDraftTests: XCTestCase {
-    func testDraftStartsFromPlantValues() {
-        let plant = Plant(name: "Monstera", species: "Monstera deliciosa", notes: "New leaf", growingEnvironment: .balcony, lightCondition: .indirect)
+struct PlantProfileDraftTests {
+    @Test func draftStartsFromPlantValues() {
+        let plant = Plant(
+            name: "Monstera",
+            species: "Monstera deliciosa",
+            notes: "New leaf",
+            growingEnvironment: .balcony,
+            lightCondition: .indirect
+        )
         let draft = PlantProfileDraft(plant: plant)
-        XCTAssertEqual(draft.name, "Monstera")
-        XCTAssertEqual(draft.species, "Monstera deliciosa")
-        XCTAssertEqual(draft.notes, "New leaf")
-        XCTAssertEqual(draft.growingEnvironment, .balcony)
-        XCTAssertEqual(draft.lightCondition, .indirect)
+
+        #expect(draft.name == "Monstera")
+        #expect(draft.species == "Monstera deliciosa")
+        #expect(draft.notes == "New leaf")
+        #expect(draft.growingEnvironment == .balcony)
+        #expect(draft.lightCondition == .indirect)
     }
 
-    func testBlankNameIsInvalid() {
-        XCTAssertFalse(PlantProfileDraft(name: "").isValid)
-        XCTAssertFalse(PlantProfileDraft(name: "   \n  ").isValid)
-        XCTAssertTrue(PlantProfileDraft(name: " Fern ").isValid)
+    @Test func blankAndWhitespaceOnlyNamesAreInvalid() {
+        #expect(PlantProfileDraft(name: "").isValid == false)
+        #expect(PlantProfileDraft(name: "   \n  ").isValid == false)
+        #expect(PlantProfileDraft(name: " Fern ").isValid)
     }
 
-    func testApplyingTrimsAndWritesBackOntoPlant() {
+    @Test func applyingTrimsAndWritesBackOntoPlant() {
         let plant = Plant(name: "Monstera")
         var draft = PlantProfileDraft(plant: plant)
         draft.name = "  Monty  "
@@ -26,37 +33,43 @@ final class PlantProfileDraftTests: XCTestCase {
         draft.notes = "\n Moved to the window  \n"
         draft.growingEnvironment = .indoor
         draft.lightCondition = .direct
+
         draft.applying(to: plant)
-        XCTAssertEqual(plant.name, "Monty")
-        XCTAssertEqual(plant.species, "Monstera deliciosa")
-        XCTAssertEqual(plant.notes, "Moved to the window")
-        XCTAssertEqual(plant.growingEnvironment, .indoor)
-        XCTAssertEqual(plant.lightCondition, .direct)
+
+        #expect(plant.name == "Monty")
+        #expect(plant.species == "Monstera deliciosa")
+        #expect(plant.notes == "Moved to the window")
+        #expect(plant.growingEnvironment == .indoor)
+        #expect(plant.lightCondition == .direct)
     }
 
-    func testDraftInitializerDefaultsGrowingContextToUnspecified() {
+    @Test func draftDefaultsGrowingContextToUnspecified() {
         let draft = PlantProfileDraft(name: "Fern")
-        XCTAssertEqual(draft.growingEnvironment, .unspecified)
-        XCTAssertEqual(draft.lightCondition, .unspecified)
+        #expect(draft.growingEnvironment == .unspecified)
+        #expect(draft.lightCondition == .unspecified)
     }
 
-    func testOptionalContextDefaultsToUnspecifiedAndCanBeCleared() {
+    @Test func optionalGrowingContextCanBeCleared() {
         let plant = Plant(name: "Fern", growingEnvironment: .balcony, lightCondition: .low)
         var draft = PlantProfileDraft(plant: plant)
         draft.growingEnvironment = .unspecified
         draft.lightCondition = .unspecified
+
         draft.applying(to: plant)
-        XCTAssertEqual(plant.growingEnvironment, .unspecified)
-        XCTAssertEqual(plant.lightCondition, .unspecified)
+
+        #expect(plant.growingEnvironment == .unspecified)
+        #expect(plant.lightCondition == .unspecified)
     }
 
-    func testApplyingBlankSpeciesAndNotesStoresEmptyStrings() {
+    @Test func applyingBlankSpeciesAndNotesStoresEmptyStrings() {
         let plant = Plant(name: "Monstera", species: "Deliciosa", notes: "Old note")
         var draft = PlantProfileDraft(plant: plant)
         draft.species = "   "
         draft.notes = ""
+
         draft.applying(to: plant)
-        XCTAssertEqual(plant.species, "")
-        XCTAssertEqual(plant.notes, "")
+
+        #expect(plant.species == "")
+        #expect(plant.notes == "")
     }
 }

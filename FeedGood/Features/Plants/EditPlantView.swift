@@ -63,11 +63,16 @@ struct EditPlantView: View {
 
                 Section {
                     Picker("Where does it grow?", selection: $draft.growingEnvironment) {
-                        ForEach(GrowingEnvironment.allCases) { option in Text(option.title).tag(option) }
+                        ForEach(GrowingEnvironment.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
                     }
                     .accessibilityIdentifier("editPlant.growingEnvironment")
+
                     Picker("Observed light", selection: $draft.lightCondition) {
-                        ForEach(LightCondition.allCases) { option in Text(option.title).tag(option) }
+                        ForEach(LightCondition.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
                     }
                     .accessibilityIdentifier("editPlant.lightCondition")
                 } header: {
