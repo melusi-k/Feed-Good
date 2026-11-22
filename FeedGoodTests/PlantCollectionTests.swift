@@ -22,12 +22,13 @@ struct PlantCollectionTests {
         let all = [older, newer, same]
         #expect(PlantCollection.plants(from: all, query: "", sort: .name).last?.id == older.id)
         #expect(PlantCollection.plants(from: all, query: "", sort: .recentlyAdded).last?.id == older.id)
+        let tieOrder = [newer.id, same.id].sorted { $0.uuidString < $1.uuidString }
         for sort in PlantCollectionSort.allCases {
             let a = PlantCollection.plants(from: all, query: "", sort: sort).map(\.id)
             let b = PlantCollection.plants(from: all.reversed(), query: "", sort: sort).map(\.id)
             #expect(a == b)
             #expect(Set(a).count == 3)
-            #expect(a.prefix(2) == [newer.id, same.id].sorted { $0.uuidString < $1.uuidString }[...])
+            #expect(Array(a.prefix(2)) == tieOrder)
         }
     }
 
