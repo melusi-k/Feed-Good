@@ -150,12 +150,18 @@ struct CareRemindersLifecycle: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var scheduler: CareReminderScheduler
     @Query private var tasks: [CareTask]
+    @Query private var plants: [Plant]
 
     private var revision: String {
-        tasks.sorted { $0.id.uuidString < $1.id.uuidString }.map {
-            "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)|\($0.plant?.name ?? "")|\($0.plant?.archivedAt?.timeIntervalSince1970 ?? 0)"
+        let taskState = tasks.sorted { $0.id.uuidString < $1.id.uuidString }.map {
+            "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)"
         }.joined(separator: ";")
+        let plantState = plants.sorted { $0.id.uuidString < $1.id.uuidString }.map {
+            "\($0.id)|\($0.archivedAt?.timeIntervalSince1970 ?? 0)"
+        }.joined(separator: ";")
+        return taskState + "#" + plantState
     }
+
     func body(content: Content) -> some View {
         content
             .task(id: revision) { await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks)) }
