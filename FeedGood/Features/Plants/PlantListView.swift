@@ -9,7 +9,7 @@ struct PlantListView: View {
     @AppStorage("plantCollectionSort") private var sortRaw = PlantCollectionSort.recentlyAdded.rawValue
 
     private var sort: PlantCollectionSort { PlantCollectionSort(rawValue: sortRaw) ?? .recentlyAdded }
-    private var visiblePlants: [Plant] { PlantCollection.plants(from: plants, query: query, sort: sort) }
+    private var visiblePlants: [Plant] { PlantCollection.active(from: plants, query: query, sort: sort) }
 
     var body: some View {
         NavigationStack {
@@ -28,13 +28,24 @@ struct PlantListView: View {
                     List {
                         Section {
                             if visiblePlants.isEmpty {
-                                ContentUnavailableView {
-                                    Label("No matching plants", systemImage: "magnifyingglass")
-                                        .accessibilityIdentifier("plants.search.empty")
-                                } description: {
-                                    Text("Try a plant name or the species you saved.")
-                                } actions: {
-                                    Button("Clear search") { query = "" }.accessibilityIdentifier("plants.search.clear")
+                                if query.isEmpty {
+                                    ContentUnavailableView {
+                                        Label("No active plants", systemImage: "archivebox")
+                                    } description: {
+                                        Text("Your archived plants are safe. Restore one whenever you want to care for it again.")
+                                    } actions: {
+                                        NavigationLink("View archived plants") { ArchivedPlantsView() }
+                                            .accessibilityIdentifier("plants.archived.empty")
+                                    }
+                                } else {
+                                    ContentUnavailableView {
+                                        Label("No matching plants", systemImage: "magnifyingglass")
+                                            .accessibilityIdentifier("plants.search.empty")
+                                    } description: {
+                                        Text("Try a plant name or the species you saved.")
+                                    } actions: {
+                                        Button("Clear search") { query = "" }.accessibilityIdentifier("plants.search.clear")
+                                    }
                                 }
                             }
                             ForEach(visiblePlants) { plant in
@@ -80,6 +91,14 @@ struct PlantListView: View {
                         Label("Sort: \(sort.title)", systemImage: "arrow.up.arrow.down")
                     }
                     .accessibilityIdentifier("plants.sort")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        ArchivedPlantsView()
+                    } label: {
+                        Label("Archived plants", systemImage: "archivebox")
+                    }
+                    .accessibilityIdentifier("plants.archived")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
