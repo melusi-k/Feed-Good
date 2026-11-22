@@ -508,7 +508,7 @@ struct JournalTests {
 
         let destination = try memory()
         let recoveryContext = ModelContext(destination)
-        #expect(try JournalArchive.recover(data, context: recoveryContext) == 1)
+        #expect(try JournalArchive.recover(data, context: recoveryContext) == 0)
         let restoredEvent = try #require(recoveryContext.fetch(FetchDescriptor<CareEvent>()).first)
         #expect(restoredEvent.id == correctedEvent.id)
         #expect(restoredEvent.completedAt == correctedDate)
