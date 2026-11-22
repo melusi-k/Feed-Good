@@ -82,7 +82,8 @@ struct JournalTests {
         let plant = Plant(
             name: "Fern", species: "Nephrolepis",
             growingEnvironment: .balcony, lightCondition: .indirect,
-            photoData: samplePhoto()
+            photoData: samplePhoto(),
+            archivedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
         sourceContext.insert(plant)
         let dueDate = Date(timeIntervalSince1970: 1_800_000_000)
@@ -120,6 +121,7 @@ struct JournalTests {
         #expect(restoredPlant.photoData == plant.photoData)
         #expect(restoredPlant.growingEnvironment == .balcony)
         #expect(restoredPlant.lightCondition == .indirect)
+        #expect(restoredPlant.archivedAt == plant.archivedAt)
 
         let restoredTask = try #require(destinationContext.fetch(FetchDescriptor<CareTask>()).first)
         #expect(restoredTask.id == task.id)
@@ -263,6 +265,7 @@ struct JournalTests {
         let restored = try #require(context.fetch(FetchDescriptor<Plant>()).first)
         #expect(restored.growingEnvironment == .unspecified)
         #expect(restored.lightCondition == .unspecified)
+        #expect(restored.archivedAt == nil)
     }
 
     @Test func recoveryKeepsUnsavedCallerChanges() throws {
@@ -431,6 +434,35 @@ struct JournalTests {
             careTasks: [], careEvents: []
         )
         #expect(throws: JournalArchiveError.invalidRecord) { try duplicateEntries.validate() }
+    }
+
+    @Test func olderVersionTwoArchiveWithoutArchivedAtDefaultsToActive() throws {
+        let plant = Plant(name: "Legacy fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let archive = JournalArchive(
+            plants: [
+                JournalArchive.PlantRecord(
+                    id: plant.id, name: plant.name, species: "", notes: "",
+                    createdAt: plant.createdAt, archivedAt: plant.archivedAt
+                )
+            ],
+            entries: [],
+            careTasks: [],
+            careEvents: []
+        )
+        let encoded = try JSONEncoder().encode(archive)
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        var plantRecords = try #require(object["plants"] as? [[String: Any]])
+        plantRecords[0].removeValue(forKey: "archivedAt")
+        object["plants"] = plantRecords
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(JournalArchive.self, from: legacyData)
+        #expect(decoded.version == 2)
+        #expect(decoded.plants.first?.archivedAt == nil)
+
+        let context = ModelContext(try memory())
+        #expect(try JournalArchive.recover(legacyData, context: context) == 0)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == nil)
     }
 
 }
