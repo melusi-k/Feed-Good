@@ -44,4 +44,14 @@ struct PlantCollectionTests {
         #expect(a.name == "Zz")
         #expect(a.species == "Updated species")
     }
+
+    @Test func activeAndArchivedFiltersSplitTheCollection() {
+        let fern = Plant(name: "Fern")
+        let aloe = Plant(name: "Aloe", archivedAt: Date(timeIntervalSince1970: 100))
+        let all = [fern, aloe]
+        #expect(PlantCollection.active(from: all, query: "", sort: .name).map(\.id) == [fern.id])
+        #expect(PlantCollection.archived(from: all, query: "", sort: .name).map(\.id) == [aloe.id])
+        #expect(PlantCollection.active(from: all, query: "aloe", sort: .name).isEmpty)
+        #expect(PlantCollection.plants(from: all, query: "", sort: .name).count == 2)
+    }
 }
