@@ -89,6 +89,9 @@ struct PlantListView: View {
                     }
                     .accessibilityIdentifier("plants.add")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    FeedGoodProfileButton()
+                }
             }
             .sheet(isPresented: $showingAddPlant) {
                 AddPlantView()

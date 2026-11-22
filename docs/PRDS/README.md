@@ -23,6 +23,7 @@ Every feature should help someone understand, notice, learn about or connect wit
 | PRD-007 | Garden Setup & Growing Context | [PRD-007-garden-setup.md](PRD-007-garden-setup.md) · [Issue #22](https://github.com/melusi-k/Feed-Good/issues/22) | Optional context that makes plant records and guidance more relevant |
 | PRD-008 | Plant Care Guide | [PRD-008-care-guide.md](PRD-008-care-guide.md) · [Issue #23](https://github.com/melusi-k/Feed-Good/issues/23) | Curated, source-backed plant-care learning available offline |
 | PRD-009 | Settings & Data Portability | [PRD-009-settings-data-portability.md](PRD-009-settings-data-portability.md) · [Issue #15](https://github.com/melusi-k/Feed-Good/issues/15) | Transparent settings and safe export/recovery of personal garden data |
+| PRD-010 | Garden Profile | [PRD-010-garden-profile.md](PRD-010-garden-profile.md) · [Issue #42](https://github.com/melusi-k/Feed-Good/issues/42) | A trustworthy, shared overview of the user's existing garden records |
 
 ## Release scope
 
