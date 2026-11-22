@@ -43,7 +43,7 @@ struct CareRoutineReviewView: View {
                     .accessibilityIdentifier("careReview.editGrowingContext")
             }
 
-            Section("Care routines") {
+            Section {
                 if tasks.isEmpty {
                     ContentUnavailableView(
                         "No care routines yet",
@@ -78,6 +78,8 @@ struct CareRoutineReviewView: View {
                     Button("Add another care routine", systemImage: "plus") { addingTask = true }
                         .accessibilityIdentifier("careReview.addTask")
                 }
+            } header: {
+                Text("Care routines")
             } footer: {
                 Text("These are your own settings, not recommended care frequencies. Review your plant's condition before deciding what it needs.")
             }
