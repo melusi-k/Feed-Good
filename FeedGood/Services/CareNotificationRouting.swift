@@ -17,7 +17,10 @@ final class CareNotificationRouter: ObservableObject {
     init() {}
 
     func open(userInfo: [AnyHashable: Any]) {
-        guard let value = CareNotificationPayload.destination(from: userInfo) else { return }
+        guard let value = CareNotificationPayload.destination(from: userInfo) else {
+            destination = nil
+            return
+        }
         destination = CareNotificationDestination(taskID: value.taskID, plantID: value.plantID)
     }
 
