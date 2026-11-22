@@ -4,7 +4,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UIKit
 
-enum JournalArchiveError: LocalizedError {
+enum JournalArchiveError: LocalizedError, Equatable {
     case invalidRecord, unsupportedVersion, tooLarge, conflictingRecord, unsavedChanges
     var errorDescription: String? {
         switch self {
