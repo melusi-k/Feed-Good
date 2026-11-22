@@ -1,6 +1,6 @@
 # PRD-017 — Care Routine Review
 
-**Status:** Proposal consistent; implementation not started  
+**Status:** Implementation in progress — draft implementation in PR #82; automated verification and manual accessibility review remain outstanding  
 **Priority:** P1  
 **Release:** Post-MVP  
 **Primary surfaces:** Plant Profile, Care Routine, existing CareTaskEditor
