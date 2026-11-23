@@ -126,6 +126,7 @@ struct CareTaskEditor: View {
     @State private var confirmingDelete = false
     @State private var confirmingSave = false
     @State private var isSaving = false
+    @State private var isDeleting = false
 
     var body: some View {
         NavigationStack {
@@ -172,11 +173,24 @@ struct CareTaskEditor: View {
             }
             .confirmationDialog("Remove this task? Its care history will stay.", isPresented: $confirmingDelete, titleVisibility: .visible) {
                 Button("Remove task", role: .destructive) {
-                    guard let task else { return }
-                    context.delete(task)
-                    do { try context.save(); dismiss() }
-                    catch { context.rollback(); errorMessage = "Couldn't remove this task. Try again." }
+                    guard let task, isDeleting == false else { return }
+                    isDeleting = true
+                    Task { @MainActor in
+                        do {
+                            try await CareTaskEditorPersistence.deleteAndReconcile(
+                                plantID: plant.id,
+                                taskID: task.id,
+                                in: context.container,
+                                scheduler: scheduler
+                            )
+                            dismiss()
+                        } catch {
+                            isDeleting = false
+                            errorMessage = "Couldn't remove this task. Your task and care history are unchanged. Try again."
+                        }
+                    }
                 }
+                .disabled(isDeleting)
             }
         }
     }
