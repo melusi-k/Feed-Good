@@ -35,6 +35,7 @@ Every feature should help someone understand, notice, learn about or connect wit
 | PRD-019 | Plant Journal Prompts | [PRD-019-plant-journal-prompts.md](PRD-019-plant-journal-prompts.md) | [#73](https://github.com/melusi-k/Feed-Good/issues/73) | Encourage optional, thoughtful plant observations |
 | PRD-020 | Seasonal and Quiet Periods | [PRD-020-seasonal-quiet-periods.md](PRD-020-seasonal-quiet-periods.md) | [#74](https://github.com/melusi-k/Feed-Good/issues/74) | Let users explicitly adjust care during quiet periods |
 | PRD-021 | Optional Plant Tags | [PRD-021-optional-plant-tags.md](PRD-021-optional-plant-tags.md) | [#75](https://github.com/melusi-k/Feed-Good/issues/75) | Organise a growing collection with lightweight user tags |
+| PRD-027 | User Lifecycle & Meaningful Engagement | [PRD-027-user-lifecycle-and-meaningful-engagement.md](PRD-027-user-lifecycle-and-meaningful-engagement.md) | [parent issue](https://github.com/melusi-k/Feed-Good/issues) | A meaningful, privacy-conscious journey from first plant to sustained plant-care relationship |
 
 ## Release scope
 
