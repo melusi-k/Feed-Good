@@ -82,7 +82,8 @@ struct JournalTests {
         let plant = Plant(
             name: "Fern", species: "Nephrolepis",
             growingEnvironment: .balcony, lightCondition: .indirect,
-            photoData: samplePhoto()
+            photoData: samplePhoto(),
+            archivedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
         sourceContext.insert(plant)
         let dueDate = Date(timeIntervalSince1970: 1_800_000_000)
@@ -120,6 +121,7 @@ struct JournalTests {
         #expect(restoredPlant.photoData == plant.photoData)
         #expect(restoredPlant.growingEnvironment == .balcony)
         #expect(restoredPlant.lightCondition == .indirect)
+        #expect(restoredPlant.archivedAt == plant.archivedAt)
 
         let restoredTask = try #require(destinationContext.fetch(FetchDescriptor<CareTask>()).first)
         #expect(restoredTask.id == task.id)
@@ -193,6 +195,7 @@ struct JournalTests {
         #expect(preview.careTasksToAdd == 1)
         #expect(preview.careEventsToAdd == 1)
         #expect(preview.confirmationMessage.contains("any conflict"))
+        #expect(preview.confirmationMessage.contains("existing same-ID plants keep their current state"))
     }
 
     @Test func archiveConflictAndMalformedReferencesRejectBeforeWrites() throws {
@@ -263,6 +266,7 @@ struct JournalTests {
         let restored = try #require(context.fetch(FetchDescriptor<Plant>()).first)
         #expect(restored.growingEnvironment == .unspecified)
         #expect(restored.lightCondition == .unspecified)
+        #expect(restored.archivedAt == nil)
     }
 
     @Test func recoveryKeepsUnsavedCallerChanges() throws {
@@ -407,6 +411,52 @@ struct JournalTests {
         #expect(try verificationContext.fetch(FetchDescriptor<JournalEntry>()).isEmpty)
         #expect(try verificationContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
         #expect(try verificationContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+    }
+
+    @Test func olderVersionTwoArchiveWithoutArchivedAtDefaultsToActive() throws {
+        let plant = Plant(name: "Legacy fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let archive = JournalArchive(
+            plants: [
+                JournalArchive.PlantRecord(
+                    id: plant.id, name: plant.name, species: "", notes: "",
+                    createdAt: plant.createdAt, archivedAt: plant.archivedAt
+                )
+            ],
+            entries: [],
+            careTasks: [],
+            careEvents: []
+        )
+        let encoded = try JSONEncoder().encode(archive)
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        var plantRecords = try #require(object["plants"] as? [[String: Any]])
+        plantRecords[0].removeValue(forKey: "archivedAt")
+        object["plants"] = plantRecords
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(JournalArchive.self, from: legacyData)
+        #expect(decoded.version == 2)
+        #expect(decoded.plants.first?.archivedAt == nil)
+
+        let context = ModelContext(try memory())
+        #expect(try JournalArchive.recover(legacyData, context: context) == 0)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).first?.archivedAt == nil)
+    }
+
+    @Test func archiveRecoveryPreservesExistingSameIDPlantState() throws {
+        let archivedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let source = Plant(name: "Archived source", archivedAt: archivedAt)
+        let data = try JournalArchive.export(plants: [source], entries: [])
+
+        let context = ModelContext(try memory())
+        let existing = Plant(id: source.id, name: "Existing local plant")
+        context.insert(existing)
+        try context.save()
+
+        #expect(try JournalArchive.recover(data, context: context) == 0)
+        let unchanged = try #require(context.fetch(FetchDescriptor<Plant>()).first)
+        #expect(unchanged.id == source.id)
+        #expect(unchanged.name == "Existing local plant")
+        #expect(unchanged.archivedAt == nil)
     }
 
     @Test func duplicatePlantAndJournalArchiveIDsAreRejected() throws {
