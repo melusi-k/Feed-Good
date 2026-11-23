@@ -59,7 +59,7 @@ struct AppTabView: View {
         let flow = AppLaunchFlow(
             stateStore: launchStateStore,
             shortVersion: shortVersion,
-            versionIdentity: "\\(shortVersion) (\\(buildNumber))"
+            versionIdentity: "\(shortVersion) (\(buildNumber))"
         )
         launchFlow = flow
         switch flow.step() {
