@@ -35,12 +35,64 @@ enum AppTab: Int, Hashable, CaseIterable {
 }
 
 struct AppTabView: View {
+    let launchStateStore: AppLaunchStateStore
+
     @AppStorage("feedGood.appearance") private var appearanceRawValue = FeedGoodAppearance.system.rawValue
     @State private var selectedTab: AppTab = .today
     @State private var showingProfile = false
+    @State private var launchFlow: AppLaunchFlow?
+    @State private var launchChecked = false
+    @State private var showingOnboarding = false
+    @State private var showingAddPlantFromOnboarding = false
+    @State private var addPlantAfterOnboarding = false
+    @State private var whatsNewEntry: ReleaseNotesEntry?
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
+    }
+
+    private func startLaunchFlow() {
+        guard launchChecked == false else { return }
+        launchChecked = true
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
+        let flow = AppLaunchFlow(
+            stateStore: launchStateStore,
+            shortVersion: shortVersion,
+            versionIdentity: "\\(shortVersion) (\\(buildNumber))"
+        )
+        launchFlow = flow
+        switch flow.step() {
+        case .onboarding:
+            showingOnboarding = true
+        case .whatsNew(let entry):
+            whatsNewEntry = entry
+        case .none:
+            break
+        }
+    }
+
+    private func finishOnboarding(addPlant: Bool) {
+        launchFlow?.completeOnboarding()
+        addPlantAfterOnboarding = addPlant
+        showingOnboarding = false
+    }
+
+    private func onboardingDidDismiss() {
+        if addPlantAfterOnboarding {
+            addPlantAfterOnboarding = false
+            showingAddPlantFromOnboarding = true
+        } else {
+            presentWhatsNewIfNeeded()
+        }
+    }
+
+    private func presentWhatsNewIfNeeded() {
+        whatsNewEntry = launchFlow?.whatsNewEntry()
+    }
+
+    private func markWhatsNewSeen() {
+        launchFlow?.markWhatsNewSeen()
     }
 
     var body: some View {
@@ -50,6 +102,25 @@ struct AppTabView: View {
         .tint(FeedGoodTheme.leaf)
         .preferredColorScheme(appearance.preferredColorScheme)
         .environment(\.showFeedGoodProfile, { showingProfile = true })
+        .onAppear(perform: startLaunchFlow)
+        .sheet(isPresented: $showingOnboarding, onDismiss: onboardingDidDismiss) {
+            OnboardingFlowView(
+                onSkip: { finishOnboarding(addPlant: false) },
+                onAddFirstPlant: { finishOnboarding(addPlant: true) },
+                onExploreFirst: { finishOnboarding(addPlant: false) }
+            )
+            .interactiveDismissDisabled()
+        }
+        .sheet(isPresented: $showingAddPlantFromOnboarding, onDismiss: presentWhatsNewIfNeeded) {
+            AddPlantView()
+        }
+        .sheet(item: $whatsNewEntry, onDismiss: markWhatsNewSeen) { entry in
+            WhatsNewView(entry: entry) {
+                markWhatsNewSeen()
+                whatsNewEntry = nil
+            }
+            .presentationDetents([.medium, .large])
+        }
         .sheet(isPresented: $showingProfile) {
             ProfileView {
                 showingProfile = false
