@@ -4,7 +4,7 @@ import Testing
 
 struct AppLaunchStateStoreTests {
     private func makeDefaults() -> UserDefaults {
-        let suiteName = "AppLaunchStateStoreTests.\\(UUID().uuidString)"
+        let suiteName = "AppLaunchStateStoreTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)
         #expect(defaults != nil)
         return defaults ?? .standard
