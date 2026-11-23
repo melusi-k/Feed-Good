@@ -31,7 +31,7 @@ final class CareRoutineUITests: XCTestCase {
         XCTAssertTrue(eventNote.waitForExistence(timeout: 5))
         XCTAssertTrue(app.datePickers["Completed"].exists)
         let originalNote = eventNote.value as? String ?? ""
-        eventNote.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        eventNote.tap()
         eventNote.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: originalNote.count))
         eventNote.typeText("Corrected care note")
         app.buttons["care.eventSave"].tap()
