@@ -194,6 +194,7 @@ struct CareEventEditor: View {
             Form {
                 Section {
                     DatePicker("Completed", selection: $completedAt)
+                        .accessibilityIdentifier("care.eventCompletedAt")
                         .accessibilityIdentifier("care.eventCompleted")
                     TextField("Optional note", text: $note).accessibilityIdentifier("care.eventNote")
                 } footer: {
