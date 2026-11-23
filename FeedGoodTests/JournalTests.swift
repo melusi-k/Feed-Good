@@ -474,7 +474,9 @@ struct JournalTests {
 
         try CareRecorder.delete(deletedEvent, in: sourceContext)
         let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\.id)
+        let remindersAfterDeletion = CareReminderScheduler.reminders(for: [task], now: referenceNow)
         #expect(todayAfterDeletion == todayBefore)
+        #expect(remindersAfterDeletion == remindersBefore)
 
         // Historical events remain independently editable after their routine is removed.
         sourceContext.delete(task)
