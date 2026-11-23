@@ -154,15 +154,18 @@ Current persistence is `FeedGoodSchemaV3`: V2 added `Plant.archivedAt`, and V3 a
 
 The current JournalArchive format is v2. The archive recommendation is an additive archive-format v3 containing optional QuietPeriod and snapshot arrays, while continuing to import supported v1 and v2 archives. Validate UUID uniqueness, plant ownership, snapshot-to-period references, membership/status values, start/end ordering, and active-period/task consistency before any writes. Reject an unreconcilable active period atomically rather than silently dropping or partially importing it. Confirm the exact archive versioning and recovery behavior in the archive contract before implementation.
 
-### Remaining design gates
+### Approved implementation constraints (2026-11-23)
 
-1. Approve the proposed Plant → QuietPeriod → snapshot cascade boundary and add tests for plant hard-delete cascade, task-delete snapshot retention and failed saves.
-2. Decide how removed-task snapshots are presented in Plant Story/export, without implying that a deleted task remains active.
-3. Confirm archive v3 and v1/v2 import compatibility, including validation and atomic failure behavior.
-4. Resolve the narrow PRD-022 occurrence interactions required by #74: removed-task history and paused completion edge cases (before/on/after due, late/backdated, repeated completion and save failure). Skip and snooze semantics remain separate PRD-022 work and do not block #74 unless implementation introduces a dependency.
-5. Keep the general persisted `CareOccurrence` model out of scope unless a validated requirement demonstrates that `CareTask.dueDate`, `CareEvent` and the QuietPeriod snapshots cannot satisfy it.
+The following decisions are approved for implementation:
 
-This section is a concrete persistence recommendation for review, not authorization to start schema or archive implementation. Product-approved pause, completion, edit, task-scope and calendar/time-zone rules remain authoritative; the schema, relationships and archive version remain open until explicitly approved.
+1. Plant hard deletion cascades through QuietPeriod and its task snapshots, matching the existing Plant-owned record lifecycle. Deleting an individual CareTask does **not** cascade to its snapshot: retain the task UUID and title snapshot for audit/history, mark it removed from active membership, and display the retained history in Plant Story with a clear removed-task label.
+2. Snapshot task UUIDs remain scalar identifiers, not CareTask relationships. Test task deletion retention, plant hard-delete cascade and save-failure behaviour.
+3. JournalArchive advances from v2 to additive v3, preserving v1 and v2 import compatibility. Validate period/snapshot UUID uniqueness, ownership, references, enum/status values, start/end ordering and active-period/task consistency before any writes. Recovery remains additive/idempotent and rejects invalid or conflicting data atomically.
+4. Pause completion tests cover before/on/after due, late/backdated completion, repeated completion and save failure. These cases must prove one normal CareEvent per accepted completion and correct frozen interval state without ending the pause.
+5. Keep the general persisted `CareOccurrence` model out of scope unless evidence shows that `CareTask.dueDate`, `CareEvent` and QuietPeriod snapshots cannot satisfy a concrete requirement.
+6. Freeze V3 before any live-model mutation, then implement V4 and a V3→V4 migration. Historical V1/V2/V3 schema definitions remain immutable; prove migration from real on-disk V1, build-52-era V2 and V3-with-tags fixtures. Fresh-install tests alone are insufficient.
+
+All #74 product and persistence design gates are now approved. Implementation may proceed in independently reviewable PRs: (1) frozen V3/V4 schema and migration proof; (2) Quiet Period persistence, scheduling and pause/resume domain logic; (3) care editor/completion/reminder integration and Plant Story; (4) archive v3 export/recovery and compatibility tests. Each PR must pass CI and migration-specific tests on its exact head SHA before merge.
 
 ## 13. Lifecycle transition matrix (design baseline)
 
