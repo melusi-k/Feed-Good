@@ -92,6 +92,7 @@ struct TodayView: View {
                     careCheckIn
                     myGarden
                     journalPrompt
+                    gardenReflection
                     footer
                 }
                 .padding(.horizontal, FeedGoodTheme.contentPadding)
@@ -439,6 +440,16 @@ struct TodayView: View {
 
     private var journalPrompt: some View {
         RecentJournalView(selectedTab: $selectedTab)
+    }
+
+    /// The weekly look-back. Tapping a moment opens its source plant through
+    /// the same navigation path every other Today route uses.
+    private var gardenReflection: some View {
+        GardenReflectionView { plantID in
+            if plants.contains(where: { $0.id == plantID }) {
+                navigationPath = [plantID]
+            }
+        }
     }
 
     private var footer: some View {
