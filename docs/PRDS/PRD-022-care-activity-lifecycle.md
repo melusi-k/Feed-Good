@@ -1,6 +1,6 @@
 # PRD-022 — Care Activity Lifecycle and Occurrence Management
 
-**Status:** Design review — core lifecycle principles approved; transition matrix, edge-case contract and persistence decision in progress; no implementation issue created  
+**Status:** Design review — ordinary care scheduling remains task/date plus CareEvent; Quiet Period product rules and calendar contract approved; minimal persistence/snapshot contract specified for review; migration/archive and remaining occurrence interactions not yet approved; no implementation issue created  
 **Stage:** 1 — Care lifecycle foundation  
 **Priority:** Proposed P1 foundation  
 **Release:** Post-MVP, sequenced after review of the existing care and reminder contracts  
@@ -111,44 +111,58 @@ These are mandatory design gates, not implementation assumptions:
 
 Existing decisions remain authoritative until explicitly changed: interval-based recurrence, ordinary unpaused completion advances from the completion timestamp, and care-history corrections are history-only. The approved Quiet Period exception is documented in PRD-020. This PRD does not supersede PRD-002, PRD-003, PRD-011 or PRD-017.
 
-## 12. Proposed persistence direction (design review; not yet implementation approval)
+## 12. Proposed Quiet Period persistence and snapshot contract
 
-The current application has one reusable `CareTask` definition with a `dueDate`, and immutable-in-practice `CareEvent` history. Today derives due state from `CareTask.dueDate`; reminders are projected from enabled tasks and their due dates. Keep this as the single source of truth for ordinary care. Do not add a general `CareOccurrence` model unless a validated lifecycle requirement cannot be met with the current task/event contract.
+The current application has one reusable `CareTask` definition with a `dueDate`, and `CareEvent` history. Today derives ordinary due state from `CareTask.dueDate`; reminders are projected from enabled tasks and their due dates. Keep that as the single source of truth for ordinary care. Do not add a general persisted `CareOccurrence` model merely to mirror a conceptual lifecycle.
 
-Quiet Periods need persisted state that cannot be reconstructed safely from `CareTask.dueDate` after a pause has begun. The smallest candidate is:
+Quiet Periods need their own persisted state because an active pause and its frozen schedule cannot be reconstructed safely from `CareTask.dueDate` after activation. The recommended minimum is two records:
 
-| Candidate record | Purpose | Candidate fields |
+| Record | Responsibility | Required data |
 | --- | --- | --- |
-| `QuietPeriod` | One scheduled, active, ended or cancelled period for a plant | stable ID, plant ID, created/start timestamps, optional end timestamp, status, label/reason, ended/cancelled timestamp |
-| `QuietPeriodTaskSnapshot` | One task's membership and frozen schedule state in that period | stable ID, quiet-period ID, task ID, task-title snapshot, membership state, signed remaining calendar-day count, captured/updated timestamp |
+| `QuietPeriod` | One scheduled, active, ended or cancelled period owned by a plant | Stable UUID; plant UUID; created-at instant; selected start instant; optional finite end instant; status; optional reason/label; activated-at instant; optional ended/cancelled-at instant |
+| `QuietPeriodTaskSnapshot` | Captured membership and that task's frozen scheduling state | Stable UUID; QuietPeriod UUID; task UUID; task-title snapshot; membership state; signed remaining calendar-day offset; original local due hour, minute and second; frozen remaining interval in days when reset/edited; optional exact Next care override instant; captured-at and updated-at instants |
 
-Use stable UUID references rather than making the quiet-period records depend on cascading SwiftData relationships to `CareTask`. This allows a deleted task's membership snapshot to remain auditable while marking it removed from the active affected set. A quiet period auto-ends when no snapshots remain active. The plant association must still be validated against the owning plant when reading/writing. Hard deletion of a plant must not leave orphaned quiet-period records; decide whether the final model uses an explicit Plant relationship with cascade or a transactional deletion service. Archiving is not deletion and must preserve all quiet-period records.
+Use UUID identifiers in the snapshot rather than a cascading `CareTask` relationship. Task deletion must not erase the membership/audit record or historical `CareEvent` records. A deleted task's snapshot is marked removed and excluded from the active affected set. A task explicitly disabled during the pause is marked removed-from-active-membership while retaining its audit record; re-enabling it during that same period does not re-add it. A Quiet Period ends automatically when no active task snapshots remain.
 
-The signed remaining-day value represents calendar-day distance at activation: zero means due on the activation day; a negative value preserves pre-existing overdue days; a positive value preserves days remaining. On resume, reconstruct the due day from the resume date and this signed offset using the same injected `Calendar` used by `CareSchedule`. Preserve the existing due-time component only if the implementation can do so deterministically under the agreed local-time/DST contract; otherwise settle an explicit due-time rule before coding. Do not store elapsed seconds as the pause clock.
+The period must be validated against its owning plant on every read/write. Archived plants cannot have scheduled or active periods. Archiving ends an active period or cancels a scheduled one, retaining its history; restoring the plant never reactivates it.
 
-A completion during a pause writes the ordinary `CareEvent` and updates only that task snapshot's frozen remaining interval to the task's full current interval. It does not create a separate occurrence, unpause the task or cause a reminder to fire. On resume, the task's next due day is reconstructed from the resume date plus that frozen interval. Ordinary completion outside a pause continues to use completion timestamp plus interval.
+### Snapshot calculation and resume
 
-**Schema/migration constraints:** current production persistence is `FeedGoodSchemaV2`, with a lightweight V1→V2 migration for `Plant.archivedAt`. Any new persisted models require an explicit schema-version/migration review (likely V3); do not edit V1/V2 historical schema definitions. Extend the archive format additively with optional quiet-period records, validate all IDs/plant/task references and status/date combinations before import, and preserve idempotent recovery/conflict checks. Do not silently import an active pause whose task or plant references cannot be reconciled.
+At scheduled activation (not when a future period is created), capture each still-enabled selected task's signed calendar-day offset from the activation date using the same injected `Calendar` as `CareSchedule`:
+- zero means due on the activation calendar day;
+- a positive value preserves days remaining;
+- a negative value preserves pre-existing overdue days.
 
-**Still to validate before approving this model:** how removed task snapshots appear in history; how hard plant deletion cleans up quiet-period records; and whether the additive archive extension warrants a format-version increment while retaining v1/v2 import compatibility. Due-time preservation, DST gap/fold handling and device time-zone behavior are approved. This is a model candidate, not permission to start schema implementation.
+Also capture the due date's local hour, minute and second. On resume, reconstruct the due date from the resume calendar day plus the signed offset, preserving those local time components. Use the same calendar/time-zone context as `CareSchedule`. If the reconstructed local time is in a DST gap, choose the next valid local time; if it is ambiguous in a DST fold, choose the first occurrence. Do not use elapsed seconds or persist a separate plant time zone.
 
-## 12.1 Design review recommendations and approved decision
+Persist scheduled Quiet Period start and finite end as absolute instants. A device time-zone change does not rewrite those instants. At activation and resume, use the device's current calendar/time zone for calendar-day calculations and local due-time reconstruction.
 
-The repository audit confirms that the existing task editor exposes both **Next care** (\`CareTask.dueDate\`) and **Every N days** (\`CareTask.intervalDays\`) as independently editable values. It also confirms that ordinary recurrence uses \`Calendar.date(byAdding: .day, value: intervalDays, to: date)\`, which preserves the date's local clock time across calendar-day and DST boundaries. The recommendations below preserve those established contracts rather than introducing a second scheduling system. The paused Next care override is explicitly approved; all other recommendations in this section remain proposals unless separately marked approved.
+### Edits and completion while paused
 
-| Concern | Recommended contract | Why |
-| --- | --- | --- |
-| Paused due-date edit | **Approved 2026-11-23:** an explicit user edit to **Next care** is an absolute date-time override. Preserve the exact selected instant through resume. The task remains suppressed until the quiet period ends; if the selected instant is in the past at resume, show the task as overdue under the existing due-state rules. | The editor exposes Next care independently of the recurrence interval; the user's explicit date selection must not be silently overwritten by the pause snapshot. |
-| Paused interval edit | **Approved 2026-11-23:** update the task's frozen remaining interval to the newly selected interval, but do not advance its countdown during the Quiet Period. Start/resume the countdown only when the period ends. Do not change the Quiet Period's own dates or any other task's schedule. An explicit Next care date-time edit remains authoritative if both fields are edited. | The task-specific interval is updated without allowing care time to elapse during the pause. |
-| Completion followed by interval edit during pause | **Approved 2026-11-23:** completion resets the frozen remaining interval to the full interval in effect at completion. A later interval edit replaces that frozen value with the newly selected interval. Neither countdown advances during the pause; the latest interval starts/resumes only when the Quiet Period ends. An explicit Next care date-time edit remains authoritative. | The latest user-selected interval is retained without allowing the paused countdown to elapse. |
-| Frozen due-date representation | For an unedited task, snapshot a signed calendar-day offset and the due date's local hour, minute and second. Reconstruct the due date from the resume local day plus that offset, using the same injected \`Calendar\` as \`CareSchedule\`. Preserve the exact selected instant for an explicit Next care override. | A day count alone loses the time-of-day that existing care reminders use. |
-| Completion reset | Represent the reset as a full current interval from the actual resume instant: \`CareSchedule.nextDate(after: resumeAt, intervalDays: currentInterval, calendar: calendar)\`. | This makes the approved “full interval after the pause” rule deterministic and preserves the current recurrence function's wall-clock behavior. |
-| DST gap/fold during reconstruction | Recommended default: for a reconstructed local time that does not exist, move to the next valid local time; for an ambiguous repeated local time, choose the first occurrence. Keep the selected finite end time as its exact persisted instant. | This makes reconstruction deterministic without elapsed-second arithmetic. It still needs explicit product approval and tests. |
-| Device time-zone changes | Keep selected scheduled start/end values as absolute instants. Calculate signed day offsets and reconstruct local due times with the current \`Calendar\`/time zone at activation and resume; do not persist a separate plant time zone. | This follows the existing app-wide \`Calendar.current\` contract and avoids creating a competing timezone authority. A device-zone change can therefore change the local calendar-day interpretation; this must be visible in tests and release notes if approved. |
-| Hard plant deletion | Give \`Plant\` a cascading relationship to \`QuietPeriod\`, and \`QuietPeriod\` a cascading relationship to its snapshots. Keep task references in snapshots as UUID values, not cascading \`CareTask\` relationships. | Existing hard plant deletion already cascades the plant's care tasks, events and journal entries. Quiet-period records should follow the same plant ownership boundary, while task deletion must leave a removable/auditable membership snapshot. |
-| Archive evolution | Add optional quiet-period and snapshot record arrays and increment the archive format to **v3**. Continue accepting v1 and v2. Validate all IDs, plant ownership, status/date combinations and active-member references before preview or recovery; reject unreconcilable active pauses before any writes. | The current archive validator accepts only v1/v2 and recovery is additive/idempotent. A version bump makes the new contract explicit while retaining old archive compatibility. |
+- An explicit **Next care** edit is stored as an exact absolute-instant override in the task snapshot. It takes precedence over the reconstructed frozen due date and remains authoritative through resume; if already past at resume, existing overdue rules apply.
+- An interval edit updates the snapshot's frozen remaining interval to the newly selected interval. The countdown remains frozen and does not advance until resume.
+- A completion during the pause writes the normal `CareEvent` and resets the snapshot's frozen remaining interval to the full recurrence interval in effect at completion. It does not end the pause or create another occurrence.
+- If an interval edit follows a completion during the same pause, the later interval edit replaces the frozen interval value. Neither value counts down until resume.
+- If both Next care and interval are edited, the exact Next care instant remains authoritative for the next scheduled date; the interval continues to govern subsequent recurrence.
+- Outside a Quiet Period, ordinary completion remains completion-timestamp-plus-interval.
 
-**Important boundaries:** the paused Next care override, paused interval-edit policy, completion-followed-by-interval-edit ordering and calendar/time-zone contract are approved product decisions. The remaining rows are implementation recommendations, not approved product decisions. Do not implement the model relationships or archive v3 until they are explicitly approved. Keep V1/V2 schema definitions immutable; any new SwiftData records belong in a new schema version and require migration tests.
+### Relationships, deletion and migration — still requiring explicit approval
+
+The recommended ownership boundary is Plant → QuietPeriod → QuietPeriodTaskSnapshot, with cascade cleanup when a plant is hard-deleted. Snapshots should retain task UUIDs as scalar identifiers rather than a cascading task relationship. This keeps plant-owned history together while allowing a deleted task's snapshot to remain auditable until its parent period is removed. The implementation must use a transactional plant-deletion path or verified SwiftData cascade behavior; do not leave orphaned records.
+
+Current persistence is `FeedGoodSchemaV2`, with V1→V2 migration for `Plant.archivedAt`. Keep V1 and V2 schema definitions immutable. If the proposed records are accepted, add them in a new schema version (expected V3) with explicit migration tests. No schema change is approved by this PRD alone.
+
+The archive recommendation is an additive archive-format v3 containing optional QuietPeriod and snapshot arrays, while continuing to import supported v1 and v2 archives. Validate UUID uniqueness, plant ownership, snapshot-to-period references, membership/status values, start/end ordering, and active-period/task consistency before any writes. Reject an unreconcilable active period atomically rather than silently dropping or partially importing it. Confirm the exact archive versioning and recovery behavior in the archive contract before implementation.
+
+### Remaining design gates
+
+1. Confirm the Plant → QuietPeriod → snapshot ownership/cascade approach against the repository's actual hard-delete implementation.
+2. Decide how removed-task snapshots are presented in Plant Story/export, without implying that a deleted task remains active.
+3. Confirm archive v3 and v1/v2 import compatibility, including validation and atomic failure behavior.
+4. Resolve the narrow PRD-022 occurrence interactions required by #74: removed-task history and paused completion edge cases (before/on/after due, late/backdated, repeated completion and save failure). Skip and snooze semantics remain separate PRD-022 work and do not block #74 unless implementation introduces a dependency.
+5. Keep the general persisted `CareOccurrence` model out of scope unless a validated requirement demonstrates that `CareTask.dueDate`, `CareEvent` and the QuietPeriod snapshots cannot satisfy it.
+
+This section is a concrete persistence recommendation for review, not authorization to start schema or archive implementation. Product-approved pause, completion, edit, task-scope and calendar/time-zone rules remain authoritative; the schema, relationships and archive version remain open until explicitly approved.
 
 ## 13. Lifecycle transition matrix (design baseline)
 
