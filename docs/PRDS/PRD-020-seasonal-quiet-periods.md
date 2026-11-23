@@ -46,13 +46,13 @@ The selected task set is a snapshot for that quiet period. It does not silently 
 
 **Care completion during a quiet period — approved 2026-11-23:** users may record a care completion while a quiet period is active. Recording a completion does not end, suspend or otherwise unpause the quiet period. The completion is persisted as normal care history. The precise due-date baseline for that task when care resumes must remain aligned with PRD-022's approved completion/occurrence semantics; do not silently advance or rewrite an occurrence as part of quiet-period handling.
 
-**Start and end dates — approved 2026-11-23:** support both immediate activation and a scheduled future start. A scheduled period becomes active on its selected start calendar date. The selected end date is inclusive: the quiet period remains active for that entire local calendar day and care resumes on the following calendar day. An omitted end date means explicitly open-ended until the user ends it. Date interpretation, including which time-zone/calendar anchors the plant when the device travels, must be finalized with the date/time contract in PRD-022 before implementation.
+**Start and end scheduling — approved 2026-11-23:** support both immediate activation and a scheduled future start date. A scheduled period becomes active at the start of the selected date in the same local calendar/time-zone context used by `CareSchedule`. For a period with an end, the user must specify both an end date and an end time; that local date-time is the actual inclusive end instant, and care resumes at that specified time. Do not interpret an end date as automatically lasting until midnight or the following day when an explicit end time has been selected. An omitted end date/time means explicitly open-ended until the user ends it. The time-zone/calendar anchor and DST edge-case policy must be finalized against the existing `CareSchedule` contract before implementation; do not use location inference or silently change the anchor when the device travels.
 
 **Archive during a quiet period — approved 2026-11-23:** archiving terminates any active quiet period and removes its active pause before/with the archive transition; the plant's `archivedAt` is set by the archive action. Preserve the quiet-period record as ended history rather than deleting it. Restoring the plant does not reactivate the previous quiet period; the user must explicitly start another one if desired. Archived plants cannot have scheduled or active quiet periods.
 
 ## 7. Behavior changes
 - Provide an explicit optional quiet-period action for an active plant.
-- Capture start date, optional end date or explicitly open-ended period, user-selected reason/label and affected care tasks.
+- Capture immediate start or scheduled future start date, optional end date plus required end time (or explicitly open-ended period), user-selected reason/label and affected care tasks.
 - Preview effects on each affected task, Today item and local reminder before confirmation.
 - Allow edit, early end and cancellation.
 - Preserve quiet-period history in Plant Story and export/restore.
@@ -80,7 +80,7 @@ Included in the local-first app. No account, network or location permission is r
 1. **Approved:** use a user-selected subset, with all currently enabled tasks preselected by default; capture the selected set for that period. Routine changes during an active period remain to be specified.
 2. Define remaining routine-edit behavior while paused: task creation, interval/next-date edits and changes to the existing per-task `isEnabled` switch. Task deletion behavior is approved in section 6.
 3. Coordinate the due-date baseline after care completion during a pause with PRD-022; completion is allowed and does not unpause the quiet period.
-4. Finalize the calendar/time-zone anchor and edge cases for the approved immediate/scheduled start and inclusive end-date behavior, in coordination with PRD-022.
+4. Finalize the `CareSchedule` calendar/time-zone anchor and DST edge cases for scheduled starts and the explicitly selected local end date/time, in coordination with PRD-022.
 5. Implement and test the approved archive transition: end the quiet period, preserve its history, set `archivedAt`, and do not reactivate the period on restore.
 6. Choose persistence only after the task/occurrence behavior is settled; coordinate with PRD-022 without pre-empting its occurrence-lifecycle decisions.
 7. Implement preview, explicit confirmation, edit/end/cancel and reminder reconciliation only after the design gates are approved.
@@ -96,9 +96,9 @@ Replaces informal or ambiguous handling of a temporary care pause. It does not r
 - Builds on Care Routine #4 and Care Reminders #5.
 - Related to PRD-015 archive; archived plants cannot have active quiet periods.
 - Approved policy: pause the remaining time on included tasks and resume with that same remaining time; do not accumulate overdue time during the quiet period.
-- Remaining design decisions: task creation and routine edits during a pause; due-date baseline after completion during a pause in coordination with PRD-022; calendar/time-zone anchor and edge cases; persistence and occurrence coordination with PRD-022.
+- Remaining design decisions: task creation and routine edits during a pause; due-date baseline after completion during a pause in coordination with PRD-022; calendar/time-zone anchor and DST edge cases for scheduled starts and selected end date/time; persistence and occurrence coordination with PRD-022.
 - No implementation should begin by silently choosing any remaining policy or persistence behavior.
 
 ## 15. Delivery tracking
 - GitHub issue: [#74 — Add explicit seasonal and quiet-period support](https://github.com/melusi-k/Feed-Good/issues/74).
-- Status: pause-clock, task-scope, deletion, completion, start/end-date and archive-transition policies approved 2026-11-23; remaining routine-edit/date-zone/persistence decisions and implementation outstanding.
+- Status: pause-clock, task-scope, deletion, completion, immediate/scheduled start, selected end date/time and archive-transition policies approved 2026-11-23; remaining routine-edit/date-zone/persistence decisions and implementation outstanding.
