@@ -176,7 +176,7 @@ struct PlantPersistenceTests {
         // Open that same store with the exact schema and migration plan used
         // by the production app. Existing plants must become active by default.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV2.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV3.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -213,6 +213,16 @@ struct PlantPersistenceTests {
             #expect(entries.first?.plant?.id == plantID)
             #expect(entries.first?.photoData == Data([0x04, 0x05]))
             #expect(entries.first?.milestoneRaw == "newLeaf")
+
+            // The full V1-V3 chain leaves an existing plant tagless, and tags
+            // work immediately after migration.
+            #expect(plant.tags?.isEmpty != false)
+            #expect(try context.fetch(FetchDescriptor<PlantTag>()).isEmpty)
+            let tag = try #require(try PlantTagStore.tag(named: "Legacy", context: context))
+            tag.plants = [plant]
+            try context.save()
+            #expect(try context.fetch(FetchDescriptor<PlantTag>()).count == 1)
+            #expect(plant.tags?.map(\.name) == ["Legacy"])
         }
     }
 
