@@ -122,7 +122,7 @@ Quiet Periods need persisted state that cannot be reconstructed safely from `Car
 | `QuietPeriod` | One scheduled, active, ended or cancelled period for a plant | stable ID, plant ID, created/start timestamps, optional end timestamp, status, label/reason, ended/cancelled timestamp |
 | `QuietPeriodTaskSnapshot` | One task's membership and frozen schedule state in that period | stable ID, quiet-period ID, task ID, task-title snapshot, membership state, signed remaining calendar-day count, captured/updated timestamp |
 
-Use stable UUID references rather than making the quiet-period records depend on cascading SwiftData relationships to `CareTask`. This allows a deleted task's membership snapshot to remain auditable while marking it removed from the active affected set. A quiet period auto-ends when no snapshots remain active. The plant association must still be validated against the owning plant when reading/writing.
+Use stable UUID references rather than making the quiet-period records depend on cascading SwiftData relationships to `CareTask`. This allows a deleted task's membership snapshot to remain auditable while marking it removed from the active affected set. A quiet period auto-ends when no snapshots remain active. The plant association must still be validated against the owning plant when reading/writing. Hard deletion of a plant must not leave orphaned quiet-period records; decide whether the final model uses an explicit Plant relationship with cascade or a transactional deletion service. Archiving is not deletion and must preserve all quiet-period records.
 
 The signed remaining-day value represents calendar-day distance at activation: zero means due on the activation day; a negative value preserves pre-existing overdue days; a positive value preserves days remaining. On resume, reconstruct the due day from the resume date and this signed offset using the same injected `Calendar` used by `CareSchedule`. Preserve the existing due-time component only if the implementation can do so deterministically under the agreed local-time/DST contract; otherwise settle an explicit due-time rule before coding. Do not store elapsed seconds as the pause clock.
 
@@ -130,13 +130,18 @@ A completion during a pause writes the ordinary `CareEvent` and updates only tha
 
 **Schema/migration constraints:** current production persistence is `FeedGoodSchemaV2`, with a lightweight V1→V2 migration for `Plant.archivedAt`. Any new persisted models require an explicit schema-version/migration review (likely V3); do not edit V1/V2 historical schema definitions. Extend the archive format additively with optional quiet-period records, validate all IDs/plant/task references and status/date combinations before import, and preserve idempotent recovery/conflict checks. Do not silently import an active pause whose task or plant references cannot be reconciled.
 
-**Still to validate before approving this model:** whether snapshots need the original local due-time components in addition to signed day count; the precise interval/next-date edit recalculation while paused; how an explicitly disabled task behaves at resume; timezone changes between scheduling, activation and resume; DST nonexistent/ambiguous local end times; and how a removed task snapshot is displayed in quiet-period history. This is a model candidate, not permission to start schema implementation.
+**Still to validate before approving this model:** whether snapshots need original local due-time components in addition to signed day count; precise interval/next-date edit recalculation while paused; how explicitly disabled tasks behave at resume; timezone changes between scheduling, activation and resume; DST nonexistent/ambiguous local end times; how removed task snapshots appear in history; and how hard plant deletion cleans up quiet-period records. Also decide whether the additive archive extension warrants a format-version increment while retaining v1/v2 import compatibility. This is a model candidate, not permission to start schema implementation.
 
 ## 13. Lifecycle transition matrix (design baseline)
 
 | Trigger | Task / schedule effect | History effect | Today / reminder effect |
 | --- | --- | --- | --- |
 | Create scheduled quiet period | Store future period and task membership; pause clock has not started | Store period intent | Existing care remains active until scheduled start |
+| Cancel scheduled period before activation | Mark period cancelled; no task due-date changes | Retain cancelled period | Existing Today/reminders remain unchanged |
+| Create a task during an active period | Do not add it to the captured membership | No history mutation | New task follows its own enabled/reminder settings |
+| Explicitly disable an included task during pause | Preserve disabled setting and period membership | No history mutation | Remains suppressed during pause and disabled after resume |
+| Explicitly enable an included task during pause | Preserve enabled setting and period membership; pause overlay still applies | No history mutation | Remains suppressed until resume, then eligible under its reminder setting |
+| Change reminder preference during pause | Persist preference without ending pause | No history mutation | Apply the new preference only when reconciling after resume |
 | Scheduled start arrives | Capture each included task's signed remaining calendar-day offset; period becomes active | Retain start transition | Suppress included tasks and their reminders; exclude non-members |
 | Edit included task while active | Persist explicit task edits; do not remove membership or auto-enable; quiet-period overlay remains | No care event is created by editing | Continue suppressing included task until resume |
 | Complete included task while active | Keep paused; reset its frozen remaining interval to its full current interval | Insert normal `CareEvent` | No active Today item/reminder until resume |
@@ -147,7 +152,7 @@ A completion during a pause writes the ordinary `CareEvent` and updates only tha
 
 This matrix is a product baseline. Rows marked by unresolved timing/edit details remain subject to the validation gates above.
 
-## 14. Delivery tracking
+## 15. Delivery tracking
 
 
 - **Implementation issue:** Not created. Create only after this PRD and its design gates are reviewed and approved.
