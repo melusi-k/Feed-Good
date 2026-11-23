@@ -52,6 +52,9 @@ final class Plant {
     @Relationship(deleteRule: .cascade, inverse: \CareTask.plant) var careTasks: [CareTask]? = []
     @Relationship(deleteRule: .cascade, inverse: \CareEvent.plant) var careEvents: [CareEvent]? = []
     @Relationship(deleteRule: .cascade, inverse: \JournalEntry.plant) var journalEntries: [JournalEntry]? = []
+    /// Optional user-authored tags (#75). No cascade: deleting a plant removes its
+    /// assignments but never the shared tags; deleting a tag never deletes a plant.
+    @Relationship var tags: [PlantTag]? = []
     var createdAt: Date
     /// Reversible archive marker. Nil means active. Archiving never deletes the plant or any related record.
     var archivedAt: Date?
