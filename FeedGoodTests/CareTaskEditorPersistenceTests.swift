@@ -9,10 +9,11 @@ private final class CareTaskEditorNotificationSpy: CareNotificationBoundary {
     var pending: [String: CareReminder] = [:]
     var removed: [String] = []
     var additions: [CareReminder] = []
+    var pendingReadCount = 0
 
     func permission() async -> ReminderPermission { status }
     func requestPermission() async throws -> Bool { status == .allowed }
-    func pendingIDs() async -> [String] { Array(pending.keys) }
+    func pendingIDs() async -> [String] { pendingReadCount += 1; return Array(pending.keys) }
     func remove(_ ids: [String]) {
         removed.append(contentsOf: ids)
         for id in ids { pending[id] = nil }
@@ -100,7 +101,12 @@ struct CareTaskEditorPersistenceTests {
         #expect(notifications.pending[originalReminder.id] == originalReminder)
         #expect(notifications.removed.isEmpty)
         #expect(notifications.additions.isEmpty)
-        _ = scheduler
+        #expect(notifications.pendingReadCount == 0)
+        let verificationContext = ModelContext(container)
+        let descriptor = FetchDescriptor<CareTask>(predicate: #Predicate { $0.id == task.id })
+        let persisted = try #require(verificationContext.fetch(descriptor).first)
+        #expect(persisted.dueDate == selectedOriginalDate)
+        #expect(persisted.intervalDays == selectedOriginalInterval)
     }
 
     @Test func successfulSaveReturnsReminderProjectionOnlyAfterCommit() async throws {
@@ -144,6 +150,13 @@ struct CareTaskEditorPersistenceTests {
         let persisted = try #require(verificationContext.fetch(descriptor).first)
         #expect(persisted.intervalDays == 30)
         #expect(persisted.dueDate == nextDate)
+
+        let notifications = CareTaskEditorNotificationSpy()
+        let scheduler = CareReminderScheduler(boundary: notifications)
+        await scheduler.reconcile(reminders)
+        #expect(notifications.pending.count == 1)
+        #expect(notifications.pending.values.first?.date == nextDate)
+        #expect(notifications.pendingReadCount == 1)
     }
 
     @Test func saveRejectsTasksThatDoNotBelongToTheSelectedPlant() throws {
