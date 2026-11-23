@@ -1,6 +1,6 @@
 # PRD-018 — Plant Changes Timeline
 
-**Status:** Proposal consistent; source-of-truth design gate open  
+**Status:** Source-of-truth decision recorded (option A); implementation in progress  
 **Priority:** P2  
 **Release:** Post-MVP, after archive compatibility  
 **Primary surfaces:** Plant Profile, Plant Story, Journal
@@ -60,7 +60,8 @@ Replaces reliance on free-form notes alone for a small set of structured plant c
 - Hard archive compatibility prerequisite: PRD-015 / issue #69.
 - Related to PRD-012 Growth Review, which may display change context; neither blocks the other.
 - Source-of-truth model decision is mandatory before implementation and must be reflected in the implementation PR.
+- **Decision (recorded before implementation):** Option A — a typed `changeKindRaw` on the existing `JournalEntry` model. A change record is one kind of entry (a record carries a milestone or a change kind, never both); ordinary observations without a kind never appear as changes by inference. Semantics: one timeline of plant observations, with the kind making the change explicit. Migration safety: an additive optional field, the same pattern as `milestoneRaw` and `Plant.archivedAt`; existing stores and pre-change archives decode unchanged. Edit/delete: the existing journal edit/delete path, which already affects only the selected record and its media. Story projection: the existing single-source projection stays, with a distinct "Plant change" label; equal timestamps keep the documented tie-break (newest first, then namespaced stable ID ascending). Export versioning: optional `changeKindRaw` key on archive version 2; unknown kinds and kind conflicts are rejected on recovery.
 
 ## 12. Delivery tracking
 - GitHub issue: [#72 — Add plant changes to the story timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- Status: proposal consistent; model decision and implementation outstanding.
+- Status: model decision recorded (option A); implementation in progress.
