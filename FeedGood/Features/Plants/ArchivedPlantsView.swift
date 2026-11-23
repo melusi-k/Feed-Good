@@ -35,6 +35,12 @@ struct ArchivedPlantsView: View {
                                 if !plant.species.isEmpty {
                                     Text(plant.species).font(.subheadline).foregroundStyle(FeedGoodTheme.muted)
                                 }
+                                let plantTags = (plant.tags ?? []).sorted { $0.name < $1.name }
+                                if plantTags.isEmpty == false {
+                                    Text(plantTags.map(\.name).joined(separator: " · "))
+                                        .font(.caption).foregroundStyle(FeedGoodTheme.muted)
+                                        .accessibilityIdentifier("archived.tags.\(plant.name)")
+                                }
                                 if let archivedAt = plant.archivedAt {
                                     Text("Archived \(archivedAt.formatted(date: .abbreviated, time: .omitted))")
                                         .font(.caption)
