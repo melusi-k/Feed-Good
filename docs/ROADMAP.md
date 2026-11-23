@@ -51,7 +51,7 @@ This is an outcome-led sequence, not a promise of calendar dates. Every implemen
 Phase 2 is active. Work is staged by dependency and design gates; implementation does not start while required product decisions remain unresolved.
 
 ### Stage 1 — Lifecycle vocabulary and transition contract
-1. **PRD-016 / #70 — Plant Lifecycle States.** Review the Active/Archived transition table and decide whether a genuinely distinct additional state is justified. Reuse the existing `Plant.archivedAt` contract; never add a duplicate archive flag. The proposed Active/Archived-only model is awaiting product approval.
+1. **PRD-016 / #70 — Plant Lifecycle States.** Approved 2026-11-23: Active/Archived only, reusing the existing `Plant.archivedAt` contract; no duplicate archive flag or new lifecycle schema. No additional lifecycle implementation is required for this release.
 2. Resolve #70 before starting #74 implementation.
 
 ### Stage 2 — Quiet-period design and implementation
