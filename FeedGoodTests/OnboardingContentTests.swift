@@ -8,7 +8,7 @@ struct OnboardingContentTests {
 
     @Test func welcomeCommunicatesTheThreeApprovedBenefits() {
         let highlights = OnboardingPage.welcome.highlights
-        #expect(highlights.map(\\.title) == [
+        #expect(highlights.map(\.title) == [
             "Know what to do today",
             "Every plant has a story",
             "Private and local-first"
@@ -17,7 +17,7 @@ struct OnboardingContentTests {
 
     @Test func howItWorksExplainsTheThreePrimaryDestinations() {
         let highlights = OnboardingPage.howItWorks.highlights
-        #expect(highlights.map(\\.title) == ["Today", "My Plants", "Journal"])
+        #expect(highlights.map(\.title) == ["Today", "My Plants", "Journal"])
     }
 
     @Test func finalPageDoesNotIntroduceSetupQuestionsOrRequiredContext() {
