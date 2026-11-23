@@ -202,7 +202,7 @@ struct CareTaskEditor: View {
         isSaving = true
         Task { @MainActor in
             do {
-                let reminders = try CareTaskEditorPersistence.save(
+                try await CareTaskEditorPersistence.saveAndReconcile(
                     plantID: plant.id,
                     taskID: task?.id,
                     kind: kind,
@@ -211,11 +211,9 @@ struct CareTaskEditor: View {
                     dueDate: dueDate,
                     isEnabled: enabled,
                     reminderEnabled: reminders,
-                    in: context.container
+                    in: context.container,
+                    scheduler: scheduler
                 )
-                // Reminder reconciliation is deliberately after the isolated
-                // context has committed successfully.
-                await scheduler.reconcile(reminders)
                 dismiss()
             } catch {
                 isSaving = false
