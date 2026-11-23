@@ -1,6 +1,6 @@
 # PRD-015 — Plant Archive and Restore
 
-**Status:** Final parent integration under review in PR #88; migration, iOS CI and Thread Sanitizer verification are pending  
+**Status:** Complete — Phase 1 implementation merged and owner-verified (2026-11-23)  
 **Priority:** P1 foundation  
 **Release:** Post-MVP foundation; archive compatibility is a prerequisite for dependent features  
 **Primary surfaces:** My Plants, Plant Profile, Plant Story, Settings / Data Portability
@@ -14,11 +14,11 @@ A user no longer owns or actively cares for a plant but wants to retain its hist
 ## 3. Capability targets
 | Capability | Acceptance evidence | Ship threshold |
 | --- | --- | --- |
-| Reversible state | Persistence and migration tests | Archive/restore preserves identity |
-| Active-surface exclusion | Collection and Today tests | Archived plants cannot receive active-care actions |
-| Reminder reconciliation | Notification lifecycle tests | No stale pending reminders |
-| Data integrity | Export/restore round-trip and rollback tests | All supported relationships/media preserved |
-| Usability | UI/accessibility review | Confirmation, archive list and restore are understandable |
+| Reversible state | Persisted optional `Plant.archivedAt: Date?`; legacy records without the field migrate as active |
+| Active-surface exclusion | Archived plants excluded from active collection, Today, active care and routine-review navigation |
+| Reminder reconciliation | Archive cancels pending notifications; restore schedules only eligible future reminders according to task settings and permission |
+| Data integrity | Export/recovery preserves archive state and supported relationships/media; rollback and duplicate-prevention behavior covered |
+| Usability | Archive confirmation, archived collection, restore flow and readable archived Plant Story |
 
 ## 4. Behavior changes
 - Add explicit Archive and Restore actions.
@@ -60,13 +60,20 @@ Included in the local-first app. Archive/restore is a data-trust capability, not
 Replaces deletion-or-leave-active as the only ways to manage an inactive plant. It does not replace permanent deletion.
 
 ## 11. Decisions and dependencies
-- #63 release gate satisfied: PR #80 merged to main after CI passed and the user confirmed manual feature testing. Its separate accessibility/Dynamic Type/appearance/privacy follow-up remains tracked independently and is not a #69 merge blocker. Do not bundle #63 into this feature.
+- #63 Care history corrections and #64 Growth Review are closed as completed after owner-confirmed manual verification and implementation evidence.
 - Builds on Plant Collection #1, Plant Story #14 and Data Portability #15 / PRD-009.
 - Hard prerequisite for PRD-016 lifecycle states, PRD-014 check-ins, PRD-018 plant changes and PRD-021 tags.
 - PRD-012 Growth Review, PRD-013 Weekly Reflection and PRD-017 Routine Review are independent but must respect archived visibility and disable active-care actions.
-- Delivery uses focused stacked sub-PRs #79, #83 and #84. The consolidated parent integration is PR #88, based directly on current main; it is the only archive PR intended to merge to main.
+- Delivery uses focused stacked sub-PRs #79, #83 and #84. The consolidated parent integration [PR #88](https://github.com/melusi-k/Feed-Good/pull/88) is merged to `main` at `acbd3c810af71d2a204ee85fee9b37aafd257007`.
 
 ## 12. Delivery tracking
-- GitHub issue: [#69 — Archive a plant without deleting its story](https://github.com/melusi-k/Feed-Good/issues/69).
+- GitHub issue: [#69 — Archive a plant without deleting its story](https://github.com/melusi-k/Feed-Good/issues/69) — completed.
 - Implementation stack: [PR #79 — archive state and active-care exclusion](https://github.com/melusi-k/Feed-Good/pull/79), [PR #83 — archived collection and restore flow](https://github.com/melusi-k/Feed-Good/pull/83), and [PR #84 — export/recovery, legacy SwiftData migration and archive-aware routine review](https://github.com/melusi-k/Feed-Good/pull/84). [Parent integration PR #88](https://github.com/melusi-k/Feed-Good/pull/88) consolidates the complete implementation. The sub-PRs are review slices and are not independently releasable.
+
+## 13. Phase 1 verification and sign-off
+- iOS build and unit tests, App Intents metadata verification, test attachment export, Thread Sanitizer and review rules passed on PR #88.
+- The on-disk legacy-store migration test verified plant fields, photo data, CareTask/CareEvent and JournalEntry relationships survive migration, with legacy plants remaining active (`archivedAt == nil`).
+- **Owner-confirmed manual verification (2026-11-23):** archive/restore journey, offline behavior, and archive accessibility/appearance checks including Dynamic Type and light/dark.
+- Growth Review populated two-photo PhotosPicker device journey passed on build 43 / `FeedGood-0.1.43-build43.ipa` (2026-11-23).
+- Phase 1 issues #63, #64 and #69 are closed as completed.
 - Related data contract: [PRD-009 — Settings & Data Portability](PRD-009-settings-data-portability.md).
