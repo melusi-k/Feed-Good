@@ -52,4 +52,56 @@ final class PlantCollectionUITests: XCTestCase {
         app.buttons["plants.sort"].tap()
         app.buttons["Recently added"].tap()
     }
+    func testArchivePreservesStoryAndRestoreReturnsSamePlantToActiveCollection() {
+        let app = XCUIApplication()
+        app.launchArguments = ["FEEDGOOD_UI_TESTING"]
+        app.launch()
+        app.tabBars.buttons["My Plants"].tap()
+
+        app.buttons["plants.add"].tap()
+        let name = app.textFields["plants.name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Archive fern")
+        app.buttons["plants.save"].tap()
+
+        let activeRow = app.buttons["plants.row.Archive fern"]
+        XCTAssertTrue(activeRow.waitForExistence(timeout: 5))
+        activeRow.tap()
+        app.buttons["plantDetail.archive"].tap()
+        let archiveConfirmation = app.buttons["plantDetail.archive.confirm"]
+        XCTAssertTrue(archiveConfirmation.waitForExistence(timeout: 5))
+        archiveConfirmation.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["plantDetail.care"].exists)
+        XCTAssertFalse(app.buttons["plantDetail.routineReview"].exists)
+        XCTAssertTrue(app.buttons["plantDetail.journal"].exists)
+        app.buttons["plantDetail.journal"].tap()
+        app.buttons["journal.story"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["story.archivedStatus"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["story.empty"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        app.navigationBars.buttons.firstMatch.tap()
+        app.navigationBars.buttons.firstMatch.tap()
+
+        app.buttons["plants.archived"].tap()
+        let archivedRow = app.buttons["plants.archived.row.Archive fern"]
+        XCTAssertTrue(archivedRow.waitForExistence(timeout: 5))
+        archivedRow.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
+        app.buttons["plantDetail.restore"].tap()
+        let restoreConfirmation = app.buttons["plantDetail.restore.confirm"]
+        XCTAssertTrue(restoreConfirmation.waitForExistence(timeout: 5))
+        restoreConfirmation.tap()
+
+        XCTAssertFalse(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
+        XCTAssertTrue(app.buttons["plantDetail.care"].exists)
+        XCTAssertTrue(app.buttons["plantDetail.routineReview"].exists)
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertFalse(app.buttons["plants.archived.row.Archive fern"].exists)
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["plants.row.Archive fern"].waitForExistence(timeout: 5))
+    }
+
 }

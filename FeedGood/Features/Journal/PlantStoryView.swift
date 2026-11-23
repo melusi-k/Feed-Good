@@ -15,6 +15,12 @@ struct PlantStoryView: View {
     var body: some View {
         List {
             Section {
+                if let archivedAt = plant.archivedAt {
+                    Label("Archived \(archivedAt.formatted(date: .abbreviated, time: .omitted)) · Not in active care", systemImage: "archivebox")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("story.archivedStatus")
+                }
                 Text("Care you've recorded and moments you've noticed, newest first. These are your records, not a plant-health assessment.")
                     .font(.callout).foregroundStyle(.secondary)
                 NavigationLink("Open plant journal") { JournalView(plant: plant) }
@@ -39,8 +45,10 @@ struct PlantStoryView: View {
                     case .care(let event):
                         Text(event.taskTitle).font(.subheadline.weight(.medium))
                         if !event.note.isEmpty { Text(event.note).fixedSize(horizontal: false, vertical: true) }
-                        NavigationLink("Open care routine and history") { PlantCareView(plant: plant) }
-                            .font(.callout)
+                        if plant.archivedAt == nil {
+                            NavigationLink("Open care routine and history") { PlantCareView(plant: plant) }
+                                .font(.callout)
+                        }
                     case .journal(let entry):
                         if let photo = entry.photoData {
                             PlantPhotoView(photoData: photo).frame(height: 190).clipped().accessibilityLabel("Journal photo")

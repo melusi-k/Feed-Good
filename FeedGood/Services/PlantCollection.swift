@@ -14,6 +14,16 @@ enum PlantCollection {
         value.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: locale)
     }
 
+    /// Active (non-archived) plants: the collection's default care surface.
+    static func active(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
+        return self.plants(from: plants.filter { $0.archivedAt == nil }, query: query, sort: sort)
+    }
+
+    /// Archived plants only, for the archived collection view.
+    static func archived(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
+        return self.plants(from: plants.filter { $0.archivedAt != nil }, query: query, sort: sort)
+    }
+
     static func plants(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
         let search = key(query.trimmingCharacters(in: .whitespacesAndNewlines))
         return plants.filter { search.isEmpty || key($0.name).contains(search) || key($0.species).contains(search) }.sorted {

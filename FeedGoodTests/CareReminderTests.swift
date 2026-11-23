@@ -126,4 +126,31 @@ struct CareReminderTests {
         }
     }
 
+    @Test func archivedPlantsAreNotScheduledForCareReminders() {
+        let archivedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let plant = Plant(name: "Fern", archivedAt: archivedAt)
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: now.addingTimeInterval(3600), reminderEnabled: true, plant: plant)
+        #expect(CareReminderScheduler.reminders(for: [task], now: now).isEmpty)
+    }
+
+    @Test func archivingCancelsReminderProjectionAndRestoreMakesItEligibleAgain() {
+        let plant = Plant(name: "Fern")
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let task = CareTask(
+            kind: .watering,
+            intervalDays: 7,
+            dueDate: now.addingTimeInterval(3600),
+            reminderEnabled: true,
+            plant: plant
+        )
+        #expect(CareReminderScheduler.reminders(for: [task], now: now).count == 1)
+
+        plant.archivedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        #expect(CareReminderScheduler.reminders(for: [task], now: now).isEmpty)
+
+        plant.archivedAt = nil
+        #expect(CareReminderScheduler.reminders(for: [task], now: now).count == 1)
+    }
+
 }

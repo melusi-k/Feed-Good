@@ -95,9 +95,14 @@ final class CareEvent {
     }
 }
 
+enum CareRecorderError: Error, Equatable {
+    case archivedPlant
+}
+
 @MainActor
 enum CareRecorder {
     static func complete(_ task: CareTask, note: String, at date: Date = .now, in context: ModelContext, calendar: Calendar = .current) throws {
+        guard let plant = task.plant, plant.archivedAt == nil else { throw CareRecorderError.archivedPlant }
         let previousDate = task.dueDate
         let event = CareEvent(task: task, completedAt: date, note: note)
         context.insert(event)

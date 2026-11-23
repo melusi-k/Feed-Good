@@ -23,7 +23,7 @@ enum TodayCare {
         let horizon = calendar.date(byAdding: .day, value: upcomingDays, to: today) ?? today
         return tasks
             .compactMap { task -> TodayCareItem? in
-                guard task.isEnabled, let plant = task.plant else { return nil }
+                guard task.isEnabled, let plant = task.plant, plant.archivedAt == nil else { return nil }
                 let state = CareSchedule.state(for: task.dueDate, now: now, calendar: calendar)
                 if state == .upcoming, calendar.startOfDay(for: task.dueDate) > horizon { return nil }
                 return TodayCareItem(task: task, plant: plant, state: state)
@@ -146,7 +146,7 @@ struct TodayView: View {
         guard let destination,
               let task = careTasks.first(where: { $0.id == destination.taskID }),
               task.plant?.id == destination.plantID,
-              plants.contains(where: { $0.id == destination.plantID }) else { return }
+              plants.contains(where: { $0.id == destination.plantID && $0.archivedAt == nil }) else { return }
         selectedTab = .today
         navigationPath = [destination.plantID]
         notificationRouter.consume(destination)
