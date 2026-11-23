@@ -38,7 +38,17 @@ final class PlantStoryUITests: XCTestCase {
         let careSavePreview = app.alerts["Review care changes"]
         XCTAssertTrue(careSavePreview.waitForExistence(timeout: 5))
         careSavePreview.buttons["Save changes"].tap()
-        app.buttons["care.complete.Watering"].tap()
+        let recordCare = app.buttons["care.complete.Watering"]
+        XCTAssertTrue(recordCare.waitForExistence(timeout: 5))
+        // The care routine section sits below the guidance and reminder sections.
+        // Explicitly scroll the List until the row is on-screen; XCTest's implicit
+        // scroll-to-visible can return a {-1, -1} hit point for this nested button.
+        for _ in 0..<5 {
+            if recordCare.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(recordCare.isHittable, "The Watering record-care button should be visible before tapping.")
+        recordCare.tap()
         let careNote = app.textFields["care.note"]
         XCTAssertTrue(careNote.waitForExistence(timeout: 5)); careNote.tap(); careNote.typeText("Checked before recording")
         app.buttons["care.recordSave"].tap()
