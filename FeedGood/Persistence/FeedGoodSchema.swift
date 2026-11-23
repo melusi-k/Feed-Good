@@ -130,7 +130,7 @@ enum FeedGoodSchemaV1: VersionedSchema {
     }
 }
 
-/// Current schema. V2 adds the optional Plant.archivedAt attribute; nil
+/// V2 adds the optional Plant.archivedAt attribute; nil
 /// represents an active plant and is the migration default for existing data.
 enum FeedGoodSchemaV2: VersionedSchema {
     static var versionIdentifier = Schema.Version(2, 0, 0)
@@ -139,12 +139,25 @@ enum FeedGoodSchemaV2: VersionedSchema {
     }
 }
 
+/// Current schema. V3 adds the PlantTag entity and the optional Plant.tags
+/// relationship (#75). Both are additive, so existing stores migrate
+/// lightweight and every existing plant simply has no tags.
+enum FeedGoodSchemaV3: VersionedSchema {
+    static var versionIdentifier = Schema.Version(3, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self]
+    }
+}
+
 enum FeedGoodMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self]
+        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self]
     }
 
     static var stages: [MigrationStage] {
-        [MigrationStage.lightweight(fromVersion: FeedGoodSchemaV1.self, toVersion: FeedGoodSchemaV2.self)]
+        [
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV1.self, toVersion: FeedGoodSchemaV2.self),
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV2.self, toVersion: FeedGoodSchemaV3.self)
+        ]
     }
 }
