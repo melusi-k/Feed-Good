@@ -268,7 +268,7 @@ The product defaults below are approved for this PRD:
 7. **Collection streak:** Deferred from the first release. Revisit only after usability validates the union-of-eligible-opportunities model.
 8. **Health language:** Use “plant insights” / “evidence-led observations”, not definitive health conclusions. No diagnoses, health scores or causal claims.
 9. **Evidence threshold:** A trend requires at least two comparable, dated observations of the same attribute. A single observation is a recorded observation, not a trend. Photo comparisons are user-directed and do not imply automated image interpretation.
-10. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The initial default preset is the most recent 30 local calendar days; the user can change it.
+10. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The default preset is still a UX decision; evaluate a recent 30-local-calendar-day window as the leading option before locking it.
 11. **Archived plants:** Exclude archived plants from active collection metrics by default; retain read-only individual history.
 
 ### 13.2 Technical decisions established from the current repository
