@@ -195,6 +195,105 @@ struct CareTaskEditorPersistenceTests {
             )
         }
     }
+
+    @Test func failedDeletePreservesTaskHistoryPendingRemindersAndUnrelatedViewEdits() async throws {
+        let container = try memory()
+        let viewContext = ModelContext(container)
+        let plant = Plant(name: "Fern")
+        let otherPlant = Plant(name: "Aloe")
+        viewContext.insert(plant)
+        viewContext.insert(otherPlant)
+        let dueDate = Date(timeIntervalSince1970: 2_000_000_000)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: dueDate, reminderEnabled: true, plant: plant)
+        let unrelatedTask = CareTask(kind: .feeding, intervalDays: 14, dueDate: dueDate, plant: otherPlant)
+        let event = CareEvent(task: task, completedAt: dueDate, note: "Watered")
+        viewContext.insert(task)
+        viewContext.insert(unrelatedTask)
+        viewContext.insert(event)
+        try viewContext.save()
+
+        let reminder = CareReminder(
+            id: CareReminderScheduler.prefix + task.id.uuidString,
+            title: "A moment with Fern",
+            body: "Watering",
+            date: dueDate,
+            taskID: task.id,
+            plantID: plant.id
+        )
+        let notifications = CareTaskEditorNotificationSpy()
+        notifications.pending[reminder.id] = reminder
+        unrelatedTask.customTitle = "Unrelated pending edit"
+
+        do {
+            try await CareTaskEditorPersistence.deleteAndReconcile(
+                plantID: plant.id,
+                taskID: task.id,
+                in: container,
+                scheduler: CareReminderScheduler(boundary: notifications),
+                now: Date(timeIntervalSince1970: 1_900_000_000),
+                saveContext: { _ in throw TestSaveError.failed }
+            )
+            Issue.record("Expected the injected deletion failure.")
+        } catch TestSaveError.failed {
+            // Expected: a failed delete must not reconcile reminders.
+        }
+
+        #expect(viewContext.hasChanges)
+        #expect(unrelatedTask.customTitle == "Unrelated pending edit")
+        #expect(notifications.pending[reminder.id] == reminder)
+        #expect(notifications.pendingReadCount == 0)
+        #expect(notifications.removed.isEmpty)
+        #expect(notifications.additions.isEmpty)
+
+        let verificationContext = ModelContext(container)
+        let taskID = task.id
+        let taskDescriptor = FetchDescriptor<CareTask>(predicate: #Predicate { $0.id == taskID })
+        let eventID = event.id
+        let eventDescriptor = FetchDescriptor<CareEvent>(predicate: #Predicate { $0.id == eventID })
+        #expect(try verificationContext.fetch(taskDescriptor).count == 1)
+        #expect(try verificationContext.fetch(eventDescriptor).count == 1)
+    }
+
+    @Test func successfulDeleteCommitsBeforeReminderReconciliationAndRetainsCareHistory() async throws {
+        let container = try memory()
+        let context = container.mainContext
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let dueDate = Date(timeIntervalSince1970: 2_000_000_000)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: dueDate, reminderEnabled: true, plant: plant)
+        let event = CareEvent(task: task, completedAt: dueDate, note: "Watered")
+        context.insert(task)
+        context.insert(event)
+        try context.save()
+
+        let notifications = CareTaskEditorNotificationSpy()
+        let scheduler = CareReminderScheduler(boundary: notifications)
+        var didCommit = false
+        notifications.onPendingRead = { #expect(didCommit) }
+        try await CareTaskEditorPersistence.deleteAndReconcile(
+            plantID: plant.id,
+            taskID: task.id,
+            in: container,
+            scheduler: scheduler,
+            now: Date(timeIntervalSince1970: 2_100_000_000),
+            saveContext: { context in
+                try context.save()
+                didCommit = true
+            }
+        )
+
+        #expect(didCommit)
+        #expect(notifications.pendingReadCount == 1)
+        let taskID = task.id
+        let taskDescriptor = FetchDescriptor<CareTask>(predicate: #Predicate { $0.id == taskID })
+        let eventID = event.id
+        let eventDescriptor = FetchDescriptor<CareEvent>(predicate: #Predicate { $0.id == eventID })
+        #expect(try context.fetch(taskDescriptor).isEmpty)
+        #expect(try context.fetch(eventDescriptor).count == 1)
+        #expect(try context.fetch(eventDescriptor).first?.taskID == task.id)
+        #expect(try context.fetch(eventDescriptor).first?.taskTitle == "Watering")
+    }
+
 }
 
 private enum TestSaveError: Error {
