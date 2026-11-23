@@ -225,6 +225,7 @@ struct CareEventEditor: View {
             Form {
                 Section {
                     DatePicker("Completed", selection: $completedAt)
+                        .accessibilityIdentifier("care.eventCompletedAt")
                     TextField("Optional note", text: $note).accessibilityIdentifier("care.eventNote")
                 } footer: {
                     Text("Correcting changes only this history record. Your active routine is never changed here.")
