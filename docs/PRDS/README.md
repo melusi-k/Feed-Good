@@ -66,7 +66,7 @@ The linked post-MVP issues have been reviewed for scope, boundaries, acceptance 
 | Trust and relationship | [PRD-013 / #65](PRD-013-weekly-garden-reflection.md) | Weekly Garden Reflection | Independent local derived experience |
 | Safety-gated | [PRD-014 / #66](PRD-014-plant-check-ins.md) | Plant Check-ins | No troubleshooting content ships before editorial/safety ownership and review |
 | Data foundation | [PRD-015 / #69](PRD-015-plant-archive.md) | Plant Archive and Restore | Complete; parent PR #88 merged and owner sign-off recorded |
-| Phase 2 Stage 1 | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Active design gate; approve transition table and whether any state beyond Active/Archived is justified |
+| Phase 2 Stage 1 | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Approved: Active/Archived only; no additional lifecycle state or schema work for this release |
 | Foundation delivered | [PRD-017 / #71](PRD-017-care-routine-review.md) | Care Routine Review | Implemented in PR #82 and archive-aware in PR #88; prerequisite for #74 satisfied |
 | Dependent | [PRD-018 / #72](PRD-018-plant-changes-timeline.md) | Plant Changes Timeline | Requires #69 compatibility; model choice is a design gate |
 | Independent | [PRD-019 / #73](PRD-019-plant-journal-prompts.md) | Plant Journal Prompts | #65 integration optional |
