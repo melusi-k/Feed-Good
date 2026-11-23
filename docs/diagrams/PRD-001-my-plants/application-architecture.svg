@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+<title id="title">Application architecture</title><desc id="desc">Cross-cutting view anchored to PRD-001 · current local-first architecture; future capabilities are explicitly gated</desc>
+<defs><style>
+:root{color-scheme:light} text{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#26372d}
+.h1{font-size:34px;font-weight:700}.sub{font-size:16px;fill:#617267}.kicker{font-size:12px;font-weight:700;letter-spacing:2px;fill:#55745e}
+.node{fill:#fffefa;stroke:#cbd8ca;stroke-width:2}.green{fill:#e7f0e5;stroke:#8eaa8e;stroke-width:2}.sand{fill:#f4eee2;stroke:#d9c9aa;stroke-width:2}.muted{fill:#f2f4f0;stroke:#cbd1ca;stroke-width:2}.warn{fill:#fff4df;stroke:#d9b76e;stroke-width:2}
+.nt{font-size:17px;font-weight:650}.small{font-size:13px;fill:#617267}.tiny{font-size:11px;fill:#718077}.line{stroke:#78917c;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.dash{stroke:#b18c49;stroke-width:2.5;stroke-dasharray:8 7;fill:none;marker-end:url(#arrowGold)}
+</style><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#78917c" stroke-width="1.5"/></marker><marker id="arrowGold" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#b18c49" stroke-width="1.5"/></marker></defs>
+<rect width="1200" height="760" rx="26" fill="#f8f7f1"/>
+<text x="64" y="62" class="kicker">FEED GOOD · PRODUCT ATLAS</text><text x="64" y="112" class="h1">Application architecture</text><text x="64" y="142" class="sub">Cross-cutting view anchored to PRD-001 · current local-first architecture; future capabilities are explicitly gated</text>
+
+<rect x="64" y="190" width="1072" height="94" rx="18" class="green"/><text x="88" y="226" class="kicker">PRESENTATION</text><text x="88" y="256" class="nt">SwiftUI app surfaces</text><text x="365" y="245" class="small">Today · My Plants · Plant Profile · Care · Journal · Settings</text>
+<path d="M600 284V328" class="line"/>
+<rect x="64" y="330" width="1072" height="112" rx="18" class="node"/><text x="88" y="366" class="kicker">DOMAIN & FEATURE LOGIC</text>
+<rect x="88" y="382" width="220" height="42" rx="10" class="green"/><text x="198" y="408" text-anchor="middle" class="nt">Plant domain</text>
+<rect x="330" y="382" width="220" height="42" rx="10" class="green"/><text x="440" y="408" text-anchor="middle" class="nt">Care scheduling</text>
+<rect x="572" y="382" width="220" height="42" rx="10" class="green"/><text x="682" y="408" text-anchor="middle" class="nt">Journal & story</text>
+<rect x="814" y="382" width="294" height="42" rx="10" class="green"/><text x="961" y="408" text-anchor="middle" class="nt">Insights / projections</text>
+<path d="M600 442V484" class="line"/>
+<rect x="64" y="486" width="1072" height="104" rx="18" class="sand"/><text x="88" y="522" class="kicker">LOCAL DATA & PLATFORM ADAPTERS</text>
+<rect x="88" y="538" width="300" height="36" rx="9" class="node"/><text x="238" y="562" text-anchor="middle" class="nt">SwiftData · local source records</text>
+<rect x="450" y="538" width="250" height="36" rx="9" class="node"/><text x="575" y="562" text-anchor="middle" class="nt">Photo storage</text>
+<rect x="762" y="538" width="346" height="36" rx="9" class="node"/><text x="935" y="562" text-anchor="middle" class="nt">UserNotifications · optional local alerts</text>
+<rect x="64" y="620" width="1072" height="54" rx="14" class="muted"/><text x="88" y="653" class="nt">No account · no backend · no cloud sync in the current architecture</text>
+<text x="1110" y="700" text-anchor="end" class="tiny">Future: sync, auth, remote content and analytics require separate approved product + privacy contracts.</text>
+<text x="64" y="720" class="tiny">Feed Good · Documentation diagram · See adjacent README for scope, source PRD and decision status</text>
+</svg>
