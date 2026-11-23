@@ -75,6 +75,9 @@ jobs:
           TEST_ARGS=()
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
+              117)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
+                ;;
               111)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema")
                 ;;
