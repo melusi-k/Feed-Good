@@ -294,6 +294,70 @@ struct CareTaskEditorPersistenceTests {
         #expect(try context.fetch(eventDescriptor).first?.taskTitle == "Watering")
     }
 
+
+    @Test func deleteRejectsArchivedPlantWithoutChangingItsTask() throws {
+        let container = try memory()
+        let context = ModelContext(container)
+        let plant = Plant(name: "Archived fern")
+        plant.archivedAt = Date(timeIntervalSince1970: 2_000_000_000)
+        let task = CareTask(
+            kind: .watering,
+            intervalDays: 7,
+            dueDate: Date(timeIntervalSince1970: 2_100_000_000),
+            plant: plant
+        )
+        context.insert(plant)
+        context.insert(task)
+        try context.save()
+
+        #expect(throws: CareTaskEditorPersistenceError.archivedPlant) {
+            try CareTaskEditorPersistence.delete(
+                plantID: plant.id,
+                taskID: task.id,
+                in: container
+            )
+        }
+
+        let verificationContext = ModelContext(container)
+        let taskID = task.id
+        let descriptor = FetchDescriptor<CareTask>(
+            predicate: #Predicate { $0.id == taskID }
+        )
+        #expect(try verificationContext.fetch(descriptor).count == 1)
+    }
+
+    @Test func deleteRejectsTaskOwnedByAnotherPlantWithoutDeletingIt() throws {
+        let container = try memory()
+        let context = ModelContext(container)
+        let selectedPlant = Plant(name: "Fern")
+        let owningPlant = Plant(name: "Aloe")
+        let task = CareTask(
+            kind: .watering,
+            intervalDays: 7,
+            dueDate: Date(timeIntervalSince1970: 2_100_000_000),
+            plant: owningPlant
+        )
+        context.insert(selectedPlant)
+        context.insert(owningPlant)
+        context.insert(task)
+        try context.save()
+
+        #expect(throws: CareTaskEditorPersistenceError.taskBelongsToAnotherPlant) {
+            try CareTaskEditorPersistence.delete(
+                plantID: selectedPlant.id,
+                taskID: task.id,
+                in: container
+            )
+        }
+
+        let verificationContext = ModelContext(container)
+        let taskID = task.id
+        let descriptor = FetchDescriptor<CareTask>(
+            predicate: #Predicate { $0.id == taskID }
+        )
+        #expect(try verificationContext.fetch(descriptor).count == 1)
+    }
+
 }
 
 private enum TestSaveError: Error {
