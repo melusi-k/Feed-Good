@@ -16,11 +16,16 @@ struct EditPlantView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingPhotoError = false
     @State private var errorMessage: String?
+    @State private var assignedTagIDs: Set<UUID>
+    @State private var pendingTagNames: [String] = []
+    @State private var newTagName = ""
+    @Query(sort: \PlantTag.name) private var allTags: [PlantTag]
 
     init(plant: Plant) {
         self.plant = plant
         _draft = State(initialValue: PlantProfileDraft(plant: plant))
         _photoData = State(initialValue: plant.photoData)
+        _assignedTagIDs = State(initialValue: Set((plant.tags ?? []).map(\.id)))
     }
 
     var body: some View {
@@ -82,6 +87,48 @@ struct EditPlantView: View {
                 } footer: {
                     Text("This helps us tailor plant care guidance to your plant’s growing conditions. These are your observations, not measurements. You can leave them unset or change them later. We do not need your location.")
                 }
+                Section {
+                    ForEach(allTags) { tag in
+                        Button {
+                            if assignedTagIDs.contains(tag.id) { assignedTagIDs.remove(tag.id) } else { assignedTagIDs.insert(tag.id) }
+                        } label: {
+                            HStack {
+                                Text(tag.name).foregroundStyle(.primary)
+                                Spacer()
+                                if assignedTagIDs.contains(tag.id) { Image(systemName: "checkmark").foregroundStyle(FeedGoodTheme.leaf) }
+                            }
+                        }
+                        .accessibilityIdentifier("editPlant.tag.\(tag.name)")
+                    }
+                    ForEach(pendingTagNames, id: \.self) { name in
+                        HStack {
+                            Text(name)
+                            Spacer()
+                            Button("Remove", role: .destructive) { pendingTagNames.removeAll { $0 == name } }
+                                .accessibilityIdentifier("editPlant.pendingTagRemove.\(name)")
+                        }
+                    }
+                    HStack {
+                        TextField("New tag", text: $newTagName)
+                            .accessibilityIdentifier("editPlant.newTag")
+                        Button("Add") {
+                            let trimmed = PlantTagStore.trimmed(newTagName)
+                            let key = PlantTagStore.normalized(newTagName)
+                            if key.isEmpty == false,
+                               allTags.contains(where: { $0.normalizedName == key }) == false,
+                               pendingTagNames.contains(where: { PlantTagStore.normalized($0) == key }) == false {
+                                pendingTagNames.append(trimmed)
+                            }
+                            newTagName = ""
+                        }
+                        .disabled(PlantTagStore.normalized(newTagName).isEmpty)
+                        .accessibilityIdentifier("editPlant.addTag")
+                    }
+                } header: {
+                    Text("Tags (optional)")
+                } footer: {
+                    Text("Tags are your own labels for finding plants, kept on this device. They are never tasks, folders or health categories.")
+                }
                 if let errorMessage {
                     Text(errorMessage)
                         .foregroundStyle(.red)
@@ -127,6 +174,14 @@ struct EditPlantView: View {
         draft.applying(to: plant)
         plant.photoData = photoData
         do {
+            var assigned = allTags.filter { assignedTagIDs.contains($0.id) }
+            for name in pendingTagNames {
+                if let tag = try PlantTagStore.tag(named: name, context: modelContext),
+                   assigned.contains(where: { $0.id == tag.id }) == false {
+                    assigned.append(tag)
+                }
+            }
+            plant.tags = assigned
             try modelContext.save()
             dismiss()
         } catch {
