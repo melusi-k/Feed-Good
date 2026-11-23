@@ -182,7 +182,7 @@ This section is a concrete persistence recommendation for review, not authorizat
 | Archive plant | End active period or cancel scheduled period | Retain period history; archive plant | No active care/reminders |
 | Restore plant | Do not reactivate old period | Preserve prior period unchanged | User must explicitly create another period |
 
-This matrix is a product baseline. Rows marked by unresolved timing/edit details remain subject to the validation gates above.
+This matrix records the approved Quiet Period product transitions. Remaining gates concern persistence, deletion/archive compatibility and validation evidence; they do not reopen the approved timing, task-edit or pause-clock rules.
 
 ## 14. Delivery tracking
 
