@@ -12,12 +12,20 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: YES
     TARGETED_DEVICE_FAMILY: "1"
+packages:
+  # Owner-approved exception to the no-third-party-dependencies rule
+  # (owner approval 2026-11-23, see AGENTS.md > Ground truth). Pinned exact.
+  OnboardingKit:
+    url: https://github.com/danielsaidi/OnboardingKit
+    exactVersion: 9.2.1
 targets:
   FeedGood:
     type: application
     platform: iOS
     sources:
       - path: FeedGood
+    dependencies:
+      - package: OnboardingKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.melusik.feedgood
