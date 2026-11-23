@@ -3,10 +3,13 @@ import Testing
 @testable import FeedGood
 
 struct GardenReflectionTests {
-    private func calendar(_ zone: String, locale: String = "en_ZA") -> Calendar {
+    // firstWeekday is set explicitly: Calendar.locale does not reliably move
+    // the week start on every platform, and the civil-week definition is what
+    // these tests pin down.
+    private func calendar(_ zone: String, firstWeekday: Int = 2) -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: zone)!
-        calendar.locale = Locale(identifier: locale)
+        calendar.firstWeekday = firstWeekday
         return calendar
     }
 
@@ -35,13 +38,15 @@ struct GardenReflectionTests {
         // Monday-start (en_ZA) vs Sunday-start (en_US) calendars put the same
         // Sunday morning instant in different weeks.
         let sunday = date("2026-11-22T08:00:00+02:00") // a Sunday in Johannesburg
-        let mondayStart = GardenReflectionBuilder.weekInterval(for: sunday, calendar: calendar("Africa/Johannesburg", locale: "en_ZA"))
-        let sundayStart = GardenReflectionBuilder.weekInterval(for: sunday, calendar: calendar("Africa/Johannesburg", locale: "en_US"))
+        let mondayCal = calendar("Africa/Johannesburg", firstWeekday: 2)
+        let sundayCal = calendar("Africa/Johannesburg", firstWeekday: 1)
+        let mondayStart = GardenReflectionBuilder.weekInterval(for: sunday, calendar: mondayCal)
+        let sundayStart = GardenReflectionBuilder.weekInterval(for: sunday, calendar: sundayCal)
         #expect(mondayStart.start != sundayStart.start)
-        // en_ZA: Sunday 22 Nov belongs to the week that started Monday 16 Nov.
-        #expect(mondayStart.start == calendar("Africa/Johannesburg", locale: "en_ZA").date(from: DateComponents(year: 2026, month: 11, day: 16)))
-        // en_US: Sunday 22 Nov starts a new week.
-        #expect(sundayStart.start == calendar("Africa/Johannesburg", locale: "en_US").date(from: DateComponents(year: 2026, month: 11, day: 22)))
+        // Monday-start: Sunday 22 Nov belongs to the week that started Monday 16 Nov.
+        #expect(mondayStart.start == mondayCal.date(from: DateComponents(year: 2026, month: 11, day: 16)))
+        // Sunday-start: Sunday 22 Nov starts a new week.
+        #expect(sundayStart.start == sundayCal.date(from: DateComponents(year: 2026, month: 11, day: 22)))
     }
 
     @Test func eventsAtTheWeekEdgesLandInsideOrOutsideExactly() {
@@ -64,7 +69,7 @@ struct GardenReflectionTests {
     @Test func dstTransitionWeekKeepsLocalMidnightBoundaries() {
         // America/New_York falls back on 1 Nov 2026: the week containing it is
         // 169 hours long, and its bounds are still local midnights.
-        let cal = calendar("America/New_York", locale: "en_US")
+        let cal = calendar("America/New_York", firstWeekday: 1)
         let during = date("2026-11-01T05:30:00Z") // 01:30 EDT, happens twice that night
         let week = GardenReflectionBuilder.weekInterval(for: during, calendar: cal)
         #expect(week.end.timeIntervalSince(week.start) == 169 * 3600)
