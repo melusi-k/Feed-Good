@@ -4,12 +4,14 @@ import SwiftData
 struct PlantListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Plant.createdAt, order: .reverse) private var plants: [Plant]
+    @Query private var tags: [PlantTag]
     @State private var showingAddPlant = false
     @State private var query = ""
+    @State private var selectedTagIDs: Set<UUID> = []
     @AppStorage("plantCollectionSort") private var sortRaw = PlantCollectionSort.recentlyAdded.rawValue
 
     private var sort: PlantCollectionSort { PlantCollectionSort(rawValue: sortRaw) ?? .recentlyAdded }
-    private var visiblePlants: [Plant] { PlantCollection.active(from: plants, query: query, sort: sort) }
+    private var visiblePlants: [Plant] { PlantCollection.tagged(PlantCollection.active(from: plants, query: query, sort: sort), selectedTagIDs: selectedTagIDs) }
 
     var body: some View {
         NavigationStack {
@@ -27,6 +29,9 @@ struct PlantListView: View {
                 } else {
                     List {
                         Section {
+                            PlantTagFilterView(tags: tags, selectedTagIDs: $selectedTagIDs)
+                        }
+                        Section {
                             if visiblePlants.isEmpty {
                                 if query.isEmpty {
                                     ContentUnavailableView {
@@ -36,6 +41,15 @@ struct PlantListView: View {
                                     } actions: {
                                         NavigationLink("View archived plants") { ArchivedPlantsView() }
                                             .accessibilityIdentifier("plants.archived.empty")
+                                    }
+                                } else if query.isEmpty, selectedTagIDs.isEmpty == false {
+                                    ContentUnavailableView {
+                                        Label("No plants with these tags", systemImage: "tag")
+                                            .accessibilityIdentifier("plants.tagFilter.empty")
+                                    } description: {
+                                        Text("Tags match any selected label. Clear the filter to see every plant.")
+                                    } actions: {
+                                        Button("Clear tags") { selectedTagIDs.removeAll() }.accessibilityIdentifier("plants.tagFilter.clearEmpty")
                                     }
                                 } else {
                                     ContentUnavailableView {
@@ -63,6 +77,13 @@ struct PlantListView: View {
                                                 Text(plant.species)
                                                     .font(.subheadline)
                                                     .foregroundStyle(FeedGoodTheme.muted)
+                                            }
+                                            let plantTags = (plant.tags ?? []).sorted { $0.name < $1.name }
+                                            if plantTags.isEmpty == false {
+                                                Text(plantTags.map(\.name).joined(separator: " · "))
+                                                    .font(.caption)
+                                                    .foregroundStyle(FeedGoodTheme.muted)
+                                                    .accessibilityIdentifier("plants.tags.\(plant.name)")
                                             }
                                         }
                                         .padding(.vertical, 4)
