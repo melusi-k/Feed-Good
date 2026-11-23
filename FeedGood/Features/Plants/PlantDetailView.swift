@@ -66,6 +66,11 @@ struct PlantDetailView: View {
                 }
 
                 if plant.archivedAt == nil {
+                    NavigationLink { CareRoutineReviewView(plant: plant) } label: {
+                        Label("Review care routine", systemImage: "calendar.badge.clock")
+                    }
+                    .accessibilityIdentifier("plantDetail.routineReview")
+
                     NavigationLink { PlantCareView(plant: plant) } label: {
                         Label("Care routine and history", systemImage: "drop")
                     }
