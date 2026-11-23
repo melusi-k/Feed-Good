@@ -11,6 +11,13 @@ The following projects are licensed under the MIT License, with the copyright an
 - [twostraws/SwiftUI-Agent-Skill](https://github.com/twostraws/SwiftUI-Agent-Skill) - Copyright (c) 2026 Paul Hudson.
 - [Dimillian/Skills](https://github.com/Dimillian/Skills) (swiftui-performance-audit) - Copyright (c) 2026 Thomas Ricouard.
 
+## Third-party dependencies
+
+The following Swift packages are bundled by the app itself (owner-approved exception to the no-dependencies rule, 2026-11-23):
+
+- [danielsaidi/OnboardingKit](https://github.com/danielsaidi/OnboardingKit), pinned to 9.2.1 - MIT License, Copyright (c) 2017-2026 Daniel Saidi.
+- [danielsaidi/PageView](https://github.com/danielsaidi/PageView) (transitive dependency of OnboardingKit) - MIT License, Copyright (c) 2025 Daniel Saidi.
+
 MIT License text:
 
 ```text
