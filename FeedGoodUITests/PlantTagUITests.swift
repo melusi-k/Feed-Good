@@ -16,7 +16,14 @@ final class PlantTagUITests: XCTestCase {
         let edit = app.buttons["plantDetail.edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let field = app.textFields["editPlant.newTag"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap(); field.typeText(tag)
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        // The Tags section closes a long form, so the field starts below the
+        // fold: it exists but is clipped, and a tap on it cannot take keyboard
+        // focus. Scroll it fully on screen first, as a user would.
+        var scrolls = 0
+        while field.isHittable == false, scrolls < 5 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(field.isHittable)
+        field.tap(); field.typeText(tag)
         app.buttons["editPlant.addTag"].tap()
         app.buttons["editPlant.save"].tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
