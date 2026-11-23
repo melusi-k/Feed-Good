@@ -153,10 +153,10 @@ struct CareTaskEditor: View {
             }
             .feedGoodHeader(task == nil ? "Add care task" : "Edit care task")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isDeleting) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { confirmingSave = true }
-                        .disabled(isSaving || (kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+                        .disabled(isSaving || isDeleting || (kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                         .accessibilityIdentifier("care.taskSave")
                 }
             }
@@ -166,7 +166,7 @@ struct CareTaskEditor: View {
             .task { reminders = task?.reminderEnabled ?? false }
             .alert("Review care changes", isPresented: $confirmingSave) {
                 Button("Save changes") { save() }
-                    .disabled(isSaving)
+                    .disabled(isSaving || isDeleting)
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(saveImpactSummary)
