@@ -38,6 +38,8 @@ struct AppTabView: View {
     @AppStorage("feedGood.appearance") private var appearanceRawValue = FeedGoodAppearance.system.rawValue
     @State private var selectedTab: AppTab = .today
     @State private var showingProfile = false
+    @State private var whatsNewEntry: ReleaseNotesEntry?
+    @State private var whatsNewChecked = false
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
@@ -50,12 +52,37 @@ struct AppTabView: View {
         .tint(FeedGoodTheme.leaf)
         .preferredColorScheme(appearance.preferredColorScheme)
         .environment(\.showFeedGoodProfile, { showingProfile = true })
+        .onAppear {
+            guard whatsNewChecked == false else { return }
+            whatsNewChecked = true
+            whatsNewEntry = AppTabView.makeWhatsNewStore().entryToPresent()
+        }
+        .sheet(item: $whatsNewEntry, onDismiss: {
+            AppTabView.makeWhatsNewStore().markCurrentVersionSeen()
+        }) { entry in
+            WhatsNewView(entry: entry) {
+                AppTabView.makeWhatsNewStore().markCurrentVersionSeen()
+            }
+        }
         .sheet(isPresented: $showingProfile) {
             ProfileView {
                 showingProfile = false
                 selectedTab = .settings
             }
         }
+    }
+    /// Builds the What's New gate, honoring UI-test launch arguments that seed
+    /// the last-seen version (`FEEDGOOD_WHATS_NEW_LAST_SEEN <identity>`) or
+    /// simulate a fresh install (`FEEDGOOD_WHATS_NEW_FRESH_INSTALL`).
+    static func makeWhatsNewStore() -> WhatsNewStore {
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "FEEDGOOD_WHATS_NEW_LAST_SEEN"), index + 1 < arguments.count {
+            return WhatsNewStore(lastSeen: arguments[index + 1])
+        }
+        if arguments.contains("FEEDGOOD_WHATS_NEW_FRESH_INSTALL") {
+            return WhatsNewStore(lastSeen: nil)
+        }
+        return WhatsNewStore()
     }
 }
 
