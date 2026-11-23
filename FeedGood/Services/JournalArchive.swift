@@ -42,13 +42,15 @@ struct JournalArchivePreview: Equatable {
     }
 }
 
-/// Version 1 is journal-only. Version 2 covers milestones, plant change records (PRD-018) and the complete local garden record; care routines and history are optional extension keys. Optional record keys keep archives written before a field existed decodable.
+/// Version 1 is journal-only. Version 2 covers milestones, plant change records (PRD-018) and the complete local garden record; care routines, history and plant tags (#75) are optional extension keys. Optional record keys keep archives written before a field existed decodable.
 struct JournalArchive: Codable {
     var version = 2
     var plants: [PlantRecord]
     var entries: [EntryRecord]
     var careTasks: [CareTaskRecord]?
     var careEvents: [CareEventRecord]?
+    // Optional so pre-tag archives decode with no tags.
+    var tags: [TagRecord]?
 
     struct PlantRecord: Codable {
         var id: UUID
@@ -73,6 +75,13 @@ struct JournalArchive: Codable {
         var milestoneRaw: String? = nil
         // Optional so archives written before plant change records decode as ordinary entries.
         var changeKindRaw: String? = nil
+    }
+
+    struct TagRecord: Codable, Equatable {
+        var id: UUID
+        var name: String
+        var normalizedName: String
+        var plantIDs: [UUID]
     }
 
     struct CareTaskRecord: Codable, Equatable {
@@ -103,7 +112,8 @@ struct JournalArchive: Codable {
         plants: [Plant],
         entries: [JournalEntry],
         careTasks: [CareTask] = [],
-        careEvents: [CareEvent] = []
+        careEvents: [CareEvent] = [],
+        tags: [PlantTag] = []
     ) throws -> Data {
         let entryRecords = try entries.map { entry -> EntryRecord in
             guard let plantID = entry.plant?.id else { throw JournalArchiveError.invalidRecord }
@@ -142,11 +152,16 @@ struct JournalArchive: Codable {
                 archivedAt: $0.archivedAt
             )
         }
+        let tagRecords = tags.map { tag in
+            TagRecord(id: tag.id, name: tag.name, normalizedName: tag.normalizedName,
+                      plantIDs: (tag.plants ?? []).map(\.id).sorted { $0.uuidString < $1.uuidString })
+        }
         let archive = JournalArchive(
             plants: plantRecords,
             entries: entryRecords,
             careTasks: taskRecords,
-            careEvents: eventRecords
+            careEvents: eventRecords,
+            tags: tagRecords
         )
         try archive.validate()
         let data = try JSONEncoder().encode(archive)
@@ -159,7 +174,8 @@ struct JournalArchive: Codable {
         guard plants.count <= Self.maxRecords,
               entries.count <= Self.maxRecords,
               (careTasks?.count ?? 0) <= Self.maxRecords,
-              (careEvents?.count ?? 0) <= Self.maxRecords else {
+              (careEvents?.count ?? 0) <= Self.maxRecords,
+              (tags?.count ?? 0) <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
         let plantIDs = Set(plants.map(\.id))
@@ -200,6 +216,21 @@ struct JournalArchive: Codable {
             if let data = entry.photoData, UIImage(data: data) == nil {
                 throw JournalArchiveError.invalidRecord
             }
+        }
+        for tag in tags ?? [] {
+            let normalized = PlantTag.normalized(tag.name)
+            guard normalized.isEmpty == false,
+                  tag.normalizedName == normalized,
+                  Set(tag.plantIDs).count == tag.plantIDs.count,
+                  tag.plantIDs.allSatisfy(plantIDs.contains) else {
+                throw JournalArchiveError.invalidRecord
+            }
+        }
+        // Tag identity is stable: one record per id and per normalized name.
+        let tagIDs = (tags ?? []).map(\.id)
+        let tagNames = (tags ?? []).map(\.normalizedName)
+        guard Set(tagIDs).count == tagIDs.count, Set(tagNames).count == tagNames.count else {
+            throw JournalArchiveError.invalidRecord
         }
         for task in careTasks ?? [] {
             guard plantIDs.contains(task.plantID),
@@ -265,16 +296,26 @@ struct JournalArchive: Codable {
         let existingTasks = try recoveryContext.fetch(FetchDescriptor<CareTask>())
         let existingEvents = try recoveryContext.fetch(FetchDescriptor<CareEvent>())
 
+        let existingTags = try recoveryContext.fetch(FetchDescriptor<PlantTag>())
         var plants = Dictionary(uniqueKeysWithValues: existingPlants.map { ($0.id, $0) })
         let entries = Dictionary(uniqueKeysWithValues: existingEntries.map { ($0.id, $0) })
         let tasks = Dictionary(uniqueKeysWithValues: existingTasks.map { ($0.id, $0) })
         let events = Dictionary(uniqueKeysWithValues: existingEvents.map { ($0.id, $0) })
+        var tags = Dictionary(uniqueKeysWithValues: existingTags.map { ($0.id, $0) })
 
         // Complete conflict validation before touching the context.
         for record in archive.entries {
             if let entry = entries[record.id] {
                 guard let plantID = entry.plant?.id,
                       EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw, changeKindRaw: entry.changeKindRaw) == record else {
+                    throw JournalArchiveError.conflictingRecord
+                }
+            }
+        }
+        for record in archive.tags ?? [] {
+            if let tag = tags[record.id] {
+                guard TagRecord(id: tag.id, name: tag.name, normalizedName: tag.normalizedName,
+                                plantIDs: (tag.plants ?? []).map(\.id).sorted { $0.uuidString < $1.uuidString }) == record else {
                     throw JournalArchiveError.conflictingRecord
                 }
             }
@@ -316,6 +357,29 @@ struct JournalArchive: Codable {
                 )
                 recoveryContext.insert(plant)
                 plants[plant.id] = plant
+            }
+            for record in archive.tags ?? [] where tags[record.id] == nil {
+                // The app's own duplicate policy applies on recovery: a local tag
+                // with the same normalized name stands in for the archived one.
+                if let existing = tags.values.first(where: { $0.normalizedName == record.normalizedName }) {
+                    tags[record.id] = existing
+                    continue
+                }
+                let tag = PlantTag(id: record.id, name: record.name)
+                guard tag.normalizedName == record.normalizedName else { throw JournalArchiveError.invalidRecord }
+                recoveryContext.insert(tag)
+                tags[tag.id] = tag
+            }
+            // Assignments restore after every plant and tag exists, so archived and
+            // restored plants keep their exact tag relationships.
+            for record in archive.tags ?? [] {
+                guard let tag = tags[record.id] else { throw JournalArchiveError.invalidRecord }
+                for plantID in record.plantIDs {
+                    guard let plant = plants[plantID] else { throw JournalArchiveError.invalidRecord }
+                    if (tag.plants ?? []).contains(where: { $0.id == plantID }) == false {
+                        tag.plants?.append(plant)
+                    }
+                }
             }
             for record in archive.entries where entries[record.id] == nil {
                 guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
