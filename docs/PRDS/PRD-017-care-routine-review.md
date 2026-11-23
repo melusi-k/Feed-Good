@@ -1,6 +1,6 @@
 # PRD-017 — Care Routine Review
 
-**Status:** Proposal consistent; implementation not started  
+**Status:** Implemented in PR #82; archive-aware integration and final CI verification included in PR #84  
 **Priority:** P1  
 **Release:** Post-MVP  
 **Primary surfaces:** Plant Profile, Care Routine, existing CareTaskEditor
@@ -67,4 +67,4 @@ Replaces the need to navigate directly into an editor to understand a routine. I
 
 ## 12. Delivery tracking
 - GitHub issue: [#71 — Let users review and adjust plant care routines safely](https://github.com/melusi-k/Feed-Good/issues/71).
-- Status: proposal consistent; implementation outstanding.
+- Implementation: PR #82 merged to `main` (`8ead8a6`). PR #84 integrates the review route with archive state, hiding it for archived plants while retaining journal/story access. Final archive-stack CI is running.
