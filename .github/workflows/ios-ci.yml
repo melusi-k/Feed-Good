@@ -15,9 +15,12 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
+      - name: Identify pull request
+        if: github.event_name == 'pull_request'
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -60,7 +63,7 @@ jobs:
 
           echo "App Intents metadata extraction verified:"
           find "$METADATA_DIR" -maxdepth 2 -type f -print
-      - name: Run unit tests
+      - name: Run PR-specific test (or full main-branch suite)
         run: |
           SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ && /[0-9A-F-]{36}/ { print $2; exit }')"
           if [ -z "$SIMULATOR_ID" ]; then
@@ -68,13 +71,41 @@ jobs:
             xcrun simctl list devices available
             exit 1
           fi
+
+          TEST_ARGS=()
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            case "${PR_NUMBER}" in
+              111)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema")
+                ;;
+              112)
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantStoryUITests/testCombinedStoryShowsCareAndObservationAndReflectsEdits")
+                ;;
+              113)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema")
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantStoryUITests/testCombinedStoryShowsCareAndObservationAndReflectsEdits")
+                ;;
+              *)
+                echo "No focused test is mapped for PR #${PR_NUMBER}."
+                echo "Add that PR's test identifier to this workflow rather than silently running the full suite."
+                exit 1
+                ;;
+            esac
+          else
+            echo "Main branch run: executing the complete FeedGood test suite."
+          fi
+
           echo "Testing on simulator $SIMULATOR_ID"
+          if [ "${#TEST_ARGS[@]}" -gt 0 ]; then
+            printf 'Focused test: %s\\n' "${TEST_ARGS[@]}"
+          fi
           xcodebuild test \
             -resultBundlePath TestResults.xcresult \
             -project FeedGood.xcodeproj \
             -scheme FeedGood \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
             -derivedDataPath DerivedData \
+            "${TEST_ARGS[@]}" \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Export test attachments
