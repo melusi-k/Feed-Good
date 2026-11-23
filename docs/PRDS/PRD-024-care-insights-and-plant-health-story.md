@@ -253,37 +253,75 @@ Deliver in independently reviewable phases, with one coherent PRD and explicit d
 
 Each phase requires its own implementation issue or sub-issue with testable acceptance criteria. Do not start implementation until the product decisions in §13 are approved and the required source contracts are stable.
 
-## 13. Product and technical decisions required
+## 13. Product and technical decisions
 
-The following are proposed defaults for review, not silently finalised decisions.
+### 13.1 Approved product decisions
 
-### Product decisions
+The product defaults below are approved for this PRD:
 
-1. **Primary experience:** Proposed: Plant Story is the canonical timeline; Plant Profile hosts compact summaries and entry points. Confirm.
-2. **Analytics scope:** Proposed: ship plant-level metrics first; collection analytics follow once denominator and cross-plant semantics are validated. Confirm.
-3. **Completion rate:** Proposed: completed ÷ resolved eligible opportunities (completed + skipped + any other final non-completion outcome), with unresolved shown separately. Confirm whether deferred occurrences are excluded until their new due boundary.
-4. **Streak semantics:** Proposed: consecutive eligible opportunities completed within the allowed window; skip or definitively overdue breaks; disabled/paused/quiet/no-due intervals are neutral. Confirm.
-5. **Collection streak:** Proposed: defer from first release unless usability testing validates the union-of-eligible-opportunities model. Confirm.
-6. **Health insight language:** Proposed: “evidence-led plant insights” rather than definitive “health conclusions”; no diagnoses, scores or causal claims. Confirm.
-7. **Minimum evidence:** Proposed: no trend from a single record; require at least two comparable, dated observations for a basic change statement, with stronger thresholds for stronger language. Confirm threshold and whether photo comparisons require Growth Review's existing comparison contract.
-8. **Period selection:** Proposed: user-selectable date range plus clearly labelled local-calendar presets. Confirm presets and default range.
-9. **Archived plants:** Proposed: exclude from active collection analytics by default; retain read-only individual history. Confirm.
+1. **Primary experience:** Plant Story is the canonical full chronology; Plant Profile hosts compact summaries and entry points.
+2. **Analytics scope:** Plant-level metrics ship first. Collection analytics follow after denominator and cross-plant semantics are validated.
+3. **Completion rate:** Completed eligible opportunities divided by resolved eligible opportunities. Skipped and other final non-completion outcomes remain separately visible; unresolved opportunities are reported separately.
+4. **Deferred care:** A deferred occurrence moves to its authoritative rescheduled due boundary and is counted once, never at both the original and new due dates.
+5. **Streak semantics:** Consecutive eligible opportunities completed within the approved completion window. A final skip or definitively overdue unresolved opportunity interrupts the current streak.
+6. **Neutral intervals:** Disabled tasks, explicit pauses, valid quiet periods and periods with no eligible care due neither advance nor break a streak.
+7. **Collection streak:** Deferred from the first release. Revisit only after usability validates the union-of-eligible-opportunities model.
+8. **Health language:** Use “plant insights” / “evidence-led observations”, not definitive health conclusions. No diagnoses, health scores or causal claims.
+9. **Evidence threshold:** A trend requires at least two comparable, dated observations of the same attribute. A single observation is a recorded observation, not a trend. Photo comparisons are user-directed and do not imply automated image interpretation.
+10. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The initial default preset is the most recent 30 local calendar days; the user can change it.
+11. **Archived plants:** Exclude archived plants from active collection metrics by default; retain read-only individual history.
 
-### Technical decisions
+### 13.2 Technical decisions established from the current repository
 
-10. **Source-of-truth mapping:** Confirm exact persisted models/fields and stable IDs for care tasks, occurrences, care events, outcomes, check-ins, journal entries, plant changes and photos.
-11. **Eligible occurrence boundary:** Confirm the authoritative due timestamp, completion window/grace period, and when an unresolved occurrence becomes definitively overdue for analytics/streak calculations.
-12. **Outcome semantics:** Confirm how skipped, deferred, rescheduled, cancelled, disabled and paused states are represented and whether lifecycle history is available for historical reconstruction.
-13. **Quiet-period and pause integration:** Confirm how PRD-020 quiet periods and task pauses alter eligible occurrences, including edits made during an active quiet period.
-14. **Time-zone/calendar contract:** Confirm canonical instant storage, user time-zone source, day/week/month boundaries and behavior when the user travels or changes time zone.
-15. **Projection strategy:** Proposed: pure deterministic calculators over source records first; introduce rebuildable versioned caches only if profiling demonstrates a need. Confirm.
-16. **Invalidation contract:** Confirm event/change hooks for create, update, delete, archive, restore, import and migrations.
-17. **Historical corrections:** Confirm whether corrected/backdated source records may revise past metrics and how audit/history is surfaced.
-18. **Collection membership:** Confirm active plant selection rules, treatment of archived plants, and behavior when plants are added/removed from a selected collection.
-19. **Unknown record types:** Confirm safe timeline fallback and whether unknown types are excluded from specific metrics with an explicit count.
-20. **Performance budgets:** Set budgets after profiling representative histories and physical devices; do not guess targets.
-21. **Migration/export:** Confirm whether projections are omitted and rebuilt on restore/export, and how calculation-version changes trigger rebuilds.
+The following findings were checked against the current `main` source and existing PRDs. They are implementation constraints, not assumptions that future lifecycle work has already shipped.
 
+| Area | Current repository evidence | Decision for PRD-024 |
+| --- | --- | --- |
+| Care task | `CareTask` stores task ID, interval, current `dueDate`, enabled/reminder flags and plant relationship | Treat it as the recurring task definition and current schedule pointer; do not duplicate it |
+| Care history | `CareEvent` stores stable event ID, task ID/title snapshot, completion instant, note and plant relationship | Treat it as immutable-in-meaning historical evidence, subject to the approved history-correction policy |
+| Occurrence identity | No persisted scheduled-occurrence identity or skip/defer outcome is present in the current `CareTask`/`CareEvent` model | **Required upstream change in PRD-022:** introduce a stable occurrence identity and explicit lifecycle outcome before completion-rate or streak calculations ship |
+| Recurrence | `CareRecorder.complete` advances `dueDate` from the actual completion timestamp plus interval; `CareSchedule` uses an injected/default `Calendar` | Preserve this existing recurrence contract; PRD-024 must not change schedule advancement |
+| Pause | Current task pause is represented by `CareTask.isEnabled`; quiet periods are a separate PRD-020 capability and are not yet represented in the current model | Exclude disabled tasks. Quiet-period exclusion becomes active only when PRD-020 supplies persisted, auditable boundaries and affected-task scope |
+| Observations | Current `JournalEntry` supports dated notes, photos, milestones and typed plant-change records | Use these as first-release evidence sources; do not pretend a separate `PlantCheckIn` model already exists |
+| Check-ins | PRD-014 leaves the `JournalEntry` extension vs separate `PlantCheckIn` schema unresolved | Consume typed check-ins only after PRD-014 settles its schema and archive contract |
+| Structured care outcomes | PRD-023 is the intended source for typed care observations; current `CareEvent` source does not yet expose those approved fields | Integrate only after PRD-023 schema and migration are approved; notes are not mined or reclassified as structured measurements |
+| Archive | `JournalArchive` version 2 exports plants, journal entries, care tasks and care events, with stable IDs and optional extension keys | Do not export derived analytics/streak caches as authoritative data. Rebuild projections from source records after restore. Any new occurrence/outcome/quiet-period records require a versioned, backward-compatible archive extension |
+| Persistence | App uses SwiftData locally, with isolated in-memory/temp stores in tests | Keep calculations local and offline; no remote service or third-party analytics |
+
+### 13.3 Technical contracts approved for implementation planning
+
+1. **Occurrence ledger dependency:** PRD-022 must define a stable ID for each scheduled opportunity, its original and current due instants, task/plant identity, lifecycle state, and links to any completion event. A reschedule updates the same occurrence's due boundary; it must not create a second eligible opportunity. Skip, cancellation, disable and pause semantics must be explicit. Do not infer historical opportunities by repeatedly subtracting intervals from today's `CareTask.dueDate`.
+2. **Backward compatibility:** Existing `CareEvent` records without an occurrence ID remain valid historical care events. They contribute to activity history but must not be retroactively assigned to a scheduled opportunity or included in completion-rate/streak denominators without reliable evidence.
+3. **Eligible opportunity boundary:** Use the occurrence lifecycle contract from PRD-022. The due instant and completion/grace window must be explicit. An occurrence becomes definitively overdue only after that window expires. PRD-024 does not invent a grace period.
+4. **Outcome mapping:** Completed requires an authoritative linked completion event. Skipped is a final non-completion outcome. Deferred/rescheduled remains the same occurrence with a new due boundary. Disabled/cancelled and paused/quiet-period intervals are excluded according to the lifecycle transition history. An unresolved opportunity is not included in the resolved completion-rate denominator.
+5. **Quiet periods:** PRD-020 must persist start/end (or open-ended) boundaries and selected-task scope. Only the overlapping affected occurrences are neutralised. Do not infer a quiet period from task inactivity or a disabled flag.
+6. **Calendar and time:** Persist source event/due instants as absolute `Date` values. Derive day/week/month buckets from an explicitly injected user calendar and time zone at calculation/presentation time. Do not rewrite source instants when the device time zone changes. Show the actual local date range and time-zone basis used.
+7. **Week boundaries:** Use the user's configured/current calendar's week definition, injected into the calculator; never hard-code Monday/Sunday or rely on a hidden process-global calendar. Test DST transitions, travel/time-zone changes and calendar boundary changes.
+8. **Calculation architecture:** Start with pure deterministic value-based calculators over fetched source snapshots. Keep SwiftData fetch/mutation at the persistence boundary and UI rendering thin. No separate analytics persistence model in the first implementation.
+9. **Caching:** Add only if profiling on representative physical devices demonstrates a need. Any cache is disposable, versioned by calculation schema, invalidated by all source mutations and fully rebuildable. Cache loss must not affect correctness.
+10. **Invalidation:** Recompute affected plant projections after source create/update/delete, task schedule changes, occurrence transitions, pause/quiet-period changes, archive/restore, import and schema migration. Collection summaries must also invalidate when membership changes.
+11. **Historical corrections:** Backdated or corrected source records may revise derived historical results. Do not mutate the active task schedule as a side effect. Keep source correction history under PRD-011's policy.
+12. **Plant scope:** Derive each plant's results only from records whose stable plant relationship matches that plant. Collection metrics aggregate already-validated plant-level inputs; no cross-plant event inference.
+13. **Unknown types:** Preserve unknown raw values during archive/restore. Exclude unsupported types from typed metrics and show a neutral “other/unsupported record” timeline representation rather than guessing their meaning.
+14. **Evidence model:** Represent each insight as a deterministic template/result with an explicit evidence class, source IDs, period, and explanatory copy key. Do not persist a free-form generated conclusion or run NLP/AI over notes/photos.
+15. **Photo evidence:** Photos may be presented in a user-initiated, date-labelled comparison using PRD-012 capabilities. The app must not automatically infer symptoms, colour changes, disease or health from image pixels.
+16. **Archive strategy:** Derived metrics and streaks are not exported. Source occurrence/outcome data required to reconstruct them must be included in a versioned archive extension and restored before projections rebuild.
+17. **Performance:** Profile first. Set budgets from measured baseline for realistic history sizes and target devices. Never make the main-thread UI wait for unbounded full-history sorting or image decoding.
+
+### 13.4 Remaining upstream decision gates
+
+These cannot be honestly marked resolved by PRD-024 alone:
+
+- **PRD-022:** persisted occurrence identity, skip/defer/cancel transitions, completion window, task edits/removal and history links.
+- **PRD-020:** exact quiet-period pause/resume policy, affected-task scope and persisted interval representation.
+- **PRD-023:** final typed care-outcome fields, validation and archive representation.
+- **PRD-014:** `JournalEntry` extension versus a dedicated `PlantCheckIn` model, plus its export/restore and evidence semantics.
+- **PRD-012:** exact photo comparison contract and what provenance/metadata it exposes.
+- **PRD-011:** correction/deletion audit semantics and whether prior source values remain available for audit.
+- **Archive:** version bump/compatibility plan once the occurrence and quiet-period source schemas are approved.
+
+These are dependency gates, not reasons to block the PRD document. Phase 0 must close them before implementation of the dependent capability begins.
+ 
 ## 14. Dependencies and delivery tracking
 
 - **Care lifecycle:** [PRD-022 — Care Activity Lifecycle](PRD-022-care-activity-lifecycle.md). It remains the authority for task/occurrence/outcome lifecycle. PRD-024 derives analytics and streaks; it does not add gamification to the lifecycle engine.
