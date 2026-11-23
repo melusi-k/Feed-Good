@@ -53,6 +53,8 @@ final class Plant {
     @Relationship(deleteRule: .cascade, inverse: \CareEvent.plant) var careEvents: [CareEvent]? = []
     @Relationship(deleteRule: .cascade, inverse: \JournalEntry.plant) var journalEntries: [JournalEntry]? = []
     var createdAt: Date
+    /// Reversible archive marker. Nil means active. Archiving never deletes the plant or any related record.
+    var archivedAt: Date?
 
     var growingEnvironment: GrowingEnvironment {
         get { GrowingEnvironment(rawValue: growingEnvironmentRaw) ?? .unspecified }
@@ -72,7 +74,8 @@ final class Plant {
         growingEnvironment: GrowingEnvironment = .unspecified,
         lightCondition: LightCondition = .unspecified,
         photoData: Data? = nil,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        archivedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -82,5 +85,6 @@ final class Plant {
         self.lightConditionRaw = lightCondition.rawValue
         self.photoData = photoData
         self.createdAt = createdAt
+        self.archivedAt = archivedAt
     }
 }
