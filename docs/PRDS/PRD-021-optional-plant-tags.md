@@ -1,6 +1,6 @@
 # PRD-021 — Optional Plant Tags
 
-**Status:** Proposal consistent; filtering design gate open  
+**Status:** Filtering semantics decided (OR); implementation in progress  
 **Priority:** P2  
 **Release:** Post-MVP, after archive compatibility  
 **Primary surfaces:** My Plants, Plant Profile, collection search/filter, Settings if tag management is centralised
@@ -47,8 +47,8 @@ Included in the local-first app. No account or network service is required.
 - “Recently observed” is not a tag; include it only if an existing supported view provides it.
 
 ## 9. Launch plan
-1. Decide canonical tag-name normalization and duplicate behavior.
-2. Decide AND/OR semantics for multi-tag filtering.
+1. Decide canonical tag-name normalization and duplicate behavior. **Decided:** trim surrounding whitespace, collapse internal runs to single spaces, compare case- and diacritic-folded in a fixed POSIX locale (the collection-search folding). "Fern", " fern " and "FERN" are one tag; the first spelling wins display. Renaming onto an existing normalized name merges the two tags and their plants.
+2. Decide AND/OR semantics for multi-tag filtering. **Decided: OR.** Tags are lightweight find-again labels; selecting several chips shows plants carrying ANY selected tag. AND would shrink the collection quickly and reads like a query builder, which is out of scope. Clear returns the unfiltered collection.
 3. Implement tag model and assignment with migration strategy.
 4. Add collection filtering and easy clear-filter behavior.
 5. Extend archive/export/restore and test active/archived relationships.
@@ -62,6 +62,7 @@ Replaces ad hoc naming/search alone for lightweight collection grouping. It does
 - Hard archive compatibility prerequisite: PRD-015 / issue #69.
 - Not dependent on PRD-016; Archived is a collection state and must not be encoded as a tag or lifecycle category.
 - Name normalization and AND/OR filtering are explicit design gates.
+- **Implementation records:** `PlantTag` entity (`id`, display name, `normalizedName`), many-to-many with `Plant`, schema V3 additive lightweight migration. Archive version 2 carries optional `tags` records (identity, names, assignments); recovery rejects unknown plant references and duplicate records, and a local tag with the same normalized name stands in for an archived one.
 
 ## 12. Delivery tracking
 - GitHub issue: [#75 — Add optional plant tags and lightweight collection organisation](https://github.com/melusi-k/Feed-Good/issues/75).
