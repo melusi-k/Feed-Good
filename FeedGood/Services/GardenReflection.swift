@@ -78,8 +78,11 @@ enum GardenReflectionBuilder {
         journalEntries: [JournalEntry]
     ) -> WeeklyGardenReflection {
         let week = weekInterval(for: date, calendar: calendar)
-        let weekCare = careEvents.filter { week.contains($0.completedAt) }
-        let weekJournal = journalEntries.filter { week.contains($0.date) }
+        // Half-open membership [start, end): DateInterval.contains is
+        // inclusive of the end on some runtimes, which would count the first
+        // instant of next week in this one.
+        let weekCare = careEvents.filter { $0.completedAt >= week.start && $0.completedAt < week.end }
+        let weekJournal = journalEntries.filter { $0.date >= week.start && $0.date < week.end }
 
         var names = Set<String>()
         var candidates: [GardenReflectionMoment] = []
