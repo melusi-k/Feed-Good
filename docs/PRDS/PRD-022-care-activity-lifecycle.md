@@ -1,6 +1,6 @@
 # PRD-022 — Care Activity Lifecycle and Occurrence Management
 
-**Status:** Draft for product review; no implementation issue created  
+**Status:** Design review — core lifecycle principles approved; transition matrix, edge-case contract and persistence decision in progress; no implementation issue created  
 **Stage:** 1 — Care lifecycle foundation  
 **Priority:** Proposed P1 foundation  
 **Release:** Post-MVP, sequenced after review of the existing care and reminder contracts  
@@ -42,7 +42,7 @@ Make each plant-care activity understandable across its lifecycle—from being s
   - Skipped and snoozed/deferred are distinct user intentions; their exact schedule and history effects must be approved before implementation.
   - Disabled/paused describes the recurring task definition, not a completed or skipped occurrence.
 - Define what happens when a task is edited, disabled, removed, archived with its plant, or restored. Preserve existing history and stable plant/task references wherever the data contract permits.
-- Define how completion advances the next due date, including late completion, backdated completion, repeated taps and failed persistence. The current completion behavior (completion time plus interval) must not be silently changed.
+- Define how completion advances the next due date, including late completion, backdated completion, repeated taps and failed persistence. The current completion behavior (completion time plus interval) remains authoritative for ordinary, unpaused tasks. During an active Quiet Period, PRD-020 defines the approved exception: completion is recorded normally, the included task's frozen remaining interval resets to its full current recurrence interval, and countdown resumes only when the quiet period ends.
 - Define notification identity, replacement/cancellation, permission-denied behavior and deep-link handling for every approved transition.
 - Keep all transitions explicit and reversible where appropriate. No automatic catch-up queue or guilt-oriented escalation.
 - Derive Today presentation from the approved task/occurrence policy; do not maintain a second conflicting source of due state.
@@ -85,11 +85,12 @@ Included in the local-first app. Lifecycle behavior must work without an account
 
 1. Audit current CareTask, CareEvent, CareSchedule, CareRecorder, Today projection and CareReminderScheduler behavior against this PRD.
 2. Produce and approve a lifecycle transition table covering task definition, scheduled occurrence, user action, persistence, due-date effect, history effect, Today visibility and notification effect.
-3. Decide whether occurrences can remain derived from the current task due date or whether a persisted occurrence identity is necessary. Do not add a model merely to mirror a conceptual diagram.
+3. **Approved direction:** keep the current task due date plus immutable `CareEvent` history as the source of truth for ordinary care scheduling; do not add a general persisted occurrence model merely to mirror a conceptual diagram. Quiet Periods may require their own persisted parent record and per-task pause snapshot because pause state/history cannot be safely derived from `CareTask.dueDate` alone. Validate the smallest migration-safe shape before implementation.
 4. Decide exact skip and snooze semantics, including recurrence advancement, repeated deferrals, expiration and cancellation.
-5. Implement domain transitions outside SwiftUI views, with transactional save/rollback and deterministic clock/calendar injection.
-6. Verify plant/task isolation, duplicate completion, late/backdated completion, task edit/delete/disable, archive/restore compatibility and notification reconciliation.
+5. Implement domain transitions outside SwiftUI views, with transactional save/rollback and deterministic clock/calendar injection. Inject the same calendar/time-zone context used by `CareSchedule`; do not create a competing plant time-zone source.
+6. Verify plant/task isolation, duplicate completion, late/backdated completion, task edit/delete/disable, archive/restore compatibility and notification reconciliation. For completion edge cases, explicitly cover completion before/at/after due date, backdated completion during a pause, repeated completion attempts, interval edits during a pause and save failure.
 7. Add unit and UI tests for every approved transition and failure path; record manual device/accessibility evidence separately from CI.
+8. Produce a transition matrix that records task/occurrence state, action, due-date baseline, history mutation, Today visibility and reminder effect for normal completion, paused completion, task edits, deletion, disable/enable, scheduled activation, end and archive.
 
 ## 10. Replaces
 
@@ -102,13 +103,13 @@ These are mandatory design gates, not implementation assumptions:
 1. **Occurrence persistence:** Is the current CareTask due date plus immutable CareEvent history sufficient, or is a first-class occurrence record required to support skip/defer and reliable notification routing?
 2. **Skip policy:** Does skipping leave the due date unchanged, advance to the next interval, or record a skipped occurrence and calculate the next one? What is the user-facing explanation?
 3. **Snooze policy:** Which durations are supported? Does snoozing alter only a notification, the scheduled occurrence, or both? Can it be repeated, cancelled or expire?
-4. **Late completion:** Does completion continue to schedule from actual completion time, as today, or should a distinct policy be considered? Any change requires explicit approval.
-5. **Task edits:** What happens to an already-due occurrence when its interval, next date, enabled state or reminder preference changes?
+4. **Late and backdated completion:** Ordinary unpaused completion continues to schedule from actual completion time. Quiet-period completion follows PRD-020's frozen-interval reset rule. Test completion before due, on due day, after due, backdated completion, repeated taps and persistence failure; no second occurrence model is implied.
+5. **Task edits:** During a quiet period, edits to an included task persist but do not remove it from the selected snapshot or automatically enable it. Explicit enabled-state changes are preserved, while the quiet-period overlay continues to suppress the included task until resume. New tasks remain outside the snapshot. Validate how interval/next-date edits recalculate the frozen remaining time.
 6. **Removed tasks:** How are any unresolved occurrences represented after a task is removed while historical CareEvents remain?
-7. **Time semantics:** Which operations use local civil days versus absolute instants, and how should DST/time-zone changes affect an existing occurrence?
+7. **Time semantics:** Use the same calendar/time-zone context as `CareSchedule` for due-day calculations, scheduled starts and end date/time. Validate DST gaps/folds and device time-zone changes. Do not introduce a separate plant time-zone authority or use elapsed seconds for pause-clock calculations.
 8. **Notification actions:** Which actions can be performed directly from a notification, and which require opening the app for confirmation?
 
-Existing decisions remain authoritative until explicitly changed: interval-based recurrence, completion advances from the completion timestamp, and care-history corrections are history-only. This PRD does not supersede PRD-002, PRD-003, PRD-011 or PRD-017.
+Existing decisions remain authoritative until explicitly changed: interval-based recurrence, ordinary unpaused completion advances from the completion timestamp, and care-history corrections are history-only. The approved Quiet Period exception is documented in PRD-020. This PRD does not supersede PRD-002, PRD-003, PRD-011 or PRD-017.
 
 ## 12. Delivery tracking
 
