@@ -75,13 +75,19 @@ struct PlantStoryView: View {
     private func kindLabel(_ item: PlantStoryItem) -> String {
         switch item {
         case .care: return "Recorded care"
-        case .journal(let entry): return entry.milestone?.title ?? "Journal observation"
+        // A plant change is labelled explicitly so it reads as a record of what the
+        // person changed, never as care completed or a plant-health assessment.
+        case .journal(let entry):
+            if let change = entry.changeKind { return "Plant change: \(change.title)" }
+            return entry.milestone?.title ?? "Journal observation"
         }
     }
     private func kindIcon(_ item: PlantStoryItem) -> String {
         switch item {
         case .care: return "drop"
-        case .journal(let entry): return entry.milestone == nil ? "book.closed" : "sparkle"
+        case .journal(let entry):
+            if entry.changeKind != nil { return "arrow.triangle.2.circlepath" }
+            return entry.milestone == nil ? "book.closed" : "sparkle"
         }
     }
 }
