@@ -10,10 +10,11 @@ private final class CareTaskEditorNotificationSpy: CareNotificationBoundary {
     var removed: [String] = []
     var additions: [CareReminder] = []
     var pendingReadCount = 0
+    var onPendingRead: (() -> Void)?
 
     func permission() async -> ReminderPermission { status }
     func requestPermission() async throws -> Bool { status == .allowed }
-    func pendingIDs() async -> [String] { pendingReadCount += 1; return Array(pending.keys) }
+    func pendingIDs() async -> [String] { pendingReadCount += 1; onPendingRead?(); return Array(pending.keys) }
     func remove(_ ids: [String]) {
         removed.append(contentsOf: ids)
         for id in ids { pending[id] = nil }
@@ -74,7 +75,7 @@ struct CareTaskEditorPersistenceTests {
         let selectedOriginalInterval = task.intervalDays
 
         do {
-            _ = try CareTaskEditorPersistence.save(
+            try await CareTaskEditorPersistence.saveAndReconcile(
                 plantID: plant.id,
                 taskID: task.id,
                 kind: .watering,
@@ -84,6 +85,7 @@ struct CareTaskEditorPersistenceTests {
                 isEnabled: true,
                 reminderEnabled: true,
                 in: container,
+                scheduler: CareReminderScheduler(boundary: notifications),
                 now: Date(timeIntervalSince1970: 1_900_000_000),
                 saveContext: { _ in throw TestSaveError.failed }
             )
@@ -125,7 +127,11 @@ struct CareTaskEditorPersistenceTests {
         try context.save()
 
         let nextDate = Date(timeIntervalSince1970: 2_100_000_000)
-        let reminders = try CareTaskEditorPersistence.save(
+        let notifications = CareTaskEditorNotificationSpy()
+        let scheduler = CareReminderScheduler(boundary: notifications)
+        var didCommit = false
+        notifications.onPendingRead = { #expect(didCommit) }
+        try await CareTaskEditorPersistence.saveAndReconcile(
             plantID: plant.id,
             taskID: task.id,
             kind: .watering,
@@ -135,12 +141,19 @@ struct CareTaskEditorPersistenceTests {
             isEnabled: true,
             reminderEnabled: true,
             in: container,
-            now: Date(timeIntervalSince1970: 2_000_000_001)
+            scheduler: scheduler,
+            now: Date(timeIntervalSince1970: 2_000_000_001),
+            saveContext: { context in
+                try context.save()
+                didCommit = true
+            }
         )
 
-        #expect(reminders.count == 1)
-        #expect(reminders.first?.date == nextDate)
-        #expect(reminders.first?.taskID == task.id)
+        #expect(didCommit)
+        #expect(notifications.pendingReadCount == 1)
+        #expect(notifications.pending.count == 1)
+        #expect(notifications.pending.values.first?.date == nextDate)
+        #expect(notifications.pending.values.first?.taskID == task.id)
 
         let verificationContext = ModelContext(container)
         let selectedTaskID = task.id
@@ -151,12 +164,6 @@ struct CareTaskEditorPersistenceTests {
         #expect(persisted.intervalDays == 30)
         #expect(persisted.dueDate == nextDate)
 
-        let notifications = CareTaskEditorNotificationSpy()
-        let scheduler = CareReminderScheduler(boundary: notifications)
-        await scheduler.reconcile(reminders)
-        #expect(notifications.pending.count == 1)
-        #expect(notifications.pending.values.first?.date == nextDate)
-        #expect(notifications.pendingReadCount == 1)
     }
 
     @Test func saveRejectsTasksThatDoNotBelongToTheSelectedPlant() throws {
