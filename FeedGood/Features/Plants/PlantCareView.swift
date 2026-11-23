@@ -125,6 +125,7 @@ struct CareTaskEditor: View {
     @State private var errorMessage: String?
     @State private var confirmingDelete = false
     @State private var confirmingSave = false
+    @State private var isSaving = false
 
     var body: some View {
         NavigationStack {
@@ -154,7 +155,7 @@ struct CareTaskEditor: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { confirmingSave = true }
-                        .disabled(kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(isSaving || (kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                         .accessibilityIdentifier("care.taskSave")
                 }
             }
@@ -164,6 +165,7 @@ struct CareTaskEditor: View {
             .task { reminders = task?.reminderEnabled ?? false }
             .alert("Review care changes", isPresented: $confirmingSave) {
                 Button("Save changes") { save() }
+                    .disabled(isSaving)
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(saveImpactSummary)
@@ -196,16 +198,28 @@ struct CareTaskEditor: View {
     }
 
     private func save() {
-        let record = task ?? CareTask(kind: kind, intervalDays: interval, dueDate: dueDate, plant: plant)
-        if task == nil { context.insert(record) }
-        record.kindRaw = kind.rawValue
-        record.customTitle = customTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        record.intervalDays = interval
-        record.dueDate = dueDate
-        record.isEnabled = enabled
-        record.reminderEnabled = reminders
-        do { try context.save(); dismiss() }
-        catch { context.rollback(); errorMessage = "Couldn't save this routine. Try again." }
+        guard isSaving == false else { return }
+        isSaving = true
+        Task { @MainActor in
+            do {
+                try await CareTaskEditorPersistence.saveAndReconcile(
+                    plantID: plant.id,
+                    taskID: task?.id,
+                    kind: kind,
+                    customTitle: customTitle,
+                    intervalDays: interval,
+                    dueDate: dueDate,
+                    isEnabled: enabled,
+                    reminderEnabled: reminders,
+                    in: context.container,
+                    scheduler: scheduler
+                )
+                dismiss()
+            } catch {
+                isSaving = false
+                errorMessage = "Couldn't save this routine. Your existing routine and reminders are unchanged. Try again."
+            }
+        }
     }
 }
 
