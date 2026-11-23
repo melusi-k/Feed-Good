@@ -42,7 +42,7 @@ struct JournalArchivePreview: Equatable {
     }
 }
 
-/// Version 1 is journal-only. Version 2 covers milestones plus the complete local garden record; care routines and history are optional extension keys.
+/// Version 1 is journal-only. Version 2 covers milestones, plant change records (PRD-018) and the complete local garden record; care routines and history are optional extension keys. Optional record keys keep archives written before a field existed decodable.
 struct JournalArchive: Codable {
     var version = 2
     var plants: [PlantRecord]
@@ -71,6 +71,8 @@ struct JournalArchive: Codable {
         var note: String
         var photoData: Data?
         var milestoneRaw: String? = nil
+        // Optional so archives written before plant change records decode as ordinary entries.
+        var changeKindRaw: String? = nil
     }
 
     struct CareTaskRecord: Codable, Equatable {
@@ -105,7 +107,7 @@ struct JournalArchive: Codable {
     ) throws -> Data {
         let entryRecords = try entries.map { entry -> EntryRecord in
             guard let plantID = entry.plant?.id else { throw JournalArchiveError.invalidRecord }
-            return EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw)
+            return EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw, changeKindRaw: entry.changeKindRaw)
         }
         let taskRecords = try careTasks.map { task -> CareTaskRecord in
             guard let plantID = task.plant?.id else { throw JournalArchiveError.invalidRecord }
@@ -183,9 +185,16 @@ struct JournalArchive: Codable {
         }
         for entry in entries {
             if version == 1, entry.milestoneRaw != nil { throw JournalArchiveError.invalidRecord }
+            if version == 1, entry.changeKindRaw != nil { throw JournalArchiveError.invalidRecord }
             if let raw = entry.milestoneRaw, JournalMilestone(rawValue: raw) == nil { throw JournalArchiveError.invalidRecord }
+            if let raw = entry.changeKindRaw, PlantChangeKind(rawValue: raw) == nil { throw JournalArchiveError.invalidRecord }
+            // A record is one kind: milestone observation or plant change, never both. A custom change needs its note.
+            if entry.milestoneRaw != nil, entry.changeKindRaw != nil { throw JournalArchiveError.invalidRecord }
+            if entry.changeKindRaw == PlantChangeKind.custom.rawValue, entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                throw JournalArchiveError.invalidRecord
+            }
             guard plantIDs.contains(entry.plantID),
-                  !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.photoData != nil || entry.milestoneRaw != nil else {
+                  !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.photoData != nil || entry.milestoneRaw != nil || entry.changeKindRaw != nil else {
                 throw JournalArchiveError.invalidRecord
             }
             if let data = entry.photoData, UIImage(data: data) == nil {
@@ -265,7 +274,7 @@ struct JournalArchive: Codable {
         for record in archive.entries {
             if let entry = entries[record.id] {
                 guard let plantID = entry.plant?.id,
-                      EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw) == record else {
+                      EntryRecord(id: entry.id, plantID: plantID, date: entry.date, note: entry.note, photoData: entry.photoData, milestoneRaw: entry.milestoneRaw, changeKindRaw: entry.changeKindRaw) == record else {
                     throw JournalArchiveError.conflictingRecord
                 }
             }
@@ -310,7 +319,7 @@ struct JournalArchive: Codable {
             }
             for record in archive.entries where entries[record.id] == nil {
                 guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
-                recoveryContext.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, plant: plant))
+                recoveryContext.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, changeKindRaw: record.changeKindRaw, plant: plant))
                 restoredEntries += 1
             }
             for record in archive.careTasks ?? [] where tasks[record.id] == nil {
