@@ -1,6 +1,6 @@
 # PRD-012 — Growth Review
 
-**Status:** Implementation in progress — PR #76 is open; remaining UI and source-navigation acceptance is outstanding  
+**Status:** Initial implementation merged in PR #76; close-out verification remains outstanding  
 **Priority:** P1/P2 relationship feature  
 **Release:** Post-MVP, after journal/photo lifecycle is release-stable  
 **Primary surfaces:** Plant Profile, Plant Story, Journal
@@ -70,7 +70,7 @@ Included in the local-first app. Existing photos remain on-device and no account
 3. Add unit tests for filtering, ordering, same-plant selection and missing source records.
 4. Add UI coverage for the two-photo journey, empty states and source navigation.
 5. Review memory use with the existing 1200 px JPEG storage policy.
-6. Complete light/dark, Dynamic Type, VoiceOver, privacy and physical-device review.
+6. Complete supported-width, light/dark, Dynamic Type, VoiceOver, privacy and physical-device review. Record the PhotosPicker-driven comparison journey as a manual verification where automated UI seeding is unavailable.
 
 ## 10. Replaces
 
