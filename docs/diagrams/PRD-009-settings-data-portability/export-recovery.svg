@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+<title id="title">Local data export & recovery</title><desc id="desc">PRD-009 · target version-2 garden archive contract; current implementation and target must remain distinguishable</desc>
+<defs><style>
+:root{color-scheme:light} text{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#26372d}
+.h1{font-size:34px;font-weight:700}.sub{font-size:16px;fill:#617267}.kicker{font-size:12px;font-weight:700;letter-spacing:2px;fill:#55745e}
+.node{fill:#fffefa;stroke:#cbd8ca;stroke-width:2}.green{fill:#e7f0e5;stroke:#8eaa8e;stroke-width:2}.sand{fill:#f4eee2;stroke:#d9c9aa;stroke-width:2}.muted{fill:#f2f4f0;stroke:#cbd1ca;stroke-width:2}.warn{fill:#fff4df;stroke:#d9b76e;stroke-width:2}
+.nt{font-size:17px;font-weight:650}.small{font-size:13px;fill:#617267}.tiny{font-size:11px;fill:#718077}.line{stroke:#78917c;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.dash{stroke:#b18c49;stroke-width:2.5;stroke-dasharray:8 7;fill:none;marker-end:url(#arrowGold)}
+</style><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#78917c" stroke-width="1.5"/></marker><marker id="arrowGold" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#b18c49" stroke-width="1.5"/></marker></defs>
+<rect width="1200" height="760" rx="26" fill="#f8f7f1"/>
+<text x="64" y="62" class="kicker">FEED GOOD · PRODUCT ATLAS</text><text x="64" y="112" class="h1">Local data export & recovery</text><text x="64" y="142" class="sub">PRD-009 · target version-2 garden archive contract; current implementation and target must remain distinguishable</text>
+
+<rect x="64" y="190" width="300" height="140" rx="16" class="green"/><text x="88" y="228" class="kicker">LOCAL SOURCE RECORDS</text><text x="88" y="260" class="nt">Plants · care routines</text><text x="88" y="286" class="nt">Care events · journal</text><text x="88" y="312" class="small">Profile photos · journal photos</text>
+<path d="M364 260H420" class="line"/>
+<rect x="425" y="190" width="320" height="140" rx="16" class="node"/><text x="449" y="228" class="kicker">EXPORT</text><text x="449" y="260" class="nt">Versioned archive</text><text x="449" y="286" class="small">V1 journal-only compatibility</text><text x="449" y="310" class="small">V2 complete garden archive target</text>
+<path d="M745 260H801" class="line"/>
+<rect x="806" y="190" width="330" height="140" rx="16" class="sand"/><text x="830" y="228" class="kicker">USER-CONTROLLED FILE</text><text x="830" y="260" class="nt">Share / save archive</text><text x="830" y="286" class="small">No cloud backup implied</text>
+<path d="M971 330V378" class="line"/>
+<rect x="806" y="382" width="330" height="112" rx="16" class="node"/><text x="830" y="420" class="kicker">RESTORE VALIDATION</text><text x="830" y="452" class="nt">Validate · preview · classify</text><text x="830" y="476" class="small">Unsupported/corrupt input rejected</text>
+<path d="M806 438H750" class="line"/>
+<rect x="425" y="382" width="320" height="112" rx="16" class="green"/><text x="449" y="420" class="kicker">ADDITIVE MERGE</text><text x="449" y="452" class="nt">Add missing · skip identical</text><text x="449" y="476" class="small">Reject conflicting IDs before write</text>
+<path d="M425 438H364" class="line"/>
+<rect x="64" y="382" width="300" height="112" rx="16" class="node"/><text x="88" y="420" class="kicker">RECOVERED STORE</text><text x="88" y="452" class="nt">Existing records preserved</text><text x="88" y="476" class="small">Failure must not partially corrupt</text>
+<rect x="64" y="540" width="1072" height="104" rx="14" class="warn"/><text x="88" y="578" class="kicker">INTEGRITY GUARANTEES</text><text x="88" y="610" class="nt">Validate before mutation · idempotent additive restore · no silent overwrite · rollback on failure</text><text x="88" y="632" class="tiny">PRD-009 target V2 includes garden context, photos, care routines, care events and journal records; V1 remains import-compatible.</text>
+<text x="64" y="720" class="tiny">Feed Good · Documentation diagram · See adjacent README for scope, source PRD and decision status</text>
+</svg>
