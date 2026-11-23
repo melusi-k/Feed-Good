@@ -22,7 +22,7 @@ struct PlantChangeTests {
         #expect(JournalDraft(changeKind: .movedLocation).isValid)
         #expect(JournalDraft(changeKind: .custom).isValid == false)
         #expect(JournalDraft(note: "Switched to a terracotta pot", changeKind: .custom).isValid)
-        #expect(JournalDraft(changeKind: nil, milestone: nil).isValid == false)
+        #expect(JournalDraft().isValid == false)
     }
 
     @Test func oneRecordIsOneKindNeverBothMilestoneAndChange() throws {
