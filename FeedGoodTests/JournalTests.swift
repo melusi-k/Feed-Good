@@ -449,16 +449,16 @@ struct JournalTests {
             plant: plant
         )
         sourceContext.insert(task)
-        let correctedEvent = CareEvent(task: task, completedAt: dueDate.addingTimeInterval(-86_400), note: "Original")
-        let deletedEvent = CareEvent(task: task, completedAt: dueDate.addingTimeInterval(-172_800), note: "Remove this")
+        let correctedEvent = CareEvent(task: task, completedAt: dueDate.addingTimeInterval(-345_600), note: "Original")
+        let deletedEvent = CareEvent(task: task, completedAt: dueDate.addingTimeInterval(-432_000), note: "Remove this")
         sourceContext.insert(correctedEvent)
         sourceContext.insert(deletedEvent)
         try sourceContext.save()
 
-        let referenceNow = dueDate.addingTimeInterval(-200_000)
+        let referenceNow = dueDate.addingTimeInterval(-172_800)
         let remindersBefore = CareReminderScheduler.reminders(for: [task], now: referenceNow)
         let todayBefore = TodayCare.items(from: [task], now: referenceNow).map(\.id)
-        let correctedDate = dueDate.addingTimeInterval(-43_200)
+        let correctedDate = dueDate.addingTimeInterval(-259_200)
         try CareRecorder.update(
             correctedEvent,
             completedAt: correctedDate,
