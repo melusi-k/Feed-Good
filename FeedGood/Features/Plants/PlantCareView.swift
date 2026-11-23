@@ -126,6 +126,7 @@ struct CareTaskEditor: View {
     @State private var confirmingDelete = false
     @State private var confirmingSave = false
     @State private var isSaving = false
+    @State private var isDeleting = false
 
     var body: some View {
         NavigationStack {
@@ -152,10 +153,10 @@ struct CareTaskEditor: View {
             }
             .feedGoodHeader(task == nil ? "Add care task" : "Edit care task")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isDeleting) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { confirmingSave = true }
-                        .disabled(isSaving || (kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+                        .disabled(isSaving || isDeleting || (kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                         .accessibilityIdentifier("care.taskSave")
                 }
             }
@@ -165,18 +166,31 @@ struct CareTaskEditor: View {
             .task { reminders = task?.reminderEnabled ?? false }
             .alert("Review care changes", isPresented: $confirmingSave) {
                 Button("Save changes") { save() }
-                    .disabled(isSaving)
+                    .disabled(isSaving || isDeleting)
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(saveImpactSummary)
             }
             .confirmationDialog("Remove this task? Its care history will stay.", isPresented: $confirmingDelete, titleVisibility: .visible) {
                 Button("Remove task", role: .destructive) {
-                    guard let task else { return }
-                    context.delete(task)
-                    do { try context.save(); dismiss() }
-                    catch { context.rollback(); errorMessage = "Couldn't remove this task. Try again." }
+                    guard let task, isDeleting == false else { return }
+                    isDeleting = true
+                    Task { @MainActor in
+                        do {
+                            try await CareTaskEditorPersistence.deleteAndReconcile(
+                                plantID: plant.id,
+                                taskID: task.id,
+                                in: context.container,
+                                scheduler: scheduler
+                            )
+                            dismiss()
+                        } catch {
+                            isDeleting = false
+                            errorMessage = "Couldn't remove this task. Your task and care history are unchanged. Try again."
+                        }
+                    }
                 }
+                .disabled(isDeleting)
             }
         }
     }

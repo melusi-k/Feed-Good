@@ -108,4 +108,62 @@ enum CareTaskEditorPersistence {
         await scheduler.reconcile(reminders)
     }
 
+
+    /// Deletes one routine in an isolated context. CareEvent records are
+    /// independent plant history snapshots and are deliberately retained.
+    @discardableResult
+    static func delete(
+        plantID: UUID,
+        taskID: UUID,
+        in container: ModelContainer,
+        now: Date = .now,
+        saveContext: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws -> [CareReminder] {
+        let writeContext = ModelContext(container)
+        let plantDescriptor = FetchDescriptor<Plant>(
+            predicate: #Predicate { $0.id == plantID }
+        )
+        guard let plant = try writeContext.fetch(plantDescriptor).first else {
+            throw CareTaskEditorPersistenceError.plantUnavailable
+        }
+        guard plant.archivedAt == nil else {
+            throw CareTaskEditorPersistenceError.archivedPlant
+        }
+
+        let taskDescriptor = FetchDescriptor<CareTask>(
+            predicate: #Predicate { $0.id == taskID }
+        )
+        guard let task = try writeContext.fetch(taskDescriptor).first else {
+            throw CareTaskEditorPersistenceError.taskUnavailable
+        }
+        guard task.plant?.id == plantID else {
+            throw CareTaskEditorPersistenceError.taskBelongsToAnotherPlant
+        }
+
+        writeContext.delete(task)
+        let remainingTasks = try writeContext.fetch(FetchDescriptor<CareTask>())
+        let reminders = CareReminderScheduler.reminders(for: remainingTasks, now: now)
+        try saveContext(writeContext)
+        return reminders
+    }
+
+    /// Reconciles notifications only after the isolated deletion commits.
+    static func deleteAndReconcile(
+        plantID: UUID,
+        taskID: UUID,
+        in container: ModelContainer,
+        scheduler: CareReminderScheduler,
+        now: Date = .now,
+        saveContext: (ModelContext) throws -> Void = { try $0.save() }
+    ) async throws {
+        let reminders = try delete(
+            plantID: plantID,
+            taskID: taskID,
+            in: container,
+            now: now,
+            saveContext: saveContext
+        )
+        await scheduler.reconcile(reminders)
+    }
+
 }
