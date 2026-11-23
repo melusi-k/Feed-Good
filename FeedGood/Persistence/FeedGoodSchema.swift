@@ -132,10 +132,136 @@ enum FeedGoodSchemaV1: VersionedSchema {
 
 /// V2 adds the optional Plant.archivedAt attribute; nil
 /// represents an active plant and is the migration default for existing data.
+/// Frozen at the V3 bump: these nested copies capture the exact V2 shape so
+/// the V2 model checksum stays distinct from V3. Referencing the live types
+/// here would pull PlantTag into V2's resolved model (via Plant.tags) and
+/// crash migration setup with "Duplicate version checksums detected."
 enum FeedGoodSchemaV2: VersionedSchema {
     static var versionIdentifier = Schema.Version(2, 0, 0)
     static var models: [any PersistentModel.Type] {
         [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]
+    }
+
+    @Model
+    final class Plant {
+        var id: UUID
+        var name: String
+        var species: String
+        var notes: String
+        var growingEnvironmentRaw: String = "unspecified"
+        var lightConditionRaw: String = "unspecified"
+        @Attribute(.externalStorage) var photoData: Data?
+        @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV2.CareTask.plant) var careTasks: [FeedGoodSchemaV2.CareTask]? = []
+        @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV2.CareEvent.plant) var careEvents: [FeedGoodSchemaV2.CareEvent]? = []
+        @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV2.JournalEntry.plant) var journalEntries: [FeedGoodSchemaV2.JournalEntry]? = []
+        var createdAt: Date
+        var archivedAt: Date?
+
+        init(
+            id: UUID = UUID(),
+            name: String,
+            species: String = "",
+            notes: String = "",
+            growingEnvironmentRaw: String = "unspecified",
+            lightConditionRaw: String = "unspecified",
+            photoData: Data? = nil,
+            createdAt: Date = .now,
+            archivedAt: Date? = nil
+        ) {
+            self.id = id
+            self.name = name
+            self.species = species
+            self.notes = notes
+            self.growingEnvironmentRaw = growingEnvironmentRaw
+            self.lightConditionRaw = lightConditionRaw
+            self.photoData = photoData
+            self.createdAt = createdAt
+            self.archivedAt = archivedAt
+        }
+    }
+
+    @Model
+    final class CareTask {
+        var id: UUID = UUID()
+        var kindRaw: String = "watering"
+        var customTitle: String = ""
+        var intervalDays: Int = 7
+        var dueDate: Date = Date.now
+        var isEnabled: Bool = true
+        var reminderEnabled: Bool = false
+        var plant: FeedGoodSchemaV2.Plant?
+
+        init(
+            id: UUID = UUID(),
+            kindRaw: String = "watering",
+            customTitle: String = "",
+            intervalDays: Int = 7,
+            dueDate: Date = Date.now,
+            isEnabled: Bool = true,
+            reminderEnabled: Bool = false,
+            plant: FeedGoodSchemaV2.Plant
+        ) {
+            self.id = id
+            self.kindRaw = kindRaw
+            self.customTitle = customTitle
+            self.intervalDays = intervalDays
+            self.dueDate = dueDate
+            self.isEnabled = isEnabled
+            self.reminderEnabled = reminderEnabled
+            self.plant = plant
+        }
+    }
+
+    @Model
+    final class CareEvent {
+        var id: UUID = UUID()
+        var taskID: UUID = UUID()
+        var taskTitle: String = ""
+        var completedAt: Date = Date.now
+        var note: String = ""
+        var plant: FeedGoodSchemaV2.Plant?
+
+        init(
+            id: UUID = UUID(),
+            taskID: UUID,
+            taskTitle: String,
+            completedAt: Date = .now,
+            note: String = "",
+            plant: FeedGoodSchemaV2.Plant
+        ) {
+            self.id = id
+            self.taskID = taskID
+            self.taskTitle = taskTitle
+            self.completedAt = completedAt
+            self.note = note
+            self.plant = plant
+        }
+    }
+
+    @Model
+    final class JournalEntry {
+        var id: UUID = UUID()
+        var date: Date = Date.now
+        var note: String = ""
+        @Attribute(.externalStorage) var photoData: Data?
+        var milestoneRaw: String? = nil
+        var plant: FeedGoodSchemaV2.Plant?
+
+        init(
+            id: UUID = UUID(),
+            date: Date = Date.now,
+            note: String,
+            photoData: Data? = nil,
+            milestoneRaw: String? = nil,
+            plant: FeedGoodSchemaV2.Plant
+        ) {
+            self.id = id
+            self.date = date
+            self.note = note
+            self.photoData = photoData
+            self.milestoneRaw = milestoneRaw
+            self.plant = plant
+        }
     }
 }
 
