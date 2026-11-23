@@ -226,4 +226,78 @@ struct PlantPersistenceTests {
         }
     }
 
+    @Test func build52EraStoreOpensAndMigratesToCurrentSchema() throws {
+        // Regression for the build-52 -> 54 launch crash: #105 added
+        // JournalEntry.changeKindRaw to the live V2 model without a schema
+        // version bump, so a store written by build 52 matched no versioned
+        // schema and the app trapped in ModelContainer init. FeedGoodSchemaV2
+        // is the frozen build-52 model graph (JournalEntry without
+        // changeKindRaw, Plant without tags); writing a store with it and
+        // reopening with the production schema and migration plan is exactly
+        // the owner's upgrade path. The store must open, keep every record,
+        // and gain nil changeKindRaw and no tags.
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let storeURL = folder.appendingPathComponent("build-52-garden.store")
+
+        let plantID = UUID()
+        let journalID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1_650_000_000)
+        let writtenAt = Date(timeIntervalSince1970: 1_700_000_000)
+
+        do {
+            let legacySchema = Schema(versionedSchema: FeedGoodSchemaV2.self)
+            let legacyConfiguration = ModelConfiguration(schema: legacySchema, url: storeURL)
+            let legacyContainer = try ModelContainer(
+                for: legacySchema,
+                configurations: [legacyConfiguration]
+            )
+            let context = ModelContext(legacyContainer)
+            let plant = FeedGoodSchemaV2.Plant(
+                id: plantID,
+                name: "Build 52 Fern",
+                species: "Nephrolepis exaltata",
+                createdAt: createdAt,
+                archivedAt: nil
+            )
+            let journal = FeedGoodSchemaV2.JournalEntry(
+                id: journalID,
+                date: writtenAt,
+                note: "Written on build 52",
+                milestoneRaw: "newLeaf",
+                plant: plant
+            )
+            context.insert(plant)
+            context.insert(journal)
+            try context.save()
+        }
+
+        do {
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV3.self)
+            let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
+            let migratedContainer = try ModelContainer(
+                for: currentSchema,
+                migrationPlan: FeedGoodMigrationPlan.self,
+                configurations: [currentConfiguration]
+            )
+            let context = ModelContext(migratedContainer)
+            let plants = try context.fetch(FetchDescriptor<Plant>())
+            let plant = try #require(plants.first { $0.id == plantID })
+            #expect(plants.count == 1)
+            #expect(plant.name == "Build 52 Fern")
+            #expect(plant.createdAt == createdAt)
+            #expect(plant.tags?.isEmpty != false)
+
+            let entries = try context.fetch(FetchDescriptor<JournalEntry>())
+            let entry = try #require(entries.first { $0.id == journalID })
+            #expect(entries.count == 1)
+            #expect(entry.note == "Written on build 52")
+            #expect(entry.milestoneRaw == "newLeaf")
+            #expect(entry.changeKindRaw == nil)
+            #expect(entry.plant?.id == plantID)
+            #expect(try context.fetch(FetchDescriptor<PlantTag>()).isEmpty)
+        }
+    }
+
 }
