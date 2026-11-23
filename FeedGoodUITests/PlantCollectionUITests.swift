@@ -75,6 +75,8 @@ final class PlantCollectionUITests: XCTestCase {
 
         XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["plantDetail.care"].exists)
+        XCTAssertFalse(app.buttons["plantDetail.routineReview"].exists)
+        XCTAssertTrue(app.buttons["plantDetail.journal"].exists)
         app.buttons["plantDetail.journal"].tap()
         app.buttons["journal.story"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["story.archivedStatus"].waitForExistence(timeout: 5))
@@ -95,6 +97,7 @@ final class PlantCollectionUITests: XCTestCase {
 
         XCTAssertFalse(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
         XCTAssertTrue(app.buttons["plantDetail.care"].exists)
+        XCTAssertTrue(app.buttons["plantDetail.routineReview"].exists)
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertFalse(app.buttons["plants.archived.row.Archive fern"].exists)
         app.navigationBars.buttons.firstMatch.tap()
