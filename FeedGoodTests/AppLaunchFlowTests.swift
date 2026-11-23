@@ -4,7 +4,7 @@ import Testing
 
 struct AppLaunchFlowTests {
     private func makeDefaults() -> UserDefaults {
-        let suiteName = "AppLaunchFlowTests.\\(UUID().uuidString)"
+        let suiteName = "AppLaunchFlowTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)
         #expect(defaults != nil)
         return defaults ?? .standard
@@ -16,7 +16,7 @@ struct AppLaunchFlowTests {
         shortVersion: String = "0.1.0",
         buildNumber: String = "1"
     ) -> AppLaunchFlow {
-        let versionIdentity = "\\(shortVersion) (\\(buildNumber))"
+        let versionIdentity = "\(shortVersion) (\(buildNumber))"
         let store = AppLaunchStateStore(defaults: defaults, hasExistingPersistentStore: hasExistingStore)
         store.bootstrap(versionIdentity: versionIdentity)
         return AppLaunchFlow(stateStore: store, shortVersion: shortVersion, versionIdentity: versionIdentity)
