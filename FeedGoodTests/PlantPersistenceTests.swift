@@ -75,4 +75,145 @@ struct PlantPersistenceTests {
 
         #expect(try context.fetch(FetchDescriptor<Plant>()).isEmpty)
     }
+
+    @Test func archivedStateSurvivesStoreReopen() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let schema = Schema([Plant.self])
+        let configuration = ModelConfiguration(
+            schema: schema,
+            url: folder.appendingPathComponent("plants.store")
+        )
+        let plantID: UUID
+        let archivedDate = Date(timeIntervalSince1970: 1_700_000_000)
+
+        do {
+            let container = try ModelContainer(for: schema, configurations: configuration)
+            let context = ModelContext(container)
+            let plant = Plant(name: "Monstera", archivedAt: archivedDate)
+            plantID = plant.id
+            context.insert(plant)
+            try context.save()
+        }
+
+        do {
+            let reopenedContainer = try ModelContainer(for: schema, configurations: configuration)
+            let reopenedContext = ModelContext(reopenedContainer)
+            let stored = try reopenedContext.fetch(FetchDescriptor<Plant>())
+            let reloaded = try #require(stored.first { $0.id == plantID })
+            #expect(reloaded.archivedAt == archivedDate)
+        }
+    }
+
+    @Test func legacyStoreMigratesPlantAndRelatedRecordsWithArchiveStateDefaultingToActive() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let storeURL = folder.appendingPathComponent("legacy-garden.store")
+
+        let plantID = UUID()
+        let taskID = UUID()
+        let eventID = UUID()
+        let journalID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1_650_000_000)
+        let completedAt = Date(timeIntervalSince1970: 1_660_000_000)
+        let dueDate = Date(timeIntervalSince1970: 1_670_000_000)
+
+        // Produce a real on-disk store using the immutable pre-archive model
+        // graph. This is deliberately not created with the current schema.
+        do {
+            let legacySchema = Schema(versionedSchema: FeedGoodSchemaV1.self)
+            let legacyConfiguration = ModelConfiguration(schema: legacySchema, url: storeURL)
+            let legacyContainer = try ModelContainer(
+                for: legacySchema,
+                configurations: [legacyConfiguration]
+            )
+            let context = ModelContext(legacyContainer)
+            let plant = FeedGoodSchemaV1.Plant(
+                id: plantID,
+                name: "Legacy Monstera",
+                species: "Monstera deliciosa",
+                notes: "A saved observation",
+                growingEnvironmentRaw: "balcony",
+                lightConditionRaw: "indirect",
+                photoData: Data([0x01, 0x02, 0x03]),
+                createdAt: createdAt
+            )
+            let task = FeedGoodSchemaV1.CareTask(
+                id: taskID,
+                kindRaw: "watering",
+                intervalDays: 9,
+                dueDate: dueDate,
+                isEnabled: true,
+                reminderEnabled: true,
+                plant: plant
+            )
+            let event = FeedGoodSchemaV1.CareEvent(
+                id: eventID,
+                taskID: taskID,
+                taskTitle: "Watering",
+                completedAt: completedAt,
+                note: "Completed before archive support",
+                plant: plant
+            )
+            let journal = FeedGoodSchemaV1.JournalEntry(
+                id: journalID,
+                date: completedAt,
+                note: "Older journal note",
+                photoData: Data([0x04, 0x05]),
+                milestoneRaw: "newLeaf",
+                plant: plant
+            )
+            context.insert(plant)
+            context.insert(task)
+            context.insert(event)
+            context.insert(journal)
+            try context.save()
+        }
+
+        // Open that same store with the exact schema and migration plan used
+        // by the production app. Existing plants must become active by default.
+        do {
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV2.self)
+            let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
+            let migratedContainer = try ModelContainer(
+                for: currentSchema,
+                migrationPlan: FeedGoodMigrationPlan.self,
+                configurations: [currentConfiguration]
+            )
+            let context = ModelContext(migratedContainer)
+            let plants = try context.fetch(FetchDescriptor<Plant>())
+            let plant = try #require(plants.first { $0.id == plantID })
+
+            #expect(plants.count == 1)
+            #expect(plant.name == "Legacy Monstera")
+            #expect(plant.species == "Monstera deliciosa")
+            #expect(plant.notes == "A saved observation")
+            #expect(plant.growingEnvironment == .balcony)
+            #expect(plant.lightCondition == .indirect)
+            #expect(plant.photoData == Data([0x01, 0x02, 0x03]))
+            #expect(plant.createdAt == createdAt)
+            #expect(plant.archivedAt == nil)
+
+            let tasks = try context.fetch(FetchDescriptor<CareTask>())
+            let events = try context.fetch(FetchDescriptor<CareEvent>())
+            let entries = try context.fetch(FetchDescriptor<JournalEntry>())
+            #expect(tasks.count == 1)
+            #expect(tasks.first?.id == taskID)
+            #expect(tasks.first?.plant?.id == plantID)
+            #expect(tasks.first?.intervalDays == 9)
+            #expect(events.count == 1)
+            #expect(events.first?.id == eventID)
+            #expect(events.first?.plant?.id == plantID)
+            #expect(events.first?.note == "Completed before archive support")
+            #expect(entries.count == 1)
+            #expect(entries.first?.id == journalID)
+            #expect(entries.first?.plant?.id == plantID)
+            #expect(entries.first?.photoData == Data([0x04, 0x05]))
+            #expect(entries.first?.milestoneRaw == "newLeaf")
+        }
+    }
+
 }
