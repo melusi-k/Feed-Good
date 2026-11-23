@@ -112,7 +112,7 @@ struct CareTaskEditorPersistenceTests {
 
     @Test func successfulSaveReturnsReminderProjectionOnlyAfterCommit() async throws {
         let container = try memory()
-        let context = ModelContext(container)
+        let context = container.mainContext
         let plant = Plant(name: "Fern")
         context.insert(plant)
         let originalDate = Date(timeIntervalSince1970: 2_000_000_000)
@@ -155,14 +155,13 @@ struct CareTaskEditorPersistenceTests {
         #expect(notifications.pending.values.first?.date == nextDate)
         #expect(notifications.pending.values.first?.taskID == task.id)
 
-        let verificationContext = ModelContext(container)
         let selectedTaskID = task.id
         let descriptor = FetchDescriptor<CareTask>(
             predicate: #Predicate { $0.id == selectedTaskID }
         )
-        let persisted = try #require(verificationContext.fetch(descriptor).first)
-        #expect(persisted.intervalDays == 30)
-        #expect(persisted.dueDate == nextDate)
+        let refreshedMainContextTask = try #require(context.fetch(descriptor).first)
+        #expect(refreshedMainContextTask.intervalDays == 30)
+        #expect(refreshedMainContextTask.dueDate == nextDate)
 
     }
 
