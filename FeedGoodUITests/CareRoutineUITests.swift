@@ -17,6 +17,9 @@ final class CareRoutineUITests: XCTestCase {
         XCTAssertTrue(app.buttons["care.add"].waitForExistence(timeout: 5))
         app.buttons["care.add"].tap()
         app.buttons["care.taskSave"].tap()
+        let savePreview = app.alerts["Review care changes"]
+        XCTAssertTrue(savePreview.waitForExistence(timeout: 5))
+        savePreview.buttons["Save changes"].tap()
         let complete = app.buttons["care.complete.Watering"]
         XCTAssertTrue(complete.waitForExistence(timeout: 5)); complete.tap()
         let note = app.textFields["care.note"]

@@ -58,6 +58,11 @@ struct PlantDetailView: View {
                 }
                 .accessibilityIdentifier("plantDetail.care")
 
+                NavigationLink { CareRoutineReviewView(plant: plant) } label: {
+                    Label("Review care routine", systemImage: "calendar.badge.clock")
+                }
+                .accessibilityIdentifier("plantDetail.routineReview")
+
                 NavigationLink { JournalView(plant: plant) } label: {
                     Label("Plant journal", systemImage: "book.closed")
                 }
