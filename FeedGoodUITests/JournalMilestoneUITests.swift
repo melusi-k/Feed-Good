@@ -12,6 +12,9 @@ final class JournalMilestoneUITests: XCTestCase {
         app.buttons["plants.save"].tap()
         app.tabBars.buttons["Journal"].tap()
         app.buttons["journal.add"].tap()
+        let entryType = app.buttons["journal.entryType"]
+        XCTAssertTrue(entryType.waitForExistence(timeout: 5)); entryType.tap()
+        app.buttons["Milestone"].tap()
         XCTAssertTrue(app.buttons["journal.milestone"].waitForExistence(timeout: 5))
         app.buttons["journal.milestone"].tap()
         app.buttons["New leaf"].tap()
