@@ -152,7 +152,7 @@ A completion during a pause writes the ordinary `CareEvent` and updates only tha
 
 This matrix is a product baseline. Rows marked by unresolved timing/edit details remain subject to the validation gates above.
 
-## 15. Delivery tracking
+## 14. Delivery tracking
 
 
 - **Implementation issue:** Not created. Create only after this PRD and its design gates are reviewed and approved.
