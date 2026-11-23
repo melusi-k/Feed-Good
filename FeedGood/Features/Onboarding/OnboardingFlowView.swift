@@ -143,7 +143,7 @@ private struct OnboardingPageView: View {
 
                 VStack(spacing: 10) {
                     Text(page.title)
-                        .font(.largeTitle.weight(.semibold).design(.serif))
+                        .font(.system(.largeTitle, design: .serif, weight: .semibold))
                         .foregroundStyle(FeedGoodTheme.soil)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
