@@ -17,12 +17,13 @@ final class PlantTagUITests: XCTestCase {
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let field = app.textFields["editPlant.newTag"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
-        // The Tags section closes a long form, so the field starts below the
-        // fold: it exists but is clipped, and a tap on it cannot take keyboard
-        // focus. Scroll it fully on screen first, as a user would.
+        // The Tags section closes a long form, so the field starts clipped at
+        // the bottom edge: XCTest still reports it hittable while its centre
+        // sits off-screen, and a tap there cannot take keyboard focus. Scroll
+        // until the whole field is on screen, as a user would.
         var scrolls = 0
-        while field.isHittable == false, scrolls < 5 { app.swipeUp(); scrolls += 1 }
-        XCTAssertTrue(field.isHittable)
+        while field.frame.maxY > app.frame.height - 8, scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(field.frame.maxY <= app.frame.height - 8)
         field.tap(); field.typeText(tag)
         app.buttons["editPlant.addTag"].tap()
         app.buttons["editPlant.save"].tap()
