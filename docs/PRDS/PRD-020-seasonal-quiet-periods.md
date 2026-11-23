@@ -82,6 +82,6 @@ Replaces informal or ambiguous handling of a temporary care pause. It does not r
 - Remaining design decisions: all-vs-selected task scope; open-ended due-task behavior (covered by pause-clock policy); routine edits and care completion during a pause; start/end date semantics; archive/restore interaction; persistence and occurrence coordination with PRD-022.
 - No implementation should begin by silently choosing one of these policies.
 
-## 12. Delivery tracking
+## 13. Delivery tracking
 - GitHub issue: [#74 — Add explicit seasonal and quiet-period support](https://github.com/melusi-k/Feed-Good/issues/74).
 - Status: pause-clock policy approved 2026-11-23; remaining design decisions and implementation outstanding.
