@@ -1,6 +1,6 @@
 # PRD-019 — Plant Journal Prompts
 
-**Status:** Proposal consistent; implementation not started  
+**Status:** Implementation in progress; selection, cooldown and reset rules defined  
 **Priority:** P2  
 **Release:** Post-MVP  
 **Primary surfaces:** Plant Profile, Journal, Plant Story, optional Weekly Reflection
@@ -58,6 +58,7 @@ Replaces the absence of occasional guided observation ideas. It does not replace
 
 ## 11. Decisions and dependencies
 - Builds on Plant Journal #12 and bundled content conventions.
+- **Defined rules (recorded with implementation):** Prompt IDs are stable slugs (`prompt.<slug>`) with a single `contentVersion` integer bumped when the bundled set changes; selection is deterministic over a djb2 hash of `plantID|civil-day` (Gregorian, local timezone, the DailyMoments convention) modulo the eligible set, so the same plant, day and prompt state always produce the same prompt without Swift's seeded hashing. Dismissed prompts are excluded for 14 civil days and return on their own; `reopen` reverses a dismissal immediately. Skip and answer both record one interaction day per plant and hide the card only for that plant that day; neither carries a penalty. Prompt state is presentation-only (UserDefaults), excluded from archives, and stores no answers or journal text.
 - PRD-013 Weekly Reflection / issue #65 is an optional integration only; neither blocks the other.
 - Not dependent on PRD-015, PRD-016 or PRD-020, but respects archived visibility.
 - Dismissal/last-shown metadata is minimal local presentation state and must not duplicate journal content.
