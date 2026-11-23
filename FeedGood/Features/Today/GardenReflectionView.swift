@@ -94,6 +94,9 @@ struct GardenReflectionView: View {
         }
         .padding(19)
         .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: FeedGoodTheme.cardRadius, style: .continuous))
+        // Keep the card a container: without .contain the identifier promotes
+        // the whole card to one accessibility element and hides its children.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("reflection.card")
         .sheet(isPresented: $showingMoments) {
             GardenReflectionMomentsSheet(reflection: reflection) { plantID in
