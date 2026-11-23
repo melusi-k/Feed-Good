@@ -70,6 +70,7 @@ struct GrowthComparisonView: View {
             }
             Button("Open source observation") { editing = entry }
                 .font(.callout)
+                .accessibilityHint("Opens this journal observation so you can review or edit its date, note and photo.")
                 .accessibilityIdentifier("growthCompare.source.\(position.lowercased())")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

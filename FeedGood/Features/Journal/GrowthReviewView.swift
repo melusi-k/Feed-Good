@@ -97,6 +97,8 @@ struct GrowthReviewView: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+        .accessibilityValue(selected ? "Selected for comparison" : "Not selected")
+        .accessibilityHint(selectable ? "Double-tap to select or remove this photo. Select two photos to compare." : "Add another journal photo before comparing.")
         .accessibilityIdentifier("growthReview.row.\(entry.id.uuidString)")
     }
 

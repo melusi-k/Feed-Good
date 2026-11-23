@@ -79,4 +79,13 @@ struct GrowthReviewTests {
         #expect(GrowthReview.entries(plantID: plant.id, from: all).map(\.id) == [keep.id])
         #expect(GrowthReview.entries(plantID: other.id, from: all).map(\.id) == [unrelated.id])
     }
+    @Test func onePhotoIsAValidReviewButCannotFormAComparison() throws {
+        let plant = Plant(name: "Fern")
+        let onlyPhoto = JournalEntry(date: Date(timeIntervalSince1970: 100), note: "First photo", photoData: photo(), plant: plant)
+        let entries = GrowthReview.entries(plantID: plant.id, from: [onlyPhoto])
+        #expect(entries.count == 1)
+        #expect(entries.first?.id == onlyPhoto.id)
+        #expect(GrowthReview.comparison(entries) == nil)
+    }
+
 }
