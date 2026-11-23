@@ -69,8 +69,6 @@ struct CareTaskEditorPersistenceTests {
         )
         let notifications = CareTaskEditorNotificationSpy()
         notifications.pending[originalReminder.id] = originalReminder
-        let scheduler = CareReminderScheduler(boundary: notifications)
-
         unrelatedTask.customTitle = "Unrelated pending edit"
         let selectedOriginalDate = task.dueDate
         let selectedOriginalInterval = task.intervalDays
@@ -103,7 +101,8 @@ struct CareTaskEditorPersistenceTests {
         #expect(notifications.additions.isEmpty)
         #expect(notifications.pendingReadCount == 0)
         let verificationContext = ModelContext(container)
-        let descriptor = FetchDescriptor<CareTask>(predicate: #Predicate { $0.id == task.id })
+        let selectedTaskID = task.id
+        let descriptor = FetchDescriptor<CareTask>(predicate: #Predicate { $0.id == selectedTaskID })
         let persisted = try #require(verificationContext.fetch(descriptor).first)
         #expect(persisted.dueDate == selectedOriginalDate)
         #expect(persisted.intervalDays == selectedOriginalInterval)
@@ -144,8 +143,9 @@ struct CareTaskEditorPersistenceTests {
         #expect(reminders.first?.taskID == task.id)
 
         let verificationContext = ModelContext(container)
+        let selectedTaskID = task.id
         let descriptor = FetchDescriptor<CareTask>(
-            predicate: #Predicate { $0.id == task.id }
+            predicate: #Predicate { $0.id == selectedTaskID }
         )
         let persisted = try #require(verificationContext.fetch(descriptor).first)
         #expect(persisted.intervalDays == 30)
