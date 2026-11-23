@@ -32,6 +32,14 @@ struct PlantCareView: View {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 }
             }
+            Section("Routine review") {
+                NavigationLink {
+                    CareRoutineReviewView(plant: plant)
+                } label: {
+                    Label("Review this plant's care routine", systemImage: "calendar.badge.clock")
+                }
+                .accessibilityIdentifier("care.routineReview")
+            }
             Section("Care routine") {
                 if tasks.isEmpty { Text("No care tasks yet. Add a routine that suits this plant.").foregroundStyle(.secondary) }
                 ForEach(tasks) { task in
@@ -116,6 +124,7 @@ struct CareTaskEditor: View {
     @State private var reminders = false
     @State private var errorMessage: String?
     @State private var confirmingDelete = false
+    @State private var confirmingSave = false
 
     var body: some View {
         NavigationStack {
@@ -144,7 +153,7 @@ struct CareTaskEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
+                    Button("Save") { confirmingSave = true }
                         .disabled(kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("care.taskSave")
                 }
@@ -153,6 +162,12 @@ struct CareTaskEditor: View {
                 if let task { kind = task.kind; customTitle = task.customTitle; interval = task.intervalDays; dueDate = task.dueDate; enabled = task.isEnabled }
             }
             .task { reminders = task?.reminderEnabled ?? false }
+            .alert("Review care changes", isPresented: $confirmingSave) {
+                Button("Save changes") { save() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(saveImpactSummary)
+            }
             .confirmationDialog("Remove this task? Its care history will stay.", isPresented: $confirmingDelete, titleVisibility: .visible) {
                 Button("Remove task", role: .destructive) {
                     guard let task else { return }
@@ -162,6 +177,22 @@ struct CareTaskEditor: View {
                 }
             }
         }
+    }
+
+    private var saveImpactSummary: String {
+        let date = dueDate.formatted(date: .complete, time: .shortened)
+        let routine = enabled ? "The routine will be active." : "The routine will be paused."
+        let reminder: String
+        if enabled && reminders && dueDate > .now {
+            reminder = "If notifications are allowed, one local reminder is eligible for this future care date."
+        } else if !reminders {
+            reminder = "No reminder will be scheduled."
+        } else if !enabled {
+            reminder = "No reminder will be scheduled while the routine is paused."
+        } else {
+            reminder = "No reminder will be scheduled because the next care date is not in the future."
+        }
+        return "Next care: \(date). Repeat every \(interval) days. \(routine) \(reminder)"
     }
 
     private func save() {
