@@ -29,7 +29,7 @@ final class CareRoutineUITests: XCTestCase {
         historyRow.tap()
         let eventNote = app.textFields["care.eventNote"]
         XCTAssertTrue(eventNote.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.datePickers["Completed"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["care.eventCompletedAt"].waitForExistence(timeout: 5))
         let originalNote = eventNote.value as? String ?? ""
         eventNote.tap()
         eventNote.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: originalNote.count))
