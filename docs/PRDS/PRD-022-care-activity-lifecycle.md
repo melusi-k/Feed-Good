@@ -111,7 +111,44 @@ These are mandatory design gates, not implementation assumptions:
 
 Existing decisions remain authoritative until explicitly changed: interval-based recurrence, ordinary unpaused completion advances from the completion timestamp, and care-history corrections are history-only. The approved Quiet Period exception is documented in PRD-020. This PRD does not supersede PRD-002, PRD-003, PRD-011 or PRD-017.
 
-## 12. Delivery tracking
+## 12. Proposed persistence direction (design review; not yet implementation approval)
+
+The current application has one reusable `CareTask` definition with a `dueDate`, and immutable-in-practice `CareEvent` history. Today derives due state from `CareTask.dueDate`; reminders are projected from enabled tasks and their due dates. Keep this as the single source of truth for ordinary care. Do not add a general `CareOccurrence` model unless a validated lifecycle requirement cannot be met with the current task/event contract.
+
+Quiet Periods need persisted state that cannot be reconstructed safely from `CareTask.dueDate` after a pause has begun. The smallest candidate is:
+
+| Candidate record | Purpose | Candidate fields |
+| --- | --- | --- |
+| `QuietPeriod` | One scheduled, active, ended or cancelled period for a plant | stable ID, plant ID, created/start timestamps, optional end timestamp, status, label/reason, ended/cancelled timestamp |
+| `QuietPeriodTaskSnapshot` | One task's membership and frozen schedule state in that period | stable ID, quiet-period ID, task ID, task-title snapshot, membership state, signed remaining calendar-day count, captured/updated timestamp |
+
+Use stable UUID references rather than making the quiet-period records depend on cascading SwiftData relationships to `CareTask`. This allows a deleted task's membership snapshot to remain auditable while marking it removed from the active affected set. A quiet period auto-ends when no snapshots remain active. The plant association must still be validated against the owning plant when reading/writing.
+
+The signed remaining-day value represents calendar-day distance at activation: zero means due on the activation day; a negative value preserves pre-existing overdue days; a positive value preserves days remaining. On resume, reconstruct the due day from the resume date and this signed offset using the same injected `Calendar` used by `CareSchedule`. Preserve the existing due-time component only if the implementation can do so deterministically under the agreed local-time/DST contract; otherwise settle an explicit due-time rule before coding. Do not store elapsed seconds as the pause clock.
+
+A completion during a pause writes the ordinary `CareEvent` and updates only that task snapshot's frozen remaining interval to the task's full current interval. It does not create a separate occurrence, unpause the task or cause a reminder to fire. On resume, the task's next due day is reconstructed from the resume date plus that frozen interval. Ordinary completion outside a pause continues to use completion timestamp plus interval.
+
+**Schema/migration constraints:** current production persistence is `FeedGoodSchemaV2`, with a lightweight V1→V2 migration for `Plant.archivedAt`. Any new persisted models require an explicit schema-version/migration review (likely V3); do not edit V1/V2 historical schema definitions. Extend the archive format additively with optional quiet-period records, validate all IDs/plant/task references and status/date combinations before import, and preserve idempotent recovery/conflict checks. Do not silently import an active pause whose task or plant references cannot be reconciled.
+
+**Still to validate before approving this model:** whether snapshots need the original local due-time components in addition to signed day count; the precise interval/next-date edit recalculation while paused; how an explicitly disabled task behaves at resume; timezone changes between scheduling, activation and resume; DST nonexistent/ambiguous local end times; and how a removed task snapshot is displayed in quiet-period history. This is a model candidate, not permission to start schema implementation.
+
+## 13. Lifecycle transition matrix (design baseline)
+
+| Trigger | Task / schedule effect | History effect | Today / reminder effect |
+| --- | --- | --- | --- |
+| Create scheduled quiet period | Store future period and task membership; pause clock has not started | Store period intent | Existing care remains active until scheduled start |
+| Scheduled start arrives | Capture each included task's signed remaining calendar-day offset; period becomes active | Retain start transition | Suppress included tasks and their reminders; exclude non-members |
+| Edit included task while active | Persist explicit task edits; do not remove membership or auto-enable; quiet-period overlay remains | No care event is created by editing | Continue suppressing included task until resume |
+| Complete included task while active | Keep paused; reset its frozen remaining interval to its full current interval | Insert normal `CareEvent` | No active Today item/reminder until resume |
+| Delete included task | Mark its membership removed; do not erase its snapshot/history | Existing CareEvents remain under the task-deletion contract | Remove only that task; end period if no active members remain |
+| End at selected local date-time | Reconstruct due dates from frozen offsets; respect each task's explicit enabled setting | Mark period ended, retain record | Reconcile reminders only after successful persistence |
+| Archive plant | End active period or cancel scheduled period | Retain period history; archive plant | No active care/reminders |
+| Restore plant | Do not reactivate old period | Preserve prior period unchanged | User must explicitly create another period |
+
+This matrix is a product baseline. Rows marked by unresolved timing/edit details remain subject to the validation gates above.
+
+## 14. Delivery tracking
+
 
 - **Implementation issue:** Not created. Create only after this PRD and its design gates are reviewed and approved.
 - **Existing foundations:** [PRD-002 — Care Routine](PRD-002-care-routine.md), [PRD-003 — Care Reminders](PRD-003-care-reminders.md), [PRD-011 — Care History Corrections](PRD-011-care-history-corrections.md), [PRD-017 — Care Routine Review](PRD-017-care-routine-review.md).
