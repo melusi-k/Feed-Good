@@ -1,6 +1,6 @@
 # PRD-020 — Seasonal and Quiet Periods
 
-**Status:** Phase 2, Stage 2 — pause-clock policy and task-scope policy approved; remaining transition and persistence decisions open  
+**Status:** Phase 2, Stage 2 — pause-clock, task-scope, deletion, completion, scheduling and archive-transition policies approved; remaining routine-edit and persistence/date-zone decisions open  
 **Priority:** P2  
 **Release:** Post-MVP, after lifecycle and routine-review decisions  
 **Primary surfaces:** Plant Profile, Care Routine, Today, local reminders, Plant Story
@@ -38,9 +38,19 @@ This is a product policy decision, not an approval of a particular persistence m
 
 **Approved by product owner on 2026-11-23:** quiet periods apply to a user-selected subset of care tasks. At setup, all tasks currently enabled for the plant are preselected by default; the user can deselect tasks before confirmation. This keeps the normal flow low-friction while allowing users to leave particular routines unaffected.
 
-The selected task set is a snapshot for that quiet period. It does not silently grow when a task is created or enabled later. Changes to routines while a period is active, including task creation/deletion, interval or next-date edits, and changes to `CareTask.isEnabled`, remain separate design decisions and must be specified before implementation. The existing per-task enabled setting must not be repurposed to represent quiet-period membership.
+The selected task set is a snapshot for that quiet period. It does not silently grow when a task is created or enabled later. Task creation and routine changes during an active period remain separate design decisions and must be specified before implementation. The existing per-task enabled setting must not be repurposed to represent quiet-period membership.
 
-## 6. Behavior changes
+## 6. Approved transition policies
+
+**Task deletion during an active quiet period — approved 2026-11-23:** deleting one included care task removes only that task from the quiet period's affected-task set. The quiet period continues for its remaining selected tasks. If no affected tasks remain, the quiet period ends automatically. Task deletion follows the app's established task-deletion and history-retention contract; quiet-period handling must not independently erase historical care events.
+
+**Care completion during a quiet period — approved 2026-11-23:** users may record a care completion while a quiet period is active. Recording a completion does not end, suspend or otherwise unpause the quiet period. The completion is persisted as normal care history. The precise due-date baseline for that task when care resumes must remain aligned with PRD-022's approved completion/occurrence semantics; do not silently advance or rewrite an occurrence as part of quiet-period handling.
+
+**Start and end dates — approved 2026-11-23:** support both immediate activation and a scheduled future start. A scheduled period becomes active on its selected start calendar date. The selected end date is inclusive: the quiet period remains active for that entire local calendar day and care resumes on the following calendar day. An omitted end date means explicitly open-ended until the user ends it. Date interpretation, including which time-zone/calendar anchors the plant when the device travels, must be finalized with the date/time contract in PRD-022 before implementation.
+
+**Archive during a quiet period — approved 2026-11-23:** archiving terminates any active quiet period and removes its active pause before/with the archive transition; the plant's `archivedAt` is set by the archive action. Preserve the quiet-period record as ended history rather than deleting it. Restoring the plant does not reactivate the previous quiet period; the user must explicitly start another one if desired. Archived plants cannot have scheduled or active quiet periods.
+
+## 7. Behavior changes
 - Provide an explicit optional quiet-period action for an active plant.
 - Capture start date, optional end date or explicitly open-ended period, user-selected reason/label and affected care tasks.
 - Preview effects on each affected task, Today item and local reminder before confirmation.
@@ -48,16 +58,16 @@ The selected task set is a snapshot for that quiet period. It does not silently 
 - Preserve quiet-period history in Plant Story and export/restore.
 - Keep ordinary journal observations available during a quiet period.
 
-## 7. Out of scope
+## 8. Out of scope
 Automatic seasonal schedules, weather-aware automation, location inference, dormancy diagnosis, universal winter rules and replacement of routine review.
 
-## 8. Surfaces
+## 9. Surfaces
 Quiet-period setup/editor; task-selection and impact preview; confirmation; active-period indicator; end/cancel flow; Plant Story history.
 
-## 9. Pricing
+## 10. Pricing
 Included in the local-first app. No account, network or location permission is required.
 
-## 10. Safety and data integrity
+## 11. Safety and data integrity
 - Never silently infer, start or end a quiet period.
 - Open-ended periods remain open until the user ends them; they do not silently expire or generate overdue guilt states.
 - Journal observations remain available and do not automatically end the period.
@@ -66,28 +76,28 @@ Included in the local-first app. No account, network or location permission is r
 - Archived plants cannot start or actively run care quiet periods.
 - Lifecycle state, archive state and quiet period are separate concepts.
 
-## 11. Launch plan
+## 12. Launch plan
 1. **Approved:** use a user-selected subset, with all currently enabled tasks preselected by default; capture the selected set for that period. Routine changes during an active period remain to be specified.
-2. Define routine-edit behavior while paused, including interval changes, explicit next-date changes, task creation/deletion and the existing per-task `isEnabled` switch.
-3. Define whether users may record a care completion during a quiet period and how the remaining pause is then calculated without rewriting history.
-4. Define immediate versus scheduled future starts, end-date inclusivity and local-calendar/time-zone behavior.
-5. Define lifecycle constraints and the transition table, including archive during an active period and restore behavior.
+2. Define remaining routine-edit behavior while paused: task creation, interval/next-date edits and changes to the existing per-task `isEnabled` switch. Task deletion behavior is approved in section 6.
+3. Coordinate the due-date baseline after care completion during a pause with PRD-022; completion is allowed and does not unpause the quiet period.
+4. Finalize the calendar/time-zone anchor and edge cases for the approved immediate/scheduled start and inclusive end-date behavior, in coordination with PRD-022.
+5. Implement and test the approved archive transition: end the quiet period, preserve its history, set `archivedAt`, and do not reactivate the period on restore.
 6. Choose persistence only after the task/occurrence behavior is settled; coordinate with PRD-022 without pre-empting its occurrence-lifecycle decisions.
 7. Implement preview, explicit confirmation, edit/end/cancel and reminder reconciliation only after the design gates are approved.
 8. Test date boundaries, DST/time zones, pause/resume, cancellation, routine edits, archive compatibility, export/restore and permission-denied behavior.
 9. Complete accessibility and physical-device review.
 
-## 12. Replaces
+## 13. Replaces
 Replaces informal or ambiguous handling of a temporary care pause. It does not replace archive, lifecycle state or routine editing.
 
-## 13. Remaining design decisions and dependencies
+## 14. Remaining design decisions and dependencies
 - Hard AND prerequisites: PRD-016 / issue #70 lifecycle vocabulary and transition behavior **and** PRD-017 / issue #71 routine editing/reminder reconciliation policy.
 - Builds on Care Routine #4 and Care Reminders #5.
 - Related to PRD-015 archive; archived plants cannot have active quiet periods.
 - Approved policy: pause the remaining time on included tasks and resume with that same remaining time; do not accumulate overdue time during the quiet period.
-- Remaining design decisions: routine edits and care completion during a pause; start/end date semantics; archive/restore interaction; persistence and occurrence coordination with PRD-022.
+- Remaining design decisions: task creation and routine edits during a pause; due-date baseline after completion during a pause in coordination with PRD-022; calendar/time-zone anchor and edge cases; persistence and occurrence coordination with PRD-022.
 - No implementation should begin by silently choosing any remaining policy or persistence behavior.
 
-## 14. Delivery tracking
+## 15. Delivery tracking
 - GitHub issue: [#74 — Add explicit seasonal and quiet-period support](https://github.com/melusi-k/Feed-Good/issues/74).
-- Status: pause-clock and task-scope policies approved 2026-11-23; remaining transition/persistence decisions and implementation outstanding.
+- Status: pause-clock, task-scope, deletion, completion, start/end-date and archive-transition policies approved 2026-11-23; remaining routine-edit/date-zone/persistence decisions and implementation outstanding.
