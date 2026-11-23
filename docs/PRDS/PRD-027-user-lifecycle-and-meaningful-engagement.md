@@ -179,6 +179,6 @@ These gates prevent duplicated shipped functionality and silent changes to estab
 ## 12. Delivery tracking
 
 - **PRD:** PRD-027 — User Lifecycle & Meaningful Engagement.
-- **Parent issue:** #TBD (to be registered).
+- **Parent issue:** [#114 — User Lifecycle & Meaningful Engagement](https://github.com/melusi-k/Feed-Good/issues/114).
 - **Related authority:** PRD-026 onboarding/What's New; PRD-001 My Plants; PRD-002 Care Routine; PRD-003 Care Reminders; PRD-004 Plant Journal; PRD-005 Today; PRD-006 Feed Good Moments; PRD-008 Care Guide; PRD-009 Settings & Data Portability; PRD-010 Garden Profile; PRD-012 Growth Review; PRD-013 Weekly Garden Reflection; PRD-015 Plant Archive; PRD-016 Plant Lifecycle States; PRD-017 Care Routine Review; PRD-020 Seasonal and Quiet Periods; PRD-022 care-occurrence/scheduling contract.
 - **Implementation status:** no implementation authorised until section 11 gates are recorded and focused delivery issues are created.
