@@ -24,7 +24,7 @@ struct FeedGoodApp: App {
                 defaults: .standard,
                 hasExistingPersistentStore: hasExistingPersistentStore
             )
-            .bootstrap(versionIdentity: "\\(version) (\\(build))")
+            .bootstrap(versionIdentity: "\(version) (\(build))")
         }
         do {
             modelContainer = try ModelContainer(
