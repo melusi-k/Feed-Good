@@ -57,20 +57,20 @@ Every feature should help someone understand, notice, learn about or connect wit
 
 ### Post-MVP proposal portfolio
 
-The linked issues #63–66 and #69–75 have been reviewed and marked **Proposal Consistent** in their issue bodies. This means their scope, boundaries, acceptance criteria and dependencies are internally aligned; it does not mean implementation is complete or approved for release.
+The linked post-MVP issues have been reviewed for scope, boundaries, acceptance criteria and dependencies. **Proposal Consistent** means a proposal is coherent; it does not mean implementation is complete or approved for release. Phase 1 (#63, #64, #69) is complete. Phase 2 is active with #70 as its first design gate.
 
 | Sequence | PRD / issue | Proposal | Delivery note |
 | --- | --- | --- | --- |
-| Trust and relationship | [PRD-011 / #63](PRD-011-care-history-corrections.md) | Care History Corrections | PR #68 merged; remaining Today/reminder/export verification is a release gate for #69 |
-| Trust and relationship | [PRD-012 / #64](PRD-012-growth-review.md) | Growth Review | PR #76 is open; comparison/source-navigation coverage remains |
+| Trust and relationship | [PRD-011 / #63](PRD-011-care-history-corrections.md) | Care History Corrections | Complete; owner-confirmed manual verification recorded |
+| Trust and relationship | [PRD-012 / #64](PRD-012-growth-review.md) | Growth Review | Complete; populated two-photo device verification recorded |
 | Trust and relationship | [PRD-013 / #65](PRD-013-weekly-garden-reflection.md) | Weekly Garden Reflection | Independent local derived experience |
 | Safety-gated | [PRD-014 / #66](PRD-014-plant-check-ins.md) | Plant Check-ins | No troubleshooting content ships before editorial/safety ownership and review |
-| Data foundation | [PRD-015 / #69](PRD-015-plant-archive.md) | Plant Archive and Restore | Selected foundation; #63 verification gates parent merge |
-| Dependent | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Requires #69; blocks #74 |
-| Independent | [PRD-017 / #71](PRD-017-care-routine-review.md) | Care Routine Review | Builds on existing CareTaskEditor and Plant profile editors; blocks #74 |
+| Data foundation | [PRD-015 / #69](PRD-015-plant-archive.md) | Plant Archive and Restore | Complete; parent PR #88 merged and owner sign-off recorded |
+| Phase 2 Stage 1 | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Approved: Active/Archived only; no additional lifecycle state or schema work for this release |
+| Foundation delivered | [PRD-017 / #71](PRD-017-care-routine-review.md) | Care Routine Review | Implemented in PR #82 and archive-aware in PR #88; prerequisite for #74 satisfied |
 | Dependent | [PRD-018 / #72](PRD-018-plant-changes-timeline.md) | Plant Changes Timeline | Requires #69 compatibility; model choice is a design gate |
 | Independent | [PRD-019 / #73](PRD-019-plant-journal-prompts.md) | Plant Journal Prompts | #65 integration optional |
-| Dependent | [PRD-020 / #74](PRD-020-seasonal-quiet-periods.md) | Seasonal and Quiet Periods | Requires both #70 and #71 |
+| Phase 2 Stage 2 | [PRD-020 / #74](PRD-020-seasonal-quiet-periods.md) | Seasonal and Quiet Periods | Next critical-path feature after #70 decision; #70 AND #71 required |
 | Dependent | [PRD-021 / #75](PRD-021-optional-plant-tags.md) | Optional Plant Tags | Requires #69 compatibility; not dependent on #70 |
 
 A later opportunity needs its own product decision, PRD and issue before implementation. A proposal's presence in this register is not implementation authorization.
