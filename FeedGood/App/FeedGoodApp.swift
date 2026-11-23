@@ -6,13 +6,25 @@ struct FeedGoodApp: App {
     @UIApplicationDelegateAdaptor(FeedGoodAppDelegate.self) private var appDelegate
     @StateObject private var reminderScheduler = CareReminderScheduler(boundary: LocalCareNotifications())
     @StateObject private var notificationRouter = CareNotificationRouter.shared
-    /// UI tests run against an in-memory store so journeys are deterministic
-    /// and never touch the on-device garden.
-    private var isUITesting: Bool {
-        ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
-    }
+    private let modelContainer: ModelContainer
 
-    init() { FeedGoodNavigationAppearance.apply() }
+    init() {
+        FeedGoodNavigationAppearance.apply()
+        let schema = Schema(versionedSchema: FeedGoodSchemaV2.self)
+        let configuration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
+        )
+        do {
+            modelContainer = try ModelContainer(
+                for: schema,
+                migrationPlan: FeedGoodMigrationPlan.self,
+                configurations: [configuration]
+            )
+        } catch {
+            fatalError("Feed Good could not open its garden data store: \(error)")
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -21,6 +33,6 @@ struct FeedGoodApp: App {
                 .environmentObject(reminderScheduler)
                 .environmentObject(notificationRouter)
         }
-        .modelContainer(for: [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self], inMemory: isUITesting)
+        .modelContainer(modelContainer)
     }
 }
