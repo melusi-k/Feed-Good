@@ -38,6 +38,11 @@ struct AppTabView: View {
     @AppStorage("feedGood.appearance") private var appearanceRawValue = FeedGoodAppearance.system.rawValue
     @State private var selectedTab: AppTab = .today
     @State private var showingProfile = false
+    @State private var launchFlow: AppLaunchFlow?
+    @State private var launchChecked = false
+    @State private var showingOnboarding = false
+    @State private var showingAddPlantFromOnboarding = false
+    @State private var whatsNewEntry: ReleaseNotesEntry?
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
@@ -50,6 +55,43 @@ struct AppTabView: View {
         .tint(FeedGoodTheme.leaf)
         .preferredColorScheme(appearance.preferredColorScheme)
         .environment(\.showFeedGoodProfile, { showingProfile = true })
+        .onAppear {
+            guard launchChecked == false else { return }
+            launchChecked = true
+            let flow = AppLaunchFlow.makeDefault()
+            launchFlow = flow
+            switch flow.step() {
+            case .onboarding:
+                showingOnboarding = true
+            case .whatsNew(let entry):
+                whatsNewEntry = entry
+            case .none:
+                break
+            }
+        }
+        .sheet(isPresented: $showingOnboarding, onDismiss: {
+            launchFlow?.completeOnboarding()
+            if showingAddPlantFromOnboarding == false {
+                whatsNewEntry = launchFlow?.whatsNewEntry()
+            }
+        }) {
+            OnboardingFlowView(onAddFirstPlant: {
+                showingAddPlantFromOnboarding = true
+            })
+        }
+        .sheet(isPresented: $showingAddPlantFromOnboarding, onDismiss: {
+            whatsNewEntry = launchFlow?.whatsNewEntry()
+        }) {
+            AddPlantView()
+        }
+        .sheet(item: $whatsNewEntry, onDismiss: {
+            launchFlow?.markWhatsNewSeen()
+        }) { entry in
+            WhatsNewView(entry: entry) {
+                launchFlow?.markWhatsNewSeen()
+            }
+            .presentationDetents([.medium, .large])
+        }
         .sheet(isPresented: $showingProfile) {
             ProfileView {
                 showingProfile = false
