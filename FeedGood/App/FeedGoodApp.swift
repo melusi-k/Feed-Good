@@ -8,12 +8,6 @@ struct FeedGoodApp: App {
     @StateObject private var notificationRouter = CareNotificationRouter.shared
     private let modelContainer: ModelContainer
 
-    /// UI tests run against an in-memory store so journeys are deterministic
-    /// and never touch the on-device garden.
-    private var isUITesting: Bool {
-        ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
-    }
-
     init() {
         FeedGoodNavigationAppearance.apply()
         let schema = Schema(versionedSchema: FeedGoodSchemaV2.self)
