@@ -1,6 +1,6 @@
 # PRD-015 — Plant Archive and Restore
 
-**Status:** Implementation in progress — stacked archive data, UI and export slices are under review; parent integration remains gated by #63  
+**Status:** Final parent integration under review in PR #88; migration, iOS CI and Thread Sanitizer verification are pending  
 **Priority:** P1 foundation  
 **Release:** Post-MVP foundation; archive compatibility is a prerequisite for dependent features  
 **Primary surfaces:** My Plants, Plant Profile, Plant Story, Settings / Data Portability
@@ -60,13 +60,13 @@ Included in the local-first app. Archive/restore is a data-trust capability, not
 Replaces deletion-or-leave-active as the only ways to manage an inactive plant. It does not replace permanent deletion.
 
 ## 11. Decisions and dependencies
-- #63 is a release gate: complete its remaining Today/reminder and export/recovery verification before the #69 parent implementation PR merges. Do not bundle #63 into this feature.
+- #63 release gate satisfied: PR #80 merged to main after CI passed and the user confirmed manual feature testing. Its separate accessibility/Dynamic Type/appearance/privacy follow-up remains tracked independently and is not a #69 merge blocker. Do not bundle #63 into this feature.
 - Builds on Plant Collection #1, Plant Story #14 and Data Portability #15 / PRD-009.
 - Hard prerequisite for PRD-016 lifecycle states, PRD-014 check-ins, PRD-018 plant changes and PRD-021 tags.
 - PRD-012 Growth Review, PRD-013 Weekly Reflection and PRD-017 Routine Review are independent but must respect archived visibility and disable active-care actions.
-- Delivery uses focused stacked sub-PRs on `feature/plant-archive-parent`; only the parent integration PR targets main.
+- Delivery uses focused stacked sub-PRs #79, #83 and #84. The consolidated parent integration is PR #88, based directly on current main; it is the only archive PR intended to merge to main.
 
 ## 12. Delivery tracking
 - GitHub issue: [#69 — Archive a plant without deleting its story](https://github.com/melusi-k/Feed-Good/issues/69).
-- Implementation stack: [PR #79 — archive state and active-care exclusion](https://github.com/melusi-k/Feed-Good/pull/79), [PR #83 — archived collection and restore flow](https://github.com/melusi-k/Feed-Good/pull/83), and [PR #84 — archive export/recovery compatibility](https://github.com/melusi-k/Feed-Good/pull/84). All are stacked; none is independently releasable.
+- Implementation stack: [PR #79 — archive state and active-care exclusion](https://github.com/melusi-k/Feed-Good/pull/79), [PR #83 — archived collection and restore flow](https://github.com/melusi-k/Feed-Good/pull/83), and [PR #84 — export/recovery, legacy SwiftData migration and archive-aware routine review](https://github.com/melusi-k/Feed-Good/pull/84). [Parent integration PR #88](https://github.com/melusi-k/Feed-Good/pull/88) consolidates the complete implementation. The sub-PRs are review slices and are not independently releasable.
 - Related data contract: [PRD-009 — Settings & Data Portability](PRD-009-settings-data-portability.md).
