@@ -91,7 +91,8 @@ Included in the local-first app. No account, network or location permission is r
 Replaces informal or ambiguous handling of a temporary care pause. It does not replace archive, lifecycle state or routine editing.
 
 ## 14. Remaining design decisions and dependencies
-- Hard AND prerequisites: PRD-016 / issue #70 lifecycle vocabulary and transition behavior **and** PRD-017 / issue #71 routine editing/reminder reconciliation policy.
+- Hard AND prerequisites: PRD-016 / issue #70 lifecycle vocabulary and transition behavior **and** PRD-017 / issue #71 routine editing/reminder reconciliation policy. Issue #71 remains open pending failed-save, reminder-reconciliation-boundary and shared-ModelContext rollback-safety evidence.
+- Scoped PRD-022 coordination gate: agree the overlapping occurrence/schedule contracts (completion during a pause, removed-task history and date/time semantics) before Quiet Period implementation. This does not require all PRD-022 scope to be implemented first; it prevents competing sources of truth.
 - Builds on Care Routine #4 and Care Reminders #5.
 - Related to PRD-015 archive; archived plants cannot have active quiet periods.
 - Approved policy: pause the remaining time on included tasks and resume with that same remaining time; do not accumulate overdue time during the quiet period.
