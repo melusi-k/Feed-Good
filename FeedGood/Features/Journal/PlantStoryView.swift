@@ -28,6 +28,7 @@ struct PlantStoryView: View {
                 NavigationLink("Open growth review") { GrowthReviewView(plant: plant) }
                     .accessibilityIdentifier("story.growth")
             }
+            Section { PlantJournalPromptCard(plant: plant) }
             if items.isEmpty {
                 ContentUnavailableView("A story waiting to grow", systemImage: "leaf", description: Text("Record care in this plant's routine, or add an observation, photo or milestone."))
                     .accessibilityIdentifier("story.empty")
