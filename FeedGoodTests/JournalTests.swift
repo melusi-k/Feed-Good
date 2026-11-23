@@ -433,4 +433,92 @@ struct JournalTests {
         #expect(throws: JournalArchiveError.invalidRecord) { try duplicateEntries.validate() }
     }
 
+
+    @Test func correctedAndDeletedCareEventsRoundTripAfterTaskRemoval() throws {
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Fern")
+        sourceContext.insert(plant)
+        let dueDate = Date(timeIntervalSince1970: 1_800_000_000)
+        let task = CareTask(
+            kind: .watering,
+            intervalDays: 9,
+            dueDate: dueDate,
+            isEnabled: true,
+            reminderEnabled: true,
+            plant: plant
+        )
+        sourceContext.insert(task)
+        let correctedEvent = CareEvent(task: task, completedAt: dueDate.addingTimeInterval(-345_600), note: "Original")
+        let deletedEvent = CareEvent(task: task, completedAt: dueDate.addingTimeInterval(-432_000), note: "Remove this")
+        sourceContext.insert(correctedEvent)
+        sourceContext.insert(deletedEvent)
+        try sourceContext.save()
+
+        let referenceNow = dueDate.addingTimeInterval(-172_800)
+        let remindersBefore = CareReminderScheduler.reminders(for: [task], now: referenceNow)
+        let todayBefore = TodayCare.items(from: [task], now: referenceNow).map(\.id)
+        let correctedDate = dueDate.addingTimeInterval(-259_200)
+        try CareRecorder.update(
+            correctedEvent,
+            completedAt: correctedDate,
+            note: "Corrected history",
+            in: sourceContext
+        )
+        let remindersAfter = CareReminderScheduler.reminders(for: [task], now: referenceNow)
+        let todayAfterCorrection = TodayCare.items(from: [task], now: referenceNow).map(\.id)
+        #expect(remindersAfter == remindersBefore)
+        #expect(todayAfterCorrection == todayBefore)
+        #expect(task.dueDate == dueDate)
+        #expect(task.intervalDays == 9)
+
+        try CareRecorder.delete(deletedEvent, in: sourceContext)
+        let todayAfterDeletion = TodayCare.items(from: [task], now: referenceNow).map(\.id)
+        let remindersAfterDeletion = CareReminderScheduler.reminders(for: [task], now: referenceNow)
+        #expect(todayAfterDeletion == todayBefore)
+        #expect(remindersAfterDeletion == remindersBefore)
+
+        // Historical events remain independently editable after their routine is removed.
+        sourceContext.delete(task)
+        try sourceContext.save()
+        try CareRecorder.update(
+            correctedEvent,
+            completedAt: correctedDate,
+            note: "Final corrected history",
+            in: sourceContext
+        )
+
+        let remainingEvents = try sourceContext.fetch(FetchDescriptor<CareEvent>())
+        #expect(remainingEvents.map(\.id) == [correctedEvent.id])
+        #expect(try sourceContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
+
+        let data = try JournalArchive.export(
+            plants: [plant],
+            entries: [],
+            careTasks: sourceContext.fetch(FetchDescriptor<CareTask>()),
+            careEvents: remainingEvents
+        )
+        let decoded = try JSONDecoder().decode(JournalArchive.self, from: data)
+        #expect(decoded.careTasks?.isEmpty == true)
+        #expect(decoded.careEvents?.count == 1)
+        #expect(decoded.careEvents?.first?.id == correctedEvent.id)
+        #expect(decoded.careEvents?.first?.completedAt == correctedDate)
+        #expect(decoded.careEvents?.first?.note == "Final corrected history")
+        #expect(decoded.careEvents?.first?.taskID == task.id)
+        #expect(decoded.careEvents?.first?.taskTitle == "Watering")
+        #expect(decoded.careEvents?.first?.plantID == plant.id)
+
+        let destination = try memory()
+        let recoveryContext = ModelContext(destination)
+        #expect(try JournalArchive.recover(data, context: recoveryContext) == 0)
+        let restoredEvent = try #require(recoveryContext.fetch(FetchDescriptor<CareEvent>()).first)
+        #expect(restoredEvent.id == correctedEvent.id)
+        #expect(restoredEvent.completedAt == correctedDate)
+        #expect(restoredEvent.note == "Final corrected history")
+        #expect(restoredEvent.taskID == task.id)
+        #expect(restoredEvent.taskTitle == "Watering")
+        #expect(restoredEvent.plant?.id == plant.id)
+        #expect(try recoveryContext.fetch(FetchDescriptor<CareTask>()).isEmpty)
+    }
+
 }
