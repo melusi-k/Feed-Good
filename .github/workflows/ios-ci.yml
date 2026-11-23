@@ -73,6 +73,9 @@ jobs:
                 SKIP_TESTS=1
                 echo "Documentation-only PR: app tests are not required."
                 ;;
+              118)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
+                ;;
               117)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
