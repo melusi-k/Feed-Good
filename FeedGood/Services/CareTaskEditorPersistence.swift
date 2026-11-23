@@ -6,6 +6,39 @@ enum CareTaskEditorPersistenceError: Error, Equatable {
     case archivedPlant
     case taskUnavailable
     case taskBelongsToAnotherPlant
+
+    /// Commits the routine edit in an isolated context, then reconciles local
+    /// notifications. A thrown persistence error never reaches the scheduler.
+    static func saveAndReconcile(
+        plantID: UUID,
+        taskID: UUID?,
+        kind: CareKind,
+        customTitle: String,
+        intervalDays: Int,
+        dueDate: Date,
+        isEnabled: Bool,
+        reminderEnabled: Bool,
+        in container: ModelContainer,
+        scheduler: CareReminderScheduler,
+        now: Date = .now,
+        saveContext: (ModelContext) throws -> Void = { try $0.save() }
+    ) async throws {
+        let reminders = try save(
+            plantID: plantID,
+            taskID: taskID,
+            kind: kind,
+            customTitle: customTitle,
+            intervalDays: intervalDays,
+            dueDate: dueDate,
+            isEnabled: isEnabled,
+            reminderEnabled: reminderEnabled,
+            in: container,
+            now: now,
+            saveContext: saveContext
+        )
+        await scheduler.reconcile(reminders)
+    }
+
 }
 
 /// Saves routine edits in an isolated context so a failed editor save cannot
