@@ -176,5 +176,5 @@ This matrix is a product baseline. Rows marked by unresolved timing/edit details
 - **Implementation issue:** Not created. Create only after this PRD and its design gates are reviewed and approved.
 - **Existing foundations:** [PRD-002 — Care Routine](PRD-002-care-routine.md), [PRD-003 — Care Reminders](PRD-003-care-reminders.md), [PRD-011 — Care History Corrections](PRD-011-care-history-corrections.md), [PRD-017 — Care Routine Review](PRD-017-care-routine-review.md).
 - **Related proposals:** [#63 — Care History Corrections](https://github.com/melusi-k/Feed-Good/issues/63), [#71 — Care Routine Review](https://github.com/melusi-k/Feed-Good/issues/71), [#74 — Seasonal and Quiet Periods](https://github.com/melusi-k/Feed-Good/issues/74).
-- **Dependency direction:** PRD-022 is the proposed foundation for PRD-023 and PRD-025. It must coordinate with #71 and must not pre-empt the AND dependency of #70 and #71 for #74.
+- **Dependency direction:** PRD-022 is the proposed foundation for PRD-023 and PRD-025. It must coordinate with #71 and must coordinate with #74's remaining persistence/migration/archive gates; #70's approved lifecycle decision and #71's implemented routine/reconciliation contract are complete (with #103 still to merge as the stacked documentation prerequisite).
 - **Implementation status:** Not started. This document records product intent only.
