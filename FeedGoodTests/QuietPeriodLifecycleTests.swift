@@ -3,6 +3,8 @@ import SwiftData
 import Testing
 @testable import FeedGood
 
+private enum QuietPeriodLifecycleTestFailure: Error { case expected }
+
 @MainActor
 struct QuietPeriodLifecycleTests {
     private func memory() throws -> ModelContainer {
@@ -405,7 +407,7 @@ struct QuietPeriodLifecycleTests {
                 period,
                 at: date("2026-11-24T12:00:00Z"),
                 in: context,
-                save: { _ in throw TestFailure.expected }
+                save: { _ in throw QuietPeriodLifecycleTestFailure.expected }
             )
         }
         #expect(period.statusRaw == QuietPeriodStatus.scheduled.rawValue)
