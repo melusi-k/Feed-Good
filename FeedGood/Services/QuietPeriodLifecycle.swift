@@ -118,6 +118,10 @@ enum QuietPeriodLifecycle {
             }
             let taskIDs = Set((period.taskSnapshots ?? []).map(\.taskID))
             let tasks = (plant.careTasks ?? []).filter { taskIDs.contains($0.id) && $0.isEnabled }
+            let snapshotState = (period.taskSnapshots ?? []).map {
+                ($0, $0.membershipStatusRaw, $0.remainingCalendarDays, $0.originalDueHour,
+                 $0.originalDueMinute, $0.originalDueSecond, $0.updatedAt)
+            }
             captureSchedulingState(for: period, tasks: tasks, at: period.startAt, calendar: calendar)
             let previousStatus = period.statusRaw
             let previousActivation = period.activatedAt
@@ -125,9 +129,25 @@ enum QuietPeriodLifecycle {
             period.activatedAt = period.startAt
             do { try save(context) }
             catch {
+                for (snapshot, membership, remaining, hour, minute, second, updatedAt) in snapshotState {
+                    snapshot.membershipStatusRaw = membership
+                    snapshot.remainingCalendarDays = remaining
+                    snapshot.originalDueHour = hour
+                    snapshot.originalDueMinute = minute
+                    snapshot.originalDueSecond = second
+                    snapshot.updatedAt = updatedAt
+                }
                 period.statusRaw = previousStatus
                 period.activatedAt = previousActivation
                 throw error
+            }
+            let hasActiveMembers = (period.taskSnapshots ?? []).contains {
+                $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+            if !hasActiveMembers {
+                try end(period, at: now, in: context, calendar: calendar, save: save)
+            } else if let endAt = period.endAt, now >= endAt {
+                try end(period, at: endAt, in: context, calendar: calendar, save: save)
             }
         case .active where period.endAt.map({ now >= $0 }) == true:
             try end(period, at: period.endAt!, in: context, calendar: calendar, save: save)
