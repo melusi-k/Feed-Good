@@ -287,7 +287,7 @@ enum FeedGoodSchemaV3: VersionedSchema {
         @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV3.CareTask.plant) var careTasks: [FeedGoodSchemaV3.CareTask]? = []
         @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV3.CareEvent.plant) var careEvents: [FeedGoodSchemaV3.CareEvent]? = []
         @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV3.JournalEntry.plant) var journalEntries: [FeedGoodSchemaV3.JournalEntry]? = []
-        @Relationship(inverse: \FeedGoodSchemaV3.PlantTag.plants) var tags: [FeedGoodSchemaV3.PlantTag]? = []
+        @Relationship var tags: [FeedGoodSchemaV3.PlantTag]? = []
         var createdAt: Date
         var archivedAt: Date?
 
