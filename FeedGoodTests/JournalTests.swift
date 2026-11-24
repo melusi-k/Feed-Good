@@ -415,7 +415,7 @@ struct JournalTests {
 
     @Test func olderVersionTwoArchiveWithoutArchivedAtDefaultsToActive() throws {
         let plant = Plant(name: "Legacy fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
-        let archive = JournalArchive(
+        var archive = JournalArchive(
             plants: [
                 JournalArchive.PlantRecord(
                     id: plant.id, name: plant.name, species: "", notes: "",
