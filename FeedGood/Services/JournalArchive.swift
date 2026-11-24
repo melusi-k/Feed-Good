@@ -28,6 +28,10 @@ struct JournalArchivePreview: Equatable {
     let careTasksAlreadyPresent: Int
     let careEventsToAdd: Int
     let careEventsAlreadyPresent: Int
+    let quietPeriodsToAdd: Int = 0
+    let quietPeriodsAlreadyPresent: Int = 0
+    let quietPeriodSnapshotsToAdd: Int = 0
+    let quietPeriodSnapshotsAlreadyPresent: Int = 0
 
     var confirmationMessage: String {
         """
@@ -36,21 +40,25 @@ struct JournalArchivePreview: Equatable {
         Journal entries: \(entriesToAdd) to add, \(entriesAlreadyPresent) already present
         Care routines: \(careTasksToAdd) to add, \(careTasksAlreadyPresent) already present
         Care history: \(careEventsToAdd) to add, \(careEventsAlreadyPresent) already present
+        Quiet Periods: \(quietPeriodsToAdd) to add, \(quietPeriodsAlreadyPresent) already present
+        Quiet Period task snapshots: \(quietPeriodSnapshotsToAdd) to add, \(quietPeriodSnapshotsAlreadyPresent) already present
 
         Existing plant records are preserved. Archive timestamps are restored for new plants; existing same-ID plants keep their current state. Existing journal and care records are checked for identical content; any conflict stops recovery before changes are saved.
         """
     }
 }
 
-/// Version 1 is journal-only. Version 2 covers milestones, plant change records (PRD-018) and the complete local garden record; care routines, history and plant tags (#75) are optional extension keys. Optional record keys keep archives written before a field existed decodable.
+/// Version 1 is journal-only, version 2 adds the complete garden record and tags, and version 3 adds Quiet Period history. Optional record keys preserve decoding of older archives.
 struct JournalArchive: Codable {
-    var version = 2
+    var version = 3
     var plants: [PlantRecord]
     var entries: [EntryRecord]
     var careTasks: [CareTaskRecord]?
     var careEvents: [CareEventRecord]?
     // Optional so pre-tag archives decode with no tags.
     var tags: [TagRecord]?
+    var quietPeriods: [QuietPeriodRecord]?
+    var quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshotRecord]?
 
     struct PlantRecord: Codable {
         var id: UUID
@@ -104,6 +112,34 @@ struct JournalArchive: Codable {
         var note: String
     }
 
+    struct QuietPeriodRecord: Codable, Equatable {
+        var id: UUID
+        var plantID: UUID
+        var createdAt: Date
+        var startAt: Date
+        var endAt: Date?
+        var statusRaw: String
+        var reason: String?
+        var activatedAt: Date?
+        var endedAt: Date?
+    }
+
+    struct QuietPeriodTaskSnapshotRecord: Codable, Equatable {
+        var id: UUID
+        var quietPeriodID: UUID
+        var taskID: UUID
+        var taskTitleSnapshot: String
+        var membershipStatusRaw: String
+        var remainingCalendarDays: Int?
+        var originalDueHour: Int?
+        var originalDueMinute: Int?
+        var originalDueSecond: Int?
+        var frozenIntervalDays: Int?
+        var nextCareOverrideAt: Date?
+        var capturedAt: Date
+        var updatedAt: Date
+    }
+
     static let maxBytes = 25 * 1024 * 1024
     static let maxRecords = 1000
 
@@ -113,7 +149,9 @@ struct JournalArchive: Codable {
         entries: [JournalEntry],
         careTasks: [CareTask] = [],
         careEvents: [CareEvent] = [],
-        tags: [PlantTag] = []
+        tags: [PlantTag] = [],
+        quietPeriods: [QuietPeriod] = [],
+        quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshot] = []
     ) throws -> Data {
         let entryRecords = try entries.map { entry -> EntryRecord in
             guard let plantID = entry.plant?.id else { throw JournalArchiveError.invalidRecord }
@@ -156,12 +194,33 @@ struct JournalArchive: Codable {
             TagRecord(id: tag.id, name: tag.name, normalizedName: tag.normalizedName,
                       plantIDs: (tag.plants ?? []).map(\.id).sorted { $0.uuidString < $1.uuidString })
         }
+        let quietPeriodRecords = try quietPeriods.map { period -> QuietPeriodRecord in
+            guard let plantID = period.plant?.id else { throw JournalArchiveError.invalidRecord }
+            return QuietPeriodRecord(
+                id: period.id, plantID: plantID, createdAt: period.createdAt,
+                startAt: period.startAt, endAt: period.endAt, statusRaw: period.statusRaw,
+                reason: period.reason, activatedAt: period.activatedAt, endedAt: period.endedAt
+            )
+        }
+        let snapshotRecords = try quietPeriodTaskSnapshots.map { snapshot -> QuietPeriodTaskSnapshotRecord in
+            guard let periodID = snapshot.quietPeriod?.id else { throw JournalArchiveError.invalidRecord }
+            return QuietPeriodTaskSnapshotRecord(
+                id: snapshot.id, quietPeriodID: periodID, taskID: snapshot.taskID,
+                taskTitleSnapshot: snapshot.taskTitleSnapshot, membershipStatusRaw: snapshot.membershipStatusRaw,
+                remainingCalendarDays: snapshot.remainingCalendarDays,
+                originalDueHour: snapshot.originalDueHour, originalDueMinute: snapshot.originalDueMinute,
+                originalDueSecond: snapshot.originalDueSecond, frozenIntervalDays: snapshot.frozenIntervalDays,
+                nextCareOverrideAt: snapshot.nextCareOverrideAt, capturedAt: snapshot.capturedAt, updatedAt: snapshot.updatedAt
+            )
+        }
         let archive = JournalArchive(
             plants: plantRecords,
             entries: entryRecords,
             careTasks: taskRecords,
             careEvents: eventRecords,
-            tags: tagRecords
+            tags: tagRecords,
+            quietPeriods: quietPeriodRecords,
+            quietPeriodTaskSnapshots: snapshotRecords
         )
         try archive.validate()
         let data = try JSONEncoder().encode(archive)
@@ -170,19 +229,26 @@ struct JournalArchive: Codable {
     }
 
     func validate() throws {
-        guard version == 1 || version == 2 else { throw JournalArchiveError.unsupportedVersion }
+        guard (1...3).contains(version) else { throw JournalArchiveError.unsupportedVersion }
         guard plants.count <= Self.maxRecords,
               entries.count <= Self.maxRecords,
               (careTasks?.count ?? 0) <= Self.maxRecords,
               (careEvents?.count ?? 0) <= Self.maxRecords,
-              (tags?.count ?? 0) <= Self.maxRecords else {
+              (tags?.count ?? 0) <= Self.maxRecords,
+              (quietPeriods?.count ?? 0) <= Self.maxRecords,
+              (quietPeriodTaskSnapshots?.count ?? 0) <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
         let plantIDs = Set(plants.map(\.id))
+        let periodRecords = quietPeriods ?? []
+        let snapshotRecords = quietPeriodTaskSnapshots ?? []
+        let periodIDs = Set(periodRecords.map(\.id))
         guard plantIDs.count == plants.count,
               Set(entries.map(\.id)).count == entries.count,
               Set((careTasks ?? []).map(\.id)).count == (careTasks ?? []).count,
               Set((careEvents ?? []).map(\.id)).count == (careEvents ?? []).count,
+              periodIDs.count == periodRecords.count,
+              Set(snapshotRecords.map(\.id)).count == snapshotRecords.count,
               plants.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             throw JournalArchiveError.invalidRecord
         }
@@ -246,6 +312,42 @@ struct JournalArchive: Codable {
                 throw JournalArchiveError.invalidRecord
             }
         }
+        if version < 3, !periodRecords.isEmpty || !snapshotRecords.isEmpty {
+            throw JournalArchiveError.invalidRecord
+        }
+        let periodByID = Dictionary(uniqueKeysWithValues: periodRecords.map { ($0.id, $0) })
+        for period in periodRecords {
+            guard plantIDs.contains(period.plantID),
+                  QuietPeriodStatus(rawValue: period.statusRaw) != nil,
+                  period.endAt == nil || period.endAt! > period.startAt,
+                  period.endedAt == nil || period.activatedAt != nil else {
+                throw JournalArchiveError.invalidRecord
+            }
+        }
+        let tasksByID = Dictionary((careTasks ?? []).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for snapshot in snapshotRecords {
+            guard periodIDs.contains(snapshot.quietPeriodID),
+                  QuietPeriodMembershipStatus(rawValue: snapshot.membershipStatusRaw) != nil,
+                  !snapshot.taskTitleSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  snapshot.frozenIntervalDays == nil || snapshot.frozenIntervalDays! >= 1,
+                  snapshot.originalDueHour.map({ (0...23).contains($0) }) ?? true,
+                  snapshot.originalDueMinute.map({ (0...59).contains($0) }) ?? true,
+                  snapshot.originalDueSecond.map({ (0...59).contains($0) }) ?? true else {
+                throw JournalArchiveError.invalidRecord
+            }
+            if snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue,
+               let period = periodByID[snapshot.quietPeriodID],
+               period.statusRaw == QuietPeriodStatus.active.rawValue {
+                guard let task = tasksByID[snapshot.taskID], task.plantID == period.plantID, task.isEnabled else {
+                    throw JournalArchiveError.invalidRecord
+                }
+            }
+        }
+        for period in periodRecords where period.statusRaw == QuietPeriodStatus.active.rawValue {
+            let active = snapshotRecords.filter { $0.quietPeriodID == period.id && $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue }
+            guard !active.isEmpty else { throw JournalArchiveError.invalidRecord }
+            guard Set(active.map(\.taskID)).count == active.count else { throw JournalArchiveError.invalidRecord }
+        }
     }
 
     @MainActor
@@ -272,7 +374,11 @@ struct JournalArchive: Codable {
             careTasksToAdd: tasks.filter { !taskIDs.contains($0.id) }.count,
             careTasksAlreadyPresent: tasks.filter { taskIDs.contains($0.id) }.count,
             careEventsToAdd: events.filter { !eventIDs.contains($0.id) }.count,
-            careEventsAlreadyPresent: events.filter { eventIDs.contains($0.id) }.count
+            careEventsAlreadyPresent: events.filter { eventIDs.contains($0.id) }.count,
+            quietPeriodsToAdd: (archive.quietPeriods ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id)).contains($0.id) }.count,
+            quietPeriodsAlreadyPresent: (archive.quietPeriods ?? []).count - (archive.quietPeriods ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id)).contains($0.id) }.count,
+            quietPeriodSnapshotsToAdd: (archive.quietPeriodTaskSnapshots ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id)).contains($0.id) }.count,
+            quietPeriodSnapshotsAlreadyPresent: (archive.quietPeriodTaskSnapshots ?? []).count - (archive.quietPeriodTaskSnapshots ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id)).contains($0.id) }.count
         )
     }
 
