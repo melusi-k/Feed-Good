@@ -166,6 +166,20 @@ struct CareRemindersLifecycle: ViewModifier {
     @Query private var tasks: [CareTask]
     @Query private var plants: [Plant]
 
+    private var nextQuietPeriodTransition: Date? {
+        plants.flatMap { $0.quietPeriods ?? [] }.compactMap { period -> Date? in
+            switch period.statusRaw {
+            case QuietPeriodStatus.scheduled.rawValue:
+                return period.startAt > .now ? period.startAt : nil
+            case QuietPeriodStatus.active.rawValue:
+                guard let endAt = period.endAt, endAt > .now else { return nil }
+                return endAt
+            default:
+                return nil
+            }
+        }.min()
+    }
+
     private var revision: String {
         let taskState = tasks.sorted { $0.id.uuidString < $1.id.uuidString }.map {
             "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)"
@@ -187,6 +201,16 @@ struct CareRemindersLifecycle: ViewModifier {
             .task(id: revision) {
                 do { try QuietPeriodLifecycle.advanceAll(in: context) }
                 catch { /* Keep care reminders available; the next foreground pass retries lifecycle catch-up. */ }
+                await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
+            }
+            .task(id: nextQuietPeriodTransition) {
+                guard let transition = nextQuietPeriodTransition else { return }
+                let delay = max(0, transition.timeIntervalSinceNow)
+                do { try await Task.sleep(for: .seconds(delay)) }
+                catch { return }
+                guard !Task.isCancelled else { return }
+                do { try QuietPeriodLifecycle.advanceAll(in: context) }
+                catch { /* Foreground and next-transition passes retry lifecycle catch-up. */ }
                 await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
             }
             .onChange(of: scenePhase) { _, phase in
