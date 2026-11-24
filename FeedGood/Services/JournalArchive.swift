@@ -362,6 +362,8 @@ struct JournalArchive: Codable {
         let entryIDs = Set(try previewContext.fetch(FetchDescriptor<JournalEntry>()).map(\.id))
         let taskIDs = Set(try previewContext.fetch(FetchDescriptor<CareTask>()).map(\.id))
         let eventIDs = Set(try previewContext.fetch(FetchDescriptor<CareEvent>()).map(\.id))
+        let quietPeriodIDs = Set(try previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id))
+        let quietPeriodSnapshotIDs = Set(try previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id))
         let tasks = archive.careTasks ?? []
         let events = archive.careEvents ?? []
 
@@ -375,10 +377,10 @@ struct JournalArchive: Codable {
             careTasksAlreadyPresent: tasks.filter { taskIDs.contains($0.id) }.count,
             careEventsToAdd: events.filter { !eventIDs.contains($0.id) }.count,
             careEventsAlreadyPresent: events.filter { eventIDs.contains($0.id) }.count,
-            quietPeriodsToAdd: (archive.quietPeriods ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id)).contains($0.id) }.count,
-            quietPeriodsAlreadyPresent: (archive.quietPeriods ?? []).count - (archive.quietPeriods ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id)).contains($0.id) }.count,
-            quietPeriodSnapshotsToAdd: (archive.quietPeriodTaskSnapshots ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id)).contains($0.id) }.count,
-            quietPeriodSnapshotsAlreadyPresent: (archive.quietPeriodTaskSnapshots ?? []).count - (archive.quietPeriodTaskSnapshots ?? []).filter { !Set(try! previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id)).contains($0.id) }.count
+            quietPeriodsToAdd: (archive.quietPeriods ?? []).filter { !quietPeriodIDs.contains($0.id) }.count,
+            quietPeriodsAlreadyPresent: (archive.quietPeriods ?? []).filter { quietPeriodIDs.contains($0.id) }.count,
+            quietPeriodSnapshotsToAdd: (archive.quietPeriodTaskSnapshots ?? []).filter { !quietPeriodSnapshotIDs.contains($0.id) }.count,
+            quietPeriodSnapshotsAlreadyPresent: (archive.quietPeriodTaskSnapshots ?? []).filter { quietPeriodSnapshotIDs.contains($0.id) }.count
         )
     }
 
