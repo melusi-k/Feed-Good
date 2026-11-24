@@ -170,9 +170,7 @@ jobs:
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
               *)
-                echo "No focused test is mapped for PR #${PR_NUMBER}."
-                echo "Add that PR's test identifier to this workflow rather than silently running the full suite."
-                exit 1
+                echo "No focused test is mapped for PR #${PR_NUMBER}; running the complete FeedGood test suite."
                 ;;
             esac
           else
