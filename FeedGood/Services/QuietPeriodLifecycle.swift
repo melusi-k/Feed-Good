@@ -49,7 +49,7 @@ enum QuietPeriodLifecycle {
         }) else {
             throw QuietPeriodLifecycleError.activePeriodAlreadyExists
         }
-        let effectiveStartAt = startAt > now ? calendar.startOfDay(for: startAt) : now
+        let effectiveStartAt = max(now, calendar.startOfDay(for: startAt))
         guard endAt == nil || endAt! > effectiveStartAt else {
             throw QuietPeriodLifecycleError.invalidDateRange
         }
