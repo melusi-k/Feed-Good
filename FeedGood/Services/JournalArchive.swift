@@ -343,6 +343,10 @@ struct JournalArchive: Codable {
             }
         }
         let tasksByID = Dictionary((careTasks ?? []).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let membershipKeys = snapshotRecords.map { "\($0.quietPeriodID.uuidString)|\($0.taskID.uuidString)" }
+        guard Set(membershipKeys).count == membershipKeys.count else {
+            throw JournalArchiveError.invalidRecord
+        }
         for snapshot in snapshotRecords {
             guard periodIDs.contains(snapshot.quietPeriodID),
                   QuietPeriodMembershipStatus(rawValue: snapshot.membershipStatusRaw) != nil,
@@ -356,7 +360,11 @@ struct JournalArchive: Codable {
             if snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue,
                let period = periodByID[snapshot.quietPeriodID],
                period.statusRaw == QuietPeriodStatus.active.rawValue {
-                guard let task = tasksByID[snapshot.taskID], task.plantID == period.plantID, task.isEnabled else {
+                guard let task = tasksByID[snapshot.taskID], task.plantID == period.plantID, task.isEnabled,
+                      snapshot.remainingCalendarDays != nil,
+                      snapshot.originalDueHour != nil,
+                      snapshot.originalDueMinute != nil,
+                      snapshot.originalDueSecond != nil else {
                     throw JournalArchiveError.invalidRecord
                 }
             }
