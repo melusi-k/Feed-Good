@@ -143,7 +143,7 @@ struct QuietPeriodCareIntegrationTests {
             period,
             at: date("2026-11-26T12:00:00Z"),
             in: context,
-            calendar: Calendar(identifier: "gregorian")
+            calendar: Calendar(identifier: .gregorian)
         )
         #expect(task.dueDate == selectedNextCare)
     }
