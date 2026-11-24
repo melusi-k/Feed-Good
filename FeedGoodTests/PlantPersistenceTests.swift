@@ -176,7 +176,7 @@ struct PlantPersistenceTests {
         // Open that same store with the exact schema and migration plan used
         // by the production app. Existing plants must become active by default.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV3.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -274,7 +274,7 @@ struct PlantPersistenceTests {
         }
 
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV3.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -298,6 +298,186 @@ struct PlantPersistenceTests {
             #expect(entry.plant?.id == plantID)
             #expect(try context.fetch(FetchDescriptor<PlantTag>()).isEmpty)
         }
+    }
+
+
+    @Test func version3StoreWithTagsMigratesToVersion4WithoutLosingRecords() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let storeURL = folder.appendingPathComponent("v3-garden.store")
+
+        let plantID = UUID()
+        let taskID = UUID()
+        let eventID = UUID()
+        let journalID = UUID()
+        let tagID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1_710_000_000)
+        let dueDate = Date(timeIntervalSince1970: 1_720_000_000)
+        let completedAt = Date(timeIntervalSince1970: 1_730_000_000)
+
+        // This fixture is written with the frozen V3 graph, including the
+        // PlantTag relationship and the V3 JournalEntry change-kind field.
+        do {
+            let legacySchema = Schema(versionedSchema: FeedGoodSchemaV3.self)
+            let configuration = ModelConfiguration(schema: legacySchema, url: storeURL)
+            let container = try ModelContainer(for: legacySchema, configurations: [configuration])
+            let context = ModelContext(container)
+            let plant = FeedGoodSchemaV3.Plant(
+                id: plantID,
+                name: "V3 Monstera",
+                species: "Monstera deliciosa",
+                notes: "Written before Quiet Period support",
+                growingEnvironmentRaw: "balcony",
+                lightConditionRaw: "indirect",
+                photoData: Data([0x10, 0x20]),
+                createdAt: createdAt,
+                archivedAt: nil
+            )
+            let task = FeedGoodSchemaV3.CareTask(
+                id: taskID,
+                kindRaw: "watering",
+                intervalDays: 11,
+                dueDate: dueDate,
+                isEnabled: true,
+                reminderEnabled: true,
+                plant: plant
+            )
+            let event = FeedGoodSchemaV3.CareEvent(
+                id: eventID,
+                taskID: taskID,
+                taskTitle: "Watering",
+                completedAt: completedAt,
+                note: "V3 care history",
+                plant: plant
+            )
+            let journal = FeedGoodSchemaV3.JournalEntry(
+                id: journalID,
+                date: completedAt,
+                note: "V3 journal",
+                photoData: Data([0x30, 0x40]),
+                milestoneRaw: "newLeaf",
+                changeKindRaw: "repotted",
+                plant: plant
+            )
+            let tag = FeedGoodSchemaV3.PlantTag(
+                id: tagID,
+                name: "Balcony",
+                normalizedName: "balcony"
+            )
+            plant.tags = [tag]
+            context.insert(plant)
+            context.insert(task)
+            context.insert(event)
+            context.insert(journal)
+            context.insert(tag)
+            try context.save()
+        }
+
+        // Open the same on-disk V3 store with the production V4 schema and
+        // complete V1 -> V2 -> V3 -> V4 migration plan.
+        do {
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+            let configuration = ModelConfiguration(schema: currentSchema, url: storeURL)
+            let container = try ModelContainer(
+                for: currentSchema,
+                migrationPlan: FeedGoodMigrationPlan.self,
+                configurations: [configuration]
+            )
+            let context = ModelContext(container)
+            let plants = try context.fetch(FetchDescriptor<Plant>())
+            let plant = try #require(plants.first { $0.id == plantID })
+
+            #expect(plants.count == 1)
+            #expect(plant.name == "V3 Monstera")
+            #expect(plant.species == "Monstera deliciosa")
+            #expect(plant.notes == "Written before Quiet Period support")
+            #expect(plant.createdAt == createdAt)
+            #expect(plant.archivedAt == nil)
+            #expect(plant.photoData == Data([0x10, 0x20]))
+
+            let tasks = try context.fetch(FetchDescriptor<CareTask>())
+            #expect(tasks.count == 1)
+            #expect(tasks.first?.id == taskID)
+            #expect(tasks.first?.intervalDays == 11)
+            #expect(tasks.first?.dueDate == dueDate)
+            #expect(tasks.first?.plant?.id == plantID)
+
+            let events = try context.fetch(FetchDescriptor<CareEvent>())
+            #expect(events.count == 1)
+            #expect(events.first?.id == eventID)
+            #expect(events.first?.note == "V3 care history")
+            #expect(events.first?.plant?.id == plantID)
+
+            let entries = try context.fetch(FetchDescriptor<JournalEntry>())
+            #expect(entries.count == 1)
+            #expect(entries.first?.id == journalID)
+            #expect(entries.first?.note == "V3 journal")
+            #expect(entries.first?.photoData == Data([0x30, 0x40]))
+            #expect(entries.first?.milestoneRaw == "newLeaf")
+            #expect(entries.first?.changeKindRaw == "repotted")
+            #expect(entries.first?.plant?.id == plantID)
+
+            #expect(plant.tags?.map(\.id) == [tagID])
+            #expect(plant.tags?.map(\.normalizedName) == ["balcony"])
+            #expect(plant.quietPeriods?.isEmpty != false)
+            #expect(try context.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
+            #expect(try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
+        }
+    }
+
+
+    @Test func shippedTopLevelV3StoreMigratesToVersion4WithoutLosingRecords() throws {
+        // CI creates this store by compiling the exact pre-PR #121 source and
+        // writing it with its original top-level V3 SwiftData model types.
+        let storeURL = URL(fileURLWithPath: "/tmp/feedgood-v3-fixture/garden.store")
+        guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
+
+        let schema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+        let configuration = ModelConfiguration(schema: schema, url: storeURL)
+        let container = try ModelContainer(
+            for: schema,
+            migrationPlan: FeedGoodMigrationPlan.self,
+            configurations: [configuration]
+        )
+        let context = ModelContext(container)
+
+        let plants = try context.fetch(FetchDescriptor<Plant>())
+        let plant = try #require(plants.first { $0.name == "Historical V3 Monstera" })
+        #expect(plants.count == 1)
+        #expect(plant.species == "Monstera deliciosa")
+        #expect(plant.notes == "Created by the pre-PR #121 model graph")
+        #expect(plant.growingEnvironment == .balcony)
+        #expect(plant.lightCondition == .indirect)
+        #expect(plant.photoData == Data([0x11, 0x22, 0x33]))
+        #expect(plant.createdAt == Date(timeIntervalSince1970: 1_700_000_000))
+        #expect(plant.archivedAt == nil)
+        #expect(plant.tags?.map(\.name) == ["V3 tag"])
+
+        let tasks = try context.fetch(FetchDescriptor<CareTask>())
+        #expect(tasks.count == 1)
+        #expect(tasks.first?.kind == .watering)
+        #expect(tasks.first?.intervalDays == 9)
+        #expect(tasks.first?.dueDate == Date(timeIntervalSince1970: 1_710_000_000))
+        #expect(tasks.first?.plant?.id == plant.id)
+
+        let events = try context.fetch(FetchDescriptor<CareEvent>())
+        #expect(events.count == 1)
+        #expect(events.first?.taskTitle == "Watering")
+        #expect(events.first?.note == "Historical care event")
+        #expect(events.first?.completedAt == Date(timeIntervalSince1970: 1_705_000_000))
+        #expect(events.first?.plant?.id == plant.id)
+
+        let entries = try context.fetch(FetchDescriptor<JournalEntry>())
+        #expect(entries.count == 1)
+        #expect(entries.first?.note == "Historical journal entry")
+        #expect(entries.first?.photoData == Data([0x44, 0x55]))
+        #expect(entries.first?.milestoneRaw == "newLeaf")
+        #expect(entries.first?.changeKindRaw == "repotted")
+        #expect(entries.first?.plant?.id == plant.id)
+
+        #expect(try context.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
     }
 
 }
