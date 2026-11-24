@@ -215,6 +215,27 @@ struct QuietPeriodLifecycleTests {
         #expect(period.endedAt == nil)
     }
 
+    @Test func scheduledStartNormalizesToStartOfSelectedLocalDate() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        context.insert(task)
+        try context.save()
+        let localCalendar = calendar("Africa/Johannesburg")
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: date("2026-12-01T14:30:00+02:00"),
+            endAt: date("2026-12-03T17:15:00+02:00"),
+            now: date("2026-11-24T12:00:00+02:00"),
+            in: context,
+            calendar: localCalendar
+        )
+        #expect(period.startAt == date("2026-11-30T22:00:00Z"))
+        #expect(period.endAt == date("2026-12-03T15:15:00Z"))
+    }
+
     @Test func scheduledCreationRejectsDisabledTasks() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
