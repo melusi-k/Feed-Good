@@ -32,6 +32,10 @@ final class QuietPeriodUITests: XCTestCase {
         XCTAssertTrue(quietPeriodLink.waitForExistence(timeout: 5))
         quietPeriodLink.tap()
 
+        let impactPreview = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "remaining time on each selected task is frozen")
+        ).firstMatch
+        XCTAssertTrue(impactPreview.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["quietPeriod.confirm"].waitForExistence(timeout: 5))
         app.buttons["quietPeriod.confirm"].tap()
 
