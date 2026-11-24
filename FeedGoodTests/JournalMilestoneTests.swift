@@ -77,7 +77,7 @@ struct JournalMilestoneTests {
         #expect(try recovery.fetch(FetchDescriptor<Plant>()).isEmpty)
         archive.entries[0].milestoneRaw = "newLeaf"; archive.version = 1
         #expect(throws: (any Error).self) { try archive.validate() }
-        archive.version = 3
+        archive.version = 4
         #expect(throws: (any Error).self) { try archive.validate() }
     }
 
