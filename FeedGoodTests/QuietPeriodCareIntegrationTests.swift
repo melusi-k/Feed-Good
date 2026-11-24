@@ -90,6 +90,73 @@ struct QuietPeriodCareIntegrationTests {
         #expect(snapshot.nextCareOverrideAt == selectedNextCare)
     }
 
+    @Test func careEditorPersistsIntervalAndExactNextCareOverridesInSnapshot() throws {
+        let container = try memory()
+        let context = container.mainContext
+        let plant = Plant(name: "Calathea")
+        context.insert(plant)
+        let due = date("2026-12-01T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, reminderEnabled: true, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(
+            startAt: date("2026-11-24T00:00:00Z"),
+            statusRaw: QuietPeriodStatus.active.rawValue,
+            activatedAt: date("2026-11-24T00:00:00Z"),
+            plant: plant
+        )
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 7,
+            originalDueHour: 9,
+            originalDueMinute: 0,
+            originalDueSecond: 0,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        try context.save()
+
+        _ = try CareTaskEditorPersistence.save(
+            plantID: plant.id,
+            taskID: task.id,
+            kind: .watering,
+            customTitle: "",
+            intervalDays: 21,
+            dueDate: due,
+            isEnabled: true,
+            reminderEnabled: true,
+            in: container
+        )
+
+        let verify = ModelContext(container)
+        let taskID = task.id
+        let taskDescriptor = FetchDescriptor<CareTask>(predicate: #Predicate { $0.id == taskID })
+        let snapshotDescriptor = FetchDescriptor<QuietPeriodTaskSnapshot>(predicate: #Predicate { $0.taskID == taskID })
+        let persistedTask = try #require(verify.fetch(taskDescriptor).first)
+        let persistedSnapshot = try #require(verify.fetch(snapshotDescriptor).first)
+        #expect(persistedTask.intervalDays == 21)
+        #expect(persistedSnapshot.frozenIntervalDays == 21)
+        #expect(persistedSnapshot.nextCareOverrideAt == nil)
+
+        let selectedDate = date("2026-12-08T16:45:00Z")
+        _ = try CareTaskEditorPersistence.save(
+            plantID: plant.id,
+            taskID: task.id,
+            kind: .watering,
+            customTitle: "",
+            intervalDays: 21,
+            dueDate: selectedDate,
+            isEnabled: true,
+            reminderEnabled: true,
+            in: container
+        )
+        let finalVerify = ModelContext(container)
+        let finalSnapshot = try #require(finalVerify.fetch(snapshotDescriptor).first)
+        #expect(finalSnapshot.frozenIntervalDays == 21)
+        #expect(finalSnapshot.nextCareOverrideAt == selectedDate)
+    }
+
     @Test func disablingTaskRemovesActiveMembershipAndReenablingDoesNotReaddIt() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Pothos")
