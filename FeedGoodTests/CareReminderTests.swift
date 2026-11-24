@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import FeedGood
 
@@ -73,7 +74,7 @@ struct CareReminderTests {
     @Test func onlyFutureEnabledOptInTasksWithAPlantAreScheduled() {
         let plant = Plant(name: "Fern")
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let task = CareTask(kind: .watering, intervalDays: 3, dueDate: now.addingTimeInterval(3600), plant: plant)
+        let task = CareTask(kind: .watering, intervalDays: 3, dueDate: now.addingTimeInterval(3600), reminderEnabled: true, plant: plant)
         #expect(CareReminderScheduler.reminders(for: [task], now: now).isEmpty)
         task.reminderEnabled = true
         #expect(CareReminderScheduler.reminders(for: [task], now: now).count == 1)
@@ -118,10 +119,10 @@ struct CareReminderTests {
             now: now,
             in: context
         )
-        #expect(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).map(\.taskID) == [unaffected.id])
+        #expect(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).map(\\.taskID) == [unaffected.id])
 
         try QuietPeriodLifecycle.end(period, at: now.addingTimeInterval(2 * 86_400), in: context)
-        #expect(Set(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).compactMap(\.taskID)) == Set([selected.id, unaffected.id]))
+        #expect(Set(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).compactMap(\\.taskID)) == Set([selected.id, unaffected.id]))
     }
 
     @Test func capacityPreservesUnrelatedRequestsAndConcurrentLatestCancelWins() async {
