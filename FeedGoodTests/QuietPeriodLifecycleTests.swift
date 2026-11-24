@@ -484,6 +484,47 @@ struct QuietPeriodLifecycleTests {
         #expect(task.dueDate == due)
     }
 
+    @Test func failedEditRestoresScheduledPeriodAndPauseSnapshot() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let now = date("2026-11-24T12:00:00Z")
+        let due = date("2026-11-28T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        try context.save()
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: date("2026-12-01T00:00:00Z"),
+            endAt: nil,
+            now: now,
+            in: context,
+            calendar: calendar("UTC")
+        )
+
+        #expect(throws: QuietPeriodLifecycleTestFailure.self) {
+            try QuietPeriodLifecycle.updateSchedule(
+                period,
+                startAt: now,
+                endAt: nil,
+                reason: "Must roll back",
+                now: now,
+                in: context,
+                calendar: calendar("UTC"),
+                save: { _ in throw QuietPeriodLifecycleTestFailure.expected }
+            )
+        }
+
+        #expect(period.statusRaw == QuietPeriodStatus.scheduled.rawValue)
+        #expect(period.startAt == date("2026-12-01T00:00:00Z"))
+        #expect(period.reason == nil)
+        #expect(period.activatedAt == nil)
+        #expect(period.endedAt == nil)
+        #expect(period.taskSnapshots?.first?.remainingCalendarDays == nil)
+        #expect(task.dueDate == due)
+    }
+
     @Test func userCancellationOfScheduledPeriodPreservesTaskScheduleAndHistory() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
