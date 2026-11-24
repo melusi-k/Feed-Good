@@ -58,10 +58,10 @@ enum QuietPeriodTaskIntegration {
         snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
         snapshot.updatedAt = date
         guard let period = snapshot.quietPeriod else { return }
-        let descriptor = FetchDescriptor<QuietPeriodTaskSnapshot>(
-            predicate: #Predicate { $0.quietPeriod?.id == period.id && $0.membershipStatusRaw == "active" }
-        )
-        let remaining = try context.fetch(descriptor)
+        let remaining = try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).filter {
+            $0.quietPeriod?.id == period.id &&
+            $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+        }
         if remaining.isEmpty {
             period.statusRaw = QuietPeriodStatus.ended.rawValue
             period.endedAt = date
@@ -75,10 +75,11 @@ enum QuietPeriodTaskIntegration {
     ) throws {
         guard let period = snapshot.quietPeriod else { return }
         let periodID = period.id
-        let descriptor = FetchDescriptor<QuietPeriodTaskSnapshot>(
-            predicate: #Predicate { $0.quietPeriod?.id == periodID && $0.membershipStatusRaw == "active" }
-        )
-        if try context.fetch(descriptor).isEmpty {
+        let remaining = try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).filter {
+            $0.quietPeriod?.id == periodID &&
+            $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+        }
+        if remaining.isEmpty {
             period.statusRaw = QuietPeriodStatus.ended.rawValue
             period.endedAt = date
         }
