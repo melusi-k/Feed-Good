@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build-and-test:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -145,6 +145,9 @@ jobs:
               113)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema")
                 TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantStoryUITests/testCombinedStoryShowsCareAndObservationAndReflectsEdits")
+                ;;
+              126)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
               *)
                 echo "No focused test is mapped for PR #${PR_NUMBER}."
