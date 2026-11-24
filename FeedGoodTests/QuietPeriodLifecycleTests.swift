@@ -371,6 +371,48 @@ struct QuietPeriodLifecycleTests {
         #expect(task.dueDate == date("2026-11-01T05:30:00Z"))
     }
 
+    @Test func userCancellationOfScheduledPeriodPreservesTaskScheduleAndHistory() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let dueDate = date("2026-12-10T08:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: dueDate, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(startAt: date("2026-12-01T00:00:00Z"), plant: plant)
+        context.insert(period)
+        try context.save()
+
+        let cancelledAt = date("2026-11-24T12:00:00Z")
+        try QuietPeriodLifecycle.cancelScheduled(period, at: cancelledAt, in: context)
+
+        #expect(period.statusRaw == QuietPeriodStatus.cancelled.rawValue)
+        #expect(period.endedAt == cancelledAt)
+        #expect(task.dueDate == dueDate)
+        #expect(plant.quietPeriods?.contains(where: { $0.id == period.id }) == true)
+    }
+
+    @Test func failedScheduledCancellationRestoresPeriodState() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let originalEnd = date("2026-12-02T00:00:00Z")
+        let period = QuietPeriod(startAt: date("2026-12-01T00:00:00Z"), endAt: originalEnd, plant: plant)
+        context.insert(period)
+        try context.save()
+
+        #expect(throws: (any Error).self) {
+            try QuietPeriodLifecycle.cancelScheduled(
+                period,
+                at: date("2026-11-24T12:00:00Z"),
+                in: context,
+                save: { _ in throw TestFailure.expected }
+            )
+        }
+        #expect(period.statusRaw == QuietPeriodStatus.scheduled.rawValue)
+        #expect(period.endedAt == nil)
+        #expect(period.endAt == originalEnd)
+    }
+
     @Test func archivingCancelsScheduledPeriodAndRetainsHistory() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
