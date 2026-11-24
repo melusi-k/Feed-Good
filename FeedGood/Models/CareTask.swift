@@ -108,9 +108,14 @@ enum CareRecorder {
         let previousFrozenInterval = snapshot?.frozenIntervalDays
         let previousOverride = snapshot?.nextCareOverrideAt
         let previousSnapshotUpdate = snapshot?.updatedAt
+        let isPaused = snapshot != nil
+        if let snapshot {
+            snapshot.frozenIntervalDays = max(1, task.intervalDays)
+            snapshot.nextCareOverrideAt = nil
+            snapshot.updatedAt = date
+        }
         let event = CareEvent(task: task, completedAt: date, note: note)
         context.insert(event)
-        let isPaused = try QuietPeriodTaskIntegration.applyCompletion(to: task, at: date, in: context)
         if !isPaused {
             task.dueDate = CareSchedule.nextDate(after: date, intervalDays: task.intervalDays, calendar: calendar)
         }
