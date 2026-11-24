@@ -90,6 +90,64 @@ struct QuietPeriodCareIntegrationTests {
         #expect(snapshot.nextCareOverrideAt == selectedNextCare)
     }
 
+    @Test func explicitNextCareOverrideSurvivesLaterIntervalEdit() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Aloe")
+        context.insert(plant)
+        let originalDue = date("2026-12-01T09:00:00Z")
+        let selectedNextCare = date("2026-12-08T16:45:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(
+            startAt: date("2026-11-24T00:00:00Z"),
+            statusRaw: QuietPeriodStatus.active.rawValue,
+            activatedAt: date("2026-11-24T00:00:00Z"),
+            plant: plant
+        )
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 7,
+            originalDueHour: 9,
+            originalDueMinute: 0,
+            originalDueSecond: 0,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        try context.save()
+
+        task.dueDate = selectedNextCare
+        try QuietPeriodTaskIntegration.applyEditorChanges(
+            to: task,
+            previousIntervalDays: 7,
+            previousDueDate: originalDue,
+            previousEnabled: true,
+            at: date("2026-11-25T10:00:00Z"),
+            in: context
+        )
+        task.intervalDays = 21
+        try QuietPeriodTaskIntegration.applyEditorChanges(
+            to: task,
+            previousIntervalDays: 7,
+            previousDueDate: selectedNextCare,
+            previousEnabled: true,
+            at: date("2026-11-25T10:01:00Z"),
+            in: context
+        )
+
+        #expect(snapshot.frozenIntervalDays == 21)
+        #expect(snapshot.nextCareOverrideAt == selectedNextCare)
+
+        try QuietPeriodLifecycle.end(
+            period,
+            at: date("2026-11-26T12:00:00Z"),
+            in: context,
+            calendar: Calendar(identifier: "gregorian")
+        )
+        #expect(task.dueDate == selectedNextCare)
+    }
+
     @Test func careEditorPersistsIntervalAndExactNextCareOverridesInSnapshot() throws {
         let container = try memory()
         let context = container.mainContext
