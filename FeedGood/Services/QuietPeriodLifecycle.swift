@@ -242,6 +242,28 @@ enum QuietPeriodLifecycle {
         }
     }
 
+    /// Cancels a future period without changing any task schedule.
+    static func cancelScheduled(
+        _ period: QuietPeriod,
+        at date: Date = .now,
+        in context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard period.statusRaw == QuietPeriodStatus.scheduled.rawValue else {
+            throw QuietPeriodLifecycleError.periodAlreadyFinished
+        }
+        let previousStatus = period.statusRaw
+        let previousEndedAt = period.endedAt
+        period.statusRaw = QuietPeriodStatus.cancelled.rawValue
+        period.endedAt = date
+        do { try save(context) }
+        catch {
+            period.statusRaw = previousStatus
+            period.endedAt = previousEndedAt
+            throw error
+        }
+    }
+
     /// Cancels a scheduled period or ends an active one when its plant is
     /// archived. History is retained and restore never reactivates it.
     static func endForArchive(
