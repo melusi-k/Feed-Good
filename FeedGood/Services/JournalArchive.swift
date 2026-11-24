@@ -450,7 +450,7 @@ struct JournalArchive: Codable {
         // A valid archive must also remain valid against the destination store.
         // Existing plants are intentionally preserved, so an archived local plant
         // cannot receive an imported open period even if the archive's copy is active.
-        let archivedPlantIDs = Set(existingPlants.filter { $0.archivedAt != nil }.map(\\.id))
+        let archivedPlantIDs = Set(existingPlants.filter { $0.archivedAt != nil }.map(\.id))
         let existingOpenPeriods = existingQuietPeriods.filter {
             $0.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
             $0.statusRaw == QuietPeriodStatus.active.rawValue
