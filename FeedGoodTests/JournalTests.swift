@@ -5,7 +5,7 @@ import UIKit
 
 @MainActor
 struct JournalTests {
-    private var schema: Schema { Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self]) }
+    private var schema: Schema { Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self]) }
     private func memory() throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
