@@ -238,6 +238,46 @@ struct QuietPeriodLifecycleTests {
         #expect(period.endAt == date("2026-12-03T15:15:00Z"))
     }
 
+    @Test func sameDayScheduledStartActivatesNowAndRejectsAnEndTimeAlreadyPassed() throws {
+        let context = ModelContext(try memory())
+        let localCalendar = calendar("Africa/Johannesburg")
+        let now = date("2026-11-24T12:00:00+02:00")
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: date("2026-11-24T14:30:00+02:00"),
+            endAt: date("2026-11-24T16:00:00+02:00"),
+            now: now,
+            in: context,
+            calendar: localCalendar
+        )
+        #expect(period.statusRaw == QuietPeriodStatus.active.rawValue)
+        #expect(period.startAt == now)
+
+        let otherPlant = Plant(name: "Aloe")
+        context.insert(otherPlant)
+        let otherTask = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: otherPlant)
+        context.insert(otherTask)
+        try context.save()
+        #expect(throws: QuietPeriodLifecycleError.invalidDateRange) {
+            try QuietPeriodLifecycle.create(
+                for: otherPlant,
+                selectedTaskIDs: [otherTask.id],
+                startAt: date("2026-11-24T14:30:00+02:00"),
+                endAt: date("2026-11-24T11:00:00+02:00"),
+                now: now,
+                in: context,
+                calendar: localCalendar
+            )
+        }
+    }
+
     @Test func scheduledCreationRejectsDisabledTasks() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
