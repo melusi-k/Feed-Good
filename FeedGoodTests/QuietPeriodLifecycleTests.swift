@@ -3,6 +3,8 @@ import SwiftData
 import Testing
 @testable import FeedGood
 
+private enum QuietPeriodLifecycleTestFailure: Error { case expected }
+
 @MainActor
 struct QuietPeriodLifecycleTests {
     private func memory() throws -> ModelContainer {
@@ -369,6 +371,200 @@ struct QuietPeriodLifecycleTests {
         )
 
         #expect(task.dueDate == date("2026-11-01T05:30:00Z"))
+    }
+
+    @Test func scheduledPeriodCanBeEditedWithoutChangingTaskSchedule() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let due = date("2026-12-12T09:30:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: date("2026-12-01T00:00:00Z"),
+            endAt: nil,
+            now: date("2026-11-24T12:00:00Z"),
+            in: context,
+            calendar: calendar("UTC")
+        )
+        let newStart = date("2026-12-03T00:00:00Z")
+        let newEnd = date("2026-12-08T16:45:00Z")
+        try QuietPeriodLifecycle.updateSchedule(
+            period,
+            startAt: newStart,
+            endAt: newEnd,
+            reason: "Winter break",
+            now: date("2026-11-24T12:00:00Z"),
+            in: context,
+            calendar: calendar("UTC")
+        )
+
+        #expect(period.statusRaw == QuietPeriodStatus.scheduled.rawValue)
+        #expect(period.startAt == newStart)
+        #expect(period.endAt == newEnd)
+        #expect(period.reason == "Winter break")
+        #expect(period.taskSnapshots?.first?.remainingCalendarDays == nil)
+        #expect(task.dueDate == due)
+    }
+
+    @Test func movingScheduledPeriodToTodayActivatesAndCapturesPauseClock() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let now = date("2026-11-24T12:00:00Z")
+        let due = date("2026-11-27T09:15:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: date("2026-12-01T00:00:00Z"),
+            endAt: nil,
+            now: now,
+            in: context,
+            calendar: calendar("UTC")
+        )
+        try QuietPeriodLifecycle.updateSchedule(
+            period,
+            startAt: now,
+            endAt: nil,
+            reason: "Starting now",
+            now: now,
+            in: context,
+            calendar: calendar("UTC")
+        )
+
+        #expect(period.statusRaw == QuietPeriodStatus.active.rawValue)
+        #expect(period.activatedAt == now)
+        #expect(period.taskSnapshots?.first?.remainingCalendarDays == 3)
+        #expect(task.dueDate == due)
+    }
+
+    @Test func activePeriodCanChangeEndAndReasonWithoutChangingFrozenTaskSchedule() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let now = date("2026-11-24T12:00:00Z")
+        let due = date("2026-11-30T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: now,
+            endAt: nil,
+            reason: "Original label",
+            now: now,
+            in: context,
+            calendar: calendar("UTC")
+        )
+        let newEnd = date("2026-12-02T18:30:00Z")
+        try QuietPeriodLifecycle.updateSchedule(
+            period,
+            endAt: newEnd,
+            reason: "Extended break",
+            now: now,
+            in: context,
+            calendar: calendar("UTC")
+        )
+
+        #expect(period.statusRaw == QuietPeriodStatus.active.rawValue)
+        #expect(period.startAt == now)
+        #expect(period.endAt == newEnd)
+        #expect(period.reason == "Extended break")
+        #expect(period.taskSnapshots?.first?.remainingCalendarDays == 6)
+        #expect(task.dueDate == due)
+    }
+
+    @Test func failedEditRestoresScheduledPeriodAndPauseSnapshot() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let now = date("2026-11-24T12:00:00Z")
+        let due = date("2026-11-28T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        try context.save()
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: date("2026-12-01T00:00:00Z"),
+            endAt: nil,
+            now: now,
+            in: context,
+            calendar: calendar("UTC")
+        )
+
+        #expect(throws: QuietPeriodLifecycleTestFailure.self) {
+            try QuietPeriodLifecycle.updateSchedule(
+                period,
+                startAt: now,
+                endAt: nil,
+                reason: "Must roll back",
+                now: now,
+                in: context,
+                calendar: calendar("UTC"),
+                save: { _ in throw QuietPeriodLifecycleTestFailure.expected }
+            )
+        }
+
+        #expect(period.statusRaw == QuietPeriodStatus.scheduled.rawValue)
+        #expect(period.startAt == date("2026-12-01T00:00:00Z"))
+        #expect(period.reason == nil)
+        #expect(period.activatedAt == nil)
+        #expect(period.endedAt == nil)
+        #expect(period.taskSnapshots?.first?.remainingCalendarDays == nil)
+        #expect(task.dueDate == due)
+    }
+
+    @Test func userCancellationOfScheduledPeriodPreservesTaskScheduleAndHistory() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let dueDate = date("2026-12-10T08:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: dueDate, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(startAt: date("2026-12-01T00:00:00Z"), plant: plant)
+        context.insert(period)
+        try context.save()
+
+        let cancelledAt = date("2026-11-24T12:00:00Z")
+        try QuietPeriodLifecycle.cancelScheduled(period, at: cancelledAt, in: context)
+
+        #expect(period.statusRaw == QuietPeriodStatus.cancelled.rawValue)
+        #expect(period.endedAt == cancelledAt)
+        #expect(task.dueDate == dueDate)
+        #expect(plant.quietPeriods?.contains(where: { $0.id == period.id }) == true)
+    }
+
+    @Test func failedScheduledCancellationRestoresPeriodState() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let originalEnd = date("2026-12-02T00:00:00Z")
+        let period = QuietPeriod(startAt: date("2026-12-01T00:00:00Z"), endAt: originalEnd, plant: plant)
+        context.insert(period)
+        try context.save()
+
+        #expect(throws: (any Error).self) {
+            try QuietPeriodLifecycle.cancelScheduled(
+                period,
+                at: date("2026-11-24T12:00:00Z"),
+                in: context,
+                save: { _ in throw QuietPeriodLifecycleTestFailure.expected }
+            )
+        }
+        #expect(period.statusRaw == QuietPeriodStatus.scheduled.rawValue)
+        #expect(period.endedAt == nil)
+        #expect(period.endAt == originalEnd)
     }
 
     @Test func archivingCancelsScheduledPeriodAndRetainsHistory() throws {

@@ -75,6 +75,17 @@ struct PlantDetailView: View {
                         Label("Care routine and history", systemImage: "drop")
                     }
                     .accessibilityIdentifier("plantDetail.care")
+
+                    NavigationLink { QuietPeriodView(plant: plant) } label: {
+                        Label(
+                            (plant.quietPeriods ?? []).contains {
+                                $0.statusRaw == QuietPeriodStatus.active.rawValue ||
+                                $0.statusRaw == QuietPeriodStatus.scheduled.rawValue
+                            } ? "Manage Quiet Period" : "Quiet Period",
+                            systemImage: "pause.circle"
+                        )
+                    }
+                    .accessibilityIdentifier("plantDetail.quietPeriod")
                 }
 
                 NavigationLink { JournalView(plant: plant) } label: {

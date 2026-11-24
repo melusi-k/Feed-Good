@@ -14,7 +14,7 @@ struct TodayCareTests {
     private func date(_ iso: String) -> Date { ISO8601DateFormatter().date(from: iso)! }
 
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([Plant.self, CareTask.self, CareEvent.self])
+        let schema = Schema([Plant.self, CareTask.self, CareEvent.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self])
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true))
         return ModelContext(container)
     }
@@ -42,6 +42,32 @@ struct TodayCareTests {
         let items = TodayCare.items(from: tasks, now: now, calendar: calendar)
         #expect(items.map(\.task.title) == ["overdue", "today-late", "soon", "edge"])
         #expect(items.map(\.state) == [.overdue, .due, .upcoming, .upcoming])
+    }
+
+    @Test func activeQuietPeriodHidesOnlyItsSelectedTasksFromToday() throws {
+        let context = try makeContext()
+        let now = date("2026-11-21T10:00:00+02:00")
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let selected = CareTask(kind: .watering, intervalDays: 7, dueDate: date("2026-11-20T09:00:00+02:00"), plant: plant)
+        let unaffected = CareTask(kind: .feeding, intervalDays: 14, dueDate: date("2026-11-20T09:00:00+02:00"), plant: plant)
+        context.insert(selected)
+        context.insert(unaffected)
+        try context.save()
+
+        _ = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [selected.id],
+            startAt: now,
+            endAt: nil,
+            now: now,
+            in: context,
+            calendar: calendar("Africa/Johannesburg")
+        )
+
+        #expect(TodayCare.items(from: [selected, unaffected], now: now, calendar: calendar("Africa/Johannesburg")).map(\.task.id) == [unaffected.id])
+        #expect(selected.isEnabled == true)
+        #expect(selected.dueDate == date("2026-11-20T09:00:00+02:00"))
     }
 
     @Test func sameTaskIsDueOrOverdueDependingOnTimeZone() throws {

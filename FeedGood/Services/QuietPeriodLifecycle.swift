@@ -242,6 +242,110 @@ enum QuietPeriodLifecycle {
         }
     }
 
+    /// Updates the user-controlled schedule and label without changing the
+    /// captured task set. A scheduled period moved to today activates immediately.
+    /// Active periods retain their original start and frozen task snapshots.
+    static func updateSchedule(
+        _ period: QuietPeriod,
+        startAt: Date? = nil,
+        endAt: Date?,
+        reason: String?,
+        now: Date = .now,
+        in context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard period.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+                period.statusRaw == QuietPeriodStatus.active.rawValue else {
+            throw QuietPeriodLifecycleError.periodUnavailable
+        }
+
+        let wasScheduled = period.statusRaw == QuietPeriodStatus.scheduled.rawValue
+        let effectiveStart = wasScheduled
+            ? max(now, calendar.startOfDay(for: startAt ?? period.startAt))
+            : period.startAt
+        if let endAt {
+            let minimumEnd = wasScheduled ? effectiveStart : now
+            guard endAt > minimumEnd else {
+                throw QuietPeriodLifecycleError.invalidDateRange
+            }
+        }
+
+        let previousStart = period.startAt
+        let previousEnd = period.endAt
+        let previousReason = period.reason
+        let previousStatus = period.statusRaw
+        let previousActivation = period.activatedAt
+        let previousEndedAt = period.endedAt
+        let snapshotState = (period.taskSnapshots ?? []).map {
+            ($0, $0.membershipStatusRaw, $0.remainingCalendarDays, $0.originalDueHour,
+             $0.originalDueMinute, $0.originalDueSecond, $0.updatedAt)
+        }
+
+        period.startAt = effectiveStart
+        period.endAt = endAt
+        period.reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+
+        if wasScheduled && effectiveStart <= now {
+            let selectedIDs = Set((period.taskSnapshots ?? []).map(\.taskID))
+            let selectedTasks = (period.plant?.careTasks ?? []).filter {
+                selectedIDs.contains($0.id) && $0.isEnabled
+            }
+            captureSchedulingState(for: period, tasks: selectedTasks, at: now, calendar: calendar)
+            period.statusRaw = QuietPeriodStatus.active.rawValue
+            period.activatedAt = now
+            let hasActiveMembers = (period.taskSnapshots ?? []).contains {
+                $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+            if !hasActiveMembers {
+                period.statusRaw = QuietPeriodStatus.ended.rawValue
+                period.endedAt = now
+            }
+        }
+
+        do {
+            try save(context)
+        } catch {
+            period.startAt = previousStart
+            period.endAt = previousEnd
+            period.reason = previousReason
+            period.statusRaw = previousStatus
+            period.activatedAt = previousActivation
+            period.endedAt = previousEndedAt
+            for (snapshot, membership, remaining, hour, minute, second, updatedAt) in snapshotState {
+                snapshot.membershipStatusRaw = membership
+                snapshot.remainingCalendarDays = remaining
+                snapshot.originalDueHour = hour
+                snapshot.originalDueMinute = minute
+                snapshot.originalDueSecond = second
+                snapshot.updatedAt = updatedAt
+            }
+            throw error
+        }
+    }
+
+    /// Cancels a future period without changing any task schedule.
+    static func cancelScheduled(
+        _ period: QuietPeriod,
+        at date: Date = .now,
+        in context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard period.statusRaw == QuietPeriodStatus.scheduled.rawValue else {
+            throw QuietPeriodLifecycleError.periodAlreadyFinished
+        }
+        let previousStatus = period.statusRaw
+        let previousEndedAt = period.endedAt
+        period.statusRaw = QuietPeriodStatus.cancelled.rawValue
+        period.endedAt = date
+        do { try save(context) }
+        catch {
+            period.statusRaw = previousStatus
+            period.endedAt = previousEndedAt
+            throw error
+        }
+    }
+
     /// Cancels a scheduled period or ends an active one when its plant is
     /// archived. History is retained and restore never reactivates it.
     static func endForArchive(

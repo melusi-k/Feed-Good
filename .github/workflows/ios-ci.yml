@@ -96,6 +96,12 @@ jobs:
           SKIP_TESTS=0
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
+              127)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodLifecycleTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/TodayCareTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/CareReminderTests")
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/QuietPeriodUITests")
+                ;;
               125)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodArchiveTests")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/JournalTests")

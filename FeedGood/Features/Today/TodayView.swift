@@ -24,6 +24,14 @@ enum TodayCare {
         return tasks
             .compactMap { task -> TodayCareItem? in
                 guard task.isEnabled, let plant = task.plant, plant.archivedAt == nil else { return nil }
+                let isPaused = (plant.quietPeriods ?? []).contains { period in
+                    period.statusRaw == QuietPeriodStatus.active.rawValue &&
+                    (period.taskSnapshots ?? []).contains { snapshot in
+                        snapshot.taskID == task.id &&
+                        snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+                    }
+                }
+                guard !isPaused else { return nil }
                 let state = CareSchedule.state(for: task.dueDate, now: now, calendar: calendar)
                 if state == .upcoming, calendar.startOfDay(for: task.dueDate) > horizon { return nil }
                 return TodayCareItem(task: task, plant: plant, state: state)
