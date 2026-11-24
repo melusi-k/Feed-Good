@@ -47,21 +47,27 @@ enum QuietPeriodTaskIntegration {
         let descriptor = FetchDescriptor<QuietPeriodTaskSnapshot>(
             predicate: #Predicate { $0.taskID == taskID }
         )
-        guard let snapshot = try context.fetch(descriptor).first(where: {
-            $0.quietPeriod?.statusRaw == QuietPeriodStatus.active.rawValue &&
-            ($0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue ||
-             $0.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue)
-        }) else { return }
-        snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
-        snapshot.updatedAt = date
-        guard let period = snapshot.quietPeriod else { return }
-        let remaining = try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).filter {
-            $0.quietPeriod?.id == period.id &&
-            $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+        let snapshots = try context.fetch(descriptor).filter {
+            $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue ||
+            $0.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue
         }
-        if remaining.isEmpty {
-            period.statusRaw = QuietPeriodStatus.ended.rawValue
-            period.endedAt = date
+        for snapshot in snapshots {
+            snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
+            snapshot.updatedAt = date
+        }
+
+        var processedPeriodIDs = Set<UUID>()
+        for period in snapshots.compactMap(\.quietPeriod)
+        where period.statusRaw == QuietPeriodStatus.active.rawValue {
+            guard processedPeriodIDs.insert(period.id).inserted else { continue }
+            let remaining = try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).contains {
+                $0.quietPeriod?.id == period.id &&
+                $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+            if !remaining {
+                period.statusRaw = QuietPeriodStatus.ended.rawValue
+                period.endedAt = date
+            }
         }
     }
 
