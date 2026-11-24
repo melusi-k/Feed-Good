@@ -96,6 +96,9 @@ jobs:
           SKIP_TESTS=0
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
+              123)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodLifecycleTests")
+                ;;
               122)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/legacyStoreMigratesPlantAndRelatedRecordsWithArchiveStateDefaultingToActive()")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema()")
