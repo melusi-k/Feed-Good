@@ -398,7 +398,7 @@ struct QuietPeriodCareIntegrationTests {
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
         context.insert(task)
         let period = QuietPeriod(startAt: .now, statusRaw: "active", activatedAt: .now, plant: plant)
-        let snapshot = QuietPeriodTaskSnapshot(taskID: task.id, taskTitleSnapshot: task.title, quietPeriod: period)
+        let snapshot = QuietPeriodTaskSnapshot(taskID: task.id, taskTitleSnapshot: task.title, membershipStatusRaw: QuietPeriodMembershipStatus.disabled.rawValue, quietPeriod: period)
         context.insert(period)
         context.insert(snapshot)
         try context.save()
