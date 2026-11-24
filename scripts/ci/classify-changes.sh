@@ -12,7 +12,10 @@ changed_files=()
 if [[ "$event_name" == "pull_request" ]] && [[ -n "$base_sha" ]] && [[ -n "$head_sha" ]] &&
    git cat-file -e "${base_sha}^{commit}" 2>/dev/null &&
    git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
-  if mapfile -d '' -t changed_files < <(git diff --no-renames --name-only -z "${base_sha}...${head_sha}"); then
+  changed_paths_file="$(mktemp)"
+  trap 'rm -f "$changed_paths_file"' EXIT
+  if git diff --no-renames --name-only -z "${base_sha}...${head_sha}" > "$changed_paths_file"; then
+    mapfile -d '' -t changed_files < "$changed_paths_file"
     if (( ${#changed_files[@]} > 0 )); then
       docs_only=true
       for path in "${changed_files[@]}"; do
