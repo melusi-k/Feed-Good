@@ -276,6 +276,7 @@ enum QuietPeriodLifecycle {
         let previousReason = period.reason
         let previousStatus = period.statusRaw
         let previousActivation = period.activatedAt
+        let previousEndedAt = period.endedAt
         let snapshotState = (period.taskSnapshots ?? []).map {
             ($0, $0.membershipStatusRaw, $0.remainingCalendarDays, $0.originalDueHour,
              $0.originalDueMinute, $0.originalDueSecond, $0.updatedAt)
@@ -293,6 +294,13 @@ enum QuietPeriodLifecycle {
             captureSchedulingState(for: period, tasks: selectedTasks, at: now, calendar: calendar)
             period.statusRaw = QuietPeriodStatus.active.rawValue
             period.activatedAt = now
+            let hasActiveMembers = (period.taskSnapshots ?? []).contains {
+                $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+            if !hasActiveMembers {
+                period.statusRaw = QuietPeriodStatus.ended.rawValue
+                period.endedAt = now
+            }
         }
 
         do {
@@ -303,6 +311,7 @@ enum QuietPeriodLifecycle {
             period.reason = previousReason
             period.statusRaw = previousStatus
             period.activatedAt = previousActivation
+            period.endedAt = previousEndedAt
             for (snapshot, membership, remaining, hour, minute, second, updatedAt) in snapshotState {
                 snapshot.membershipStatusRaw = membership
                 snapshot.remainingCalendarDays = remaining
