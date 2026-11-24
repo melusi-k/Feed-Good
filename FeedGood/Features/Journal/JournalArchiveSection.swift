@@ -90,9 +90,9 @@ struct JournalArchiveSection: View {
                 entries: entries,
                 careTasks: careTasks,
                 careEvents: careEvents,
+                tags: tags,
                 quietPeriods: quietPeriods,
-                quietPeriodTaskSnapshots: quietPeriodTaskSnapshots,
-                tags: tags
+                quietPeriodTaskSnapshots: quietPeriodTaskSnapshots
             ))
             exporting = true
         } catch {
