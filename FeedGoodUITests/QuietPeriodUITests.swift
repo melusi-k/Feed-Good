@@ -47,6 +47,13 @@ final class QuietPeriodUITests: XCTestCase {
         // Reopen management to verify the active period and its end control.
         app.buttons["plantDetail.quietPeriod"].tap()
         XCTAssertTrue(app.buttons["quietPeriod.end"].waitForExistence(timeout: 5))
+        app.buttons["quietPeriod.edit"].tap()
+        let reason = app.textFields["quietPeriod.editReason"]
+        XCTAssertTrue(reason.waitForExistence(timeout: 5))
+        reason.tap()
+        reason.typeText("Winter break")
+        app.buttons["quietPeriod.saveEdit"].tap()
+        XCTAssertTrue(app.buttons["quietPeriod.edit"].waitForExistence(timeout: 5))
         app.buttons["quietPeriod.end"].tap()
         XCTAssertTrue(app.buttons["plantDetail.care"].waitForExistence(timeout: 5))
 
