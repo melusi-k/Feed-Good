@@ -28,10 +28,10 @@ struct JournalArchivePreview: Equatable {
     let careTasksAlreadyPresent: Int
     let careEventsToAdd: Int
     let careEventsAlreadyPresent: Int
-    let quietPeriodsToAdd: Int = 0
-    let quietPeriodsAlreadyPresent: Int = 0
-    let quietPeriodSnapshotsToAdd: Int = 0
-    let quietPeriodSnapshotsAlreadyPresent: Int = 0
+    var quietPeriodsToAdd: Int = 0
+    var quietPeriodsAlreadyPresent: Int = 0
+    var quietPeriodSnapshotsToAdd: Int = 0
+    var quietPeriodSnapshotsAlreadyPresent: Int = 0
 
     var confirmationMessage: String {
         """
