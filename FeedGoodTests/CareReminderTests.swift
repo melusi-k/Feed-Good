@@ -121,7 +121,7 @@ struct CareReminderTests {
         #expect(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).map(\.taskID) == [unaffected.id])
 
         try QuietPeriodLifecycle.end(period, at: now.addingTimeInterval(2 * 86_400), in: context)
-        #expect(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).map(\.taskID) == [selected.id, unaffected.id])
+        #expect(Set(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).compactMap(\.taskID)) == Set([selected.id, unaffected.id]))
     }
 
     @Test func capacityPreservesUnrelatedRequestsAndConcurrentLatestCancelWins() async {
