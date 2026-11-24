@@ -1,0 +1,306 @@
+import Foundation
+import SwiftData
+
+enum QuietPeriodStatus: String {
+    case scheduled
+    case active
+    case ended
+    case cancelled
+}
+
+enum QuietPeriodMembershipStatus: String {
+    case active
+    case disabled
+    case removed
+}
+
+enum QuietPeriodLifecycleError: Error, Equatable {
+    case archivedPlant
+    case invalidDateRange
+    case noTasksSelected
+    case taskUnavailable
+    case taskNotEnabled
+    case taskBelongsToAnotherPlant
+    case periodUnavailable
+    case periodAlreadyFinished
+}
+
+/// Owns Quiet Period creation and lifecycle transitions. CareTask.dueDate is
+/// left untouched while a period is active; the snapshot is the pause clock.
+@MainActor
+enum QuietPeriodLifecycle {
+    @discardableResult
+    static func create(
+        for plant: Plant,
+        selectedTaskIDs: [UUID],
+        startAt: Date,
+        endAt: Date?,
+        reason: String? = nil,
+        now: Date = .now,
+        in context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws -> QuietPeriod {
+        guard plant.archivedAt == nil else { throw QuietPeriodLifecycleError.archivedPlant }
+        guard endAt == nil || endAt! > startAt else {
+            throw QuietPeriodLifecycleError.invalidDateRange
+        }
+        let uniqueIDs = Set(selectedTaskIDs)
+        guard !uniqueIDs.isEmpty, uniqueIDs.count == selectedTaskIDs.count else {
+            throw QuietPeriodLifecycleError.noTasksSelected
+        }
+
+        let tasks = plant.careTasks ?? []
+        var selected: [CareTask] = []
+        for taskID in selectedTaskIDs {
+            guard let task = tasks.first(where: { $0.id == taskID }) else {
+                throw QuietPeriodLifecycleError.taskUnavailable
+            }
+            guard task.plant?.id == plant.id else {
+                throw QuietPeriodLifecycleError.taskBelongsToAnotherPlant
+            }
+            guard task.isEnabled else { throw QuietPeriodLifecycleError.taskNotEnabled }
+            selected.append(task)
+        }
+
+        let status: QuietPeriodStatus = startAt > now ? .scheduled : .active
+        let period = QuietPeriod(
+            createdAt: now,
+            startAt: startAt,
+            endAt: endAt,
+            statusRaw: status.rawValue,
+            reason: reason?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            activatedAt: status == .active ? now : nil,
+            plant: plant
+        )
+        context.insert(period)
+
+        for task in selected {
+            let snapshot = QuietPeriodTaskSnapshot(
+                taskID: task.id,
+                taskTitleSnapshot: task.title,
+                capturedAt: now,
+                updatedAt: now,
+                quietPeriod: period
+            )
+            context.insert(snapshot)
+        }
+
+        if status == .active {
+            captureSchedulingState(for: period, tasks: selected, at: now, calendar: calendar)
+        }
+
+        do {
+            try save(context)
+            return period
+        } catch {
+            context.delete(period)
+            throw error
+        }
+    }
+
+    /// Activates scheduled periods at their selected local start instant and
+    /// ends finite active periods inclusively at endAt.
+    static func advance(
+        _ period: QuietPeriod,
+        now: Date = .now,
+        in context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard let status = QuietPeriodStatus(rawValue: period.statusRaw) else {
+            throw QuietPeriodLifecycleError.periodUnavailable
+        }
+        switch status {
+        case .scheduled where now >= period.startAt:
+            guard let plant = period.plant, plant.archivedAt == nil else {
+                throw QuietPeriodLifecycleError.archivedPlant
+            }
+            let taskIDs = Set((period.taskSnapshots ?? []).map(\.taskID))
+            let tasks = (plant.careTasks ?? []).filter { taskIDs.contains($0.id) && $0.isEnabled }
+            captureSchedulingState(for: period, tasks: tasks, at: period.startAt, calendar: calendar)
+            let previousStatus = period.statusRaw
+            let previousActivation = period.activatedAt
+            period.statusRaw = QuietPeriodStatus.active.rawValue
+            period.activatedAt = period.startAt
+            do { try save(context) }
+            catch {
+                period.statusRaw = previousStatus
+                period.activatedAt = previousActivation
+                throw error
+            }
+        case .active where period.endAt.map({ now >= $0 }) == true:
+            try end(period, at: period.endAt!, in: context, calendar: calendar, save: save)
+        default:
+            return
+        }
+    }
+
+    /// Resumes affected tasks from the frozen calendar-day offset, or from a
+    /// full interval after a completion/interval edit. Explicit Next care
+    /// overrides remain exact absolute instants.
+    static func end(
+        _ period: QuietPeriod,
+        at date: Date = .now,
+        in context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard period.statusRaw == QuietPeriodStatus.active.rawValue else {
+            throw QuietPeriodLifecycleError.periodAlreadyFinished
+        }
+        let snapshots = period.taskSnapshots ?? []
+        let tasks = period.plant?.careTasks ?? []
+        var previousDueDates: [(CareTask, Date)] = []
+        for snapshot in snapshots where snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue {
+            guard let task = tasks.first(where: { $0.id == snapshot.taskID }), task.isEnabled else { continue }
+            previousDueDates.append((task, task.dueDate))
+            if let override = snapshot.nextCareOverrideAt {
+                task.dueDate = override
+            } else if let interval = snapshot.frozenIntervalDays {
+                task.dueDate = reconstructedDate(
+                    from: date,
+                    dayOffset: max(1, interval),
+                    hour: snapshot.originalDueHour,
+                    minute: snapshot.originalDueMinute,
+                    second: snapshot.originalDueSecond,
+                    calendar: calendar
+                )
+            } else if let remaining = snapshot.remainingCalendarDays {
+                task.dueDate = reconstructedDate(
+                    from: date,
+                    dayOffset: remaining,
+                    hour: snapshot.originalDueHour,
+                    minute: snapshot.originalDueMinute,
+                    second: snapshot.originalDueSecond,
+                    calendar: calendar
+                )
+            }
+        }
+
+        let previousStatus = period.statusRaw
+        let previousEndedAt = period.endedAt
+        period.statusRaw = QuietPeriodStatus.ended.rawValue
+        period.endedAt = date
+        do { try save(context) }
+        catch {
+            for (task, dueDate) in previousDueDates { task.dueDate = dueDate }
+            period.statusRaw = previousStatus
+            period.endedAt = previousEndedAt
+            throw error
+        }
+    }
+
+    /// Cancels a scheduled period or ends an active one when its plant is
+    /// archived. History is retained and restore never reactivates it.
+    static func endForArchive(
+        _ period: QuietPeriod,
+        at date: Date = .now,
+        in context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        switch period.statusRaw {
+        case QuietPeriodStatus.scheduled.rawValue:
+            let previousStatus = period.statusRaw
+            let previousEndedAt = period.endedAt
+            period.statusRaw = QuietPeriodStatus.cancelled.rawValue
+            period.endedAt = date
+            do { try save(context) }
+            catch {
+                period.statusRaw = previousStatus
+                period.endedAt = previousEndedAt
+                throw error
+            }
+        case QuietPeriodStatus.active.rawValue:
+            try end(period, at: date, in: context, calendar: calendar, save: save)
+        default:
+            return
+        }
+    }
+
+    /// Keeps an audit membership row while removing a disabled/deleted task
+    /// from the active pause set. The period ends when no active members remain.
+    static func removeTaskFromActiveSet(
+        taskID: UUID,
+        status: QuietPeriodMembershipStatus,
+        in period: QuietPeriod,
+        at date: Date = .now,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard period.statusRaw == QuietPeriodStatus.active.rawValue,
+              let snapshot = (period.taskSnapshots ?? []).first(where: { $0.taskID == taskID }),
+              snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue else {
+            return
+        }
+        let oldStatus = snapshot.membershipStatusRaw
+        let oldUpdatedAt = snapshot.updatedAt
+        snapshot.membershipStatusRaw = status.rawValue
+        snapshot.updatedAt = date
+        let remaining = (period.taskSnapshots ?? []).contains {
+            $0.id != snapshot.id && $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+        }
+        do {
+            if remaining {
+                try save(context)
+            } else {
+                try end(period, at: date, in: context, calendar: calendar, save: save)
+            }
+        } catch {
+            snapshot.membershipStatusRaw = oldStatus
+            snapshot.updatedAt = oldUpdatedAt
+            throw error
+        }
+    }
+
+    private static func captureSchedulingState(
+        for period: QuietPeriod,
+        tasks: [CareTask],
+        at activationDate: Date,
+        calendar: Calendar
+    ) {
+        let startOfActivationDay = calendar.startOfDay(for: activationDate)
+        for snapshot in period.taskSnapshots ?? [] {
+            guard let task = tasks.first(where: { $0.id == snapshot.taskID }) else {
+                if snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue {
+                    snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
+                }
+                continue
+            }
+            let dueDay = calendar.startOfDay(for: task.dueDate)
+            snapshot.remainingCalendarDays = calendar.dateComponents([.day], from: startOfActivationDay, to: dueDay).day ?? 0
+            let components = calendar.dateComponents([.hour, .minute, .second], from: task.dueDate)
+            snapshot.originalDueHour = components.hour ?? 9
+            snapshot.originalDueMinute = components.minute ?? 0
+            snapshot.originalDueSecond = components.second ?? 0
+            snapshot.updatedAt = activationDate
+        }
+    }
+
+    private static func reconstructedDate(
+        from resumeDate: Date,
+        dayOffset: Int,
+        hour: Int?,
+        minute: Int?,
+        second: Int?,
+        calendar: Calendar
+    ) -> Date {
+        let resumeDay = calendar.startOfDay(for: resumeDate)
+        let targetDay = calendar.date(byAdding: .day, value: dayOffset, to: resumeDay) ?? resumeDay
+        return calendar.date(
+            bySettingHour: hour ?? 9,
+            minute: minute ?? 0,
+            second: second ?? 0,
+            of: targetDay,
+            matchingPolicy: .nextTime,
+            repeatedTimePolicy: .first,
+            direction: .forward
+        ) ?? targetDay
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
+}
