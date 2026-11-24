@@ -151,6 +151,7 @@ enum CareTaskEditorPersistence {
             throw CareTaskEditorPersistenceError.taskBelongsToAnotherPlant
         }
 
+        try QuietPeriodTaskIntegration.markDeleted(taskID: taskID, at: now, in: writeContext)
         writeContext.delete(task)
         let remainingTasks = try writeContext.fetch(FetchDescriptor<CareTask>())
         let reminders = CareReminderScheduler.reminders(for: remainingTasks, now: now)
