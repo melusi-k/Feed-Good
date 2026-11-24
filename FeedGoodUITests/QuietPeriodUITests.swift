@@ -32,18 +32,19 @@ final class QuietPeriodUITests: XCTestCase {
         XCTAssertTrue(quietPeriodLink.waitForExistence(timeout: 5))
         quietPeriodLink.tap()
 
-        XCTAssertTrue(app.staticTexts["Before you confirm"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["quietPeriod.confirm"].exists)
+        XCTAssertTrue(app.buttons["quietPeriod.confirm"].waitForExistence(timeout: 5))
         app.buttons["quietPeriod.confirm"].tap()
 
-        XCTAssertTrue(app.staticTexts["Current Quiet Period"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["quietPeriod.end"].exists)
+        // Creation saves and dismisses back to the plant profile.
+        XCTAssertTrue(app.buttons["plantDetail.quietPeriod"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["plantDetail.quietPeriod"].label, "Manage Quiet Period")
 
-        app.buttons["Close"].tap()
+        // A Quiet Period must not block the plant journal.
         app.buttons["plantDetail.journal"].tap()
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5))
-
         app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        // Reopen management to verify the active period and its end control.
         app.buttons["plantDetail.quietPeriod"].tap()
         XCTAssertTrue(app.buttons["quietPeriod.end"].waitForExistence(timeout: 5))
         app.buttons["quietPeriod.end"].tap()
