@@ -43,6 +43,12 @@ final class QuietPeriodUITests: XCTestCase {
         app.buttons["plantDetail.journal"].tap()
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5))
 
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["plantDetail.quietPeriod"].tap()
+        XCTAssertTrue(app.buttons["quietPeriod.end"].waitForExistence(timeout: 5))
+        app.buttons["quietPeriod.end"].tap()
+        XCTAssertTrue(app.buttons["plantDetail.care"].waitForExistence(timeout: 5))
+
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Quiet Period active while journal remains available"
         attachment.lifetime = .keepAlways
