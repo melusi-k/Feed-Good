@@ -189,7 +189,7 @@ struct QuietPeriodLifecycleTests {
         let due = date("2026-12-01T09:00:00Z")
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let period = QuietPeriod(startAt: date("2026-11-24T00:00:00Z"), plant: plant)
+        let period = QuietPeriod(startAt: date("2026-11-24T00:00:00Z"), statusRaw: QuietPeriodStatus.active.rawValue, activatedAt: date("2026-11-24T00:00:00Z"), plant: plant)
         let snapshot = QuietPeriodTaskSnapshot(
             taskID: task.id,
             taskTitleSnapshot: task.title,
