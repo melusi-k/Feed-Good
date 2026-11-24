@@ -316,12 +316,30 @@ struct JournalArchive: Codable {
             throw JournalArchiveError.invalidRecord
         }
         let periodByID = Dictionary(uniqueKeysWithValues: periodRecords.map { ($0.id, $0) })
+        let plantsByID = Dictionary(uniqueKeysWithValues: plants.map { ($0.id, $0) })
         for period in periodRecords {
             guard plantIDs.contains(period.plantID),
-                  QuietPeriodStatus(rawValue: period.statusRaw) != nil,
-                  period.endAt == nil || period.endAt! > period.startAt,
-                  period.endedAt == nil || period.activatedAt != nil || period.statusRaw == QuietPeriodStatus.cancelled.rawValue else {
+                  let status = QuietPeriodStatus(rawValue: period.statusRaw),
+                  period.endAt == nil || period.endAt! > period.startAt else {
                 throw JournalArchiveError.invalidRecord
+            }
+            switch status {
+            case .scheduled:
+                guard period.activatedAt == nil, period.endedAt == nil,
+                      plantsByID[period.plantID]?.archivedAt == nil else {
+                    throw JournalArchiveError.invalidRecord
+                }
+            case .active:
+                guard period.activatedAt != nil, period.endedAt == nil,
+                      plantsByID[period.plantID]?.archivedAt == nil else {
+                    throw JournalArchiveError.invalidRecord
+                }
+            case .ended:
+                guard period.activatedAt != nil, period.endedAt != nil else {
+                    throw JournalArchiveError.invalidRecord
+                }
+            case .cancelled:
+                guard period.endedAt != nil else { throw JournalArchiveError.invalidRecord }
             }
         }
         let tasksByID = Dictionary((careTasks ?? []).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
