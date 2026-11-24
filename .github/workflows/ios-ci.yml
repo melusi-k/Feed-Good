@@ -99,6 +99,13 @@ jobs:
               126)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
+              125)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodArchiveTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/JournalTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantTagTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantChangeTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/JournalMilestoneTests")
+                ;;
               124)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodLifecycleTests")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodCareIntegrationTests")
