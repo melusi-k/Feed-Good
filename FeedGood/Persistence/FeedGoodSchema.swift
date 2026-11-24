@@ -265,25 +265,176 @@ enum FeedGoodSchemaV2: VersionedSchema {
     }
 }
 
-/// Current schema. V3 adds the PlantTag entity and the optional Plant.tags
-/// relationship (#75). Both are additive, so existing stores migrate
-/// lightweight and every existing plant simply has no tags.
+/// Frozen V3 model graph. Do not reference the live models here: V4 adds
+/// QuietPeriod relationships to Plant and must not change the V3 checksum.
+/// These nested types preserve the exact persisted V3 shape, including tags
+/// and JournalEntry.changeKindRaw.
 enum FeedGoodSchemaV3: VersionedSchema {
     static var versionIdentifier = Schema.Version(3, 0, 0)
     static var models: [any PersistentModel.Type] {
         [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self]
     }
+
+    @Model
+    final class Plant {
+        var id: UUID
+        var name: String
+        var species: String
+        var notes: String
+        var growingEnvironmentRaw: String = "unspecified"
+        var lightConditionRaw: String = "unspecified"
+        @Attribute(.externalStorage) var photoData: Data?
+        @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV3.CareTask.plant) var careTasks: [FeedGoodSchemaV3.CareTask]? = []
+        @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV3.CareEvent.plant) var careEvents: [FeedGoodSchemaV3.CareEvent]? = []
+        @Relationship(deleteRule: .cascade, inverse: \FeedGoodSchemaV3.JournalEntry.plant) var journalEntries: [FeedGoodSchemaV3.JournalEntry]? = []
+        @Relationship(inverse: \FeedGoodSchemaV3.PlantTag.plants) var tags: [FeedGoodSchemaV3.PlantTag]? = []
+        var createdAt: Date
+        var archivedAt: Date?
+
+        init(
+            id: UUID = UUID(),
+            name: String,
+            species: String = "",
+            notes: String = "",
+            growingEnvironmentRaw: String = "unspecified",
+            lightConditionRaw: String = "unspecified",
+            photoData: Data? = nil,
+            createdAt: Date = .now,
+            archivedAt: Date? = nil
+        ) {
+            self.id = id
+            self.name = name
+            self.species = species
+            self.notes = notes
+            self.growingEnvironmentRaw = growingEnvironmentRaw
+            self.lightConditionRaw = lightConditionRaw
+            self.photoData = photoData
+            self.createdAt = createdAt
+            self.archivedAt = archivedAt
+        }
+    }
+
+    @Model
+    final class CareTask {
+        var id: UUID = UUID()
+        var kindRaw: String = "watering"
+        var customTitle: String = ""
+        var intervalDays: Int = 7
+        var dueDate: Date = Date.now
+        var isEnabled: Bool = true
+        var reminderEnabled: Bool = false
+        var plant: FeedGoodSchemaV3.Plant?
+
+        init(
+            id: UUID = UUID(),
+            kindRaw: String = "watering",
+            customTitle: String = "",
+            intervalDays: Int = 7,
+            dueDate: Date = .now,
+            isEnabled: Bool = true,
+            reminderEnabled: Bool = false,
+            plant: FeedGoodSchemaV3.Plant
+        ) {
+            self.id = id
+            self.kindRaw = kindRaw
+            self.customTitle = customTitle
+            self.intervalDays = intervalDays
+            self.dueDate = dueDate
+            self.isEnabled = isEnabled
+            self.reminderEnabled = reminderEnabled
+            self.plant = plant
+        }
+    }
+
+    @Model
+    final class CareEvent {
+        var id: UUID = UUID()
+        var taskID: UUID = UUID()
+        var taskTitle: String = ""
+        var completedAt: Date = Date.now
+        var note: String = ""
+        var plant: FeedGoodSchemaV3.Plant?
+
+        init(
+            id: UUID = UUID(),
+            taskID: UUID,
+            taskTitle: String,
+            completedAt: Date = .now,
+            note: String = "",
+            plant: FeedGoodSchemaV3.Plant
+        ) {
+            self.id = id
+            self.taskID = taskID
+            self.taskTitle = taskTitle
+            self.completedAt = completedAt
+            self.note = note
+            self.plant = plant
+        }
+    }
+
+    @Model
+    final class JournalEntry {
+        var id: UUID = UUID()
+        var date: Date = Date.now
+        var note: String = ""
+        @Attribute(.externalStorage) var photoData: Data?
+        var milestoneRaw: String? = nil
+        var changeKindRaw: String? = nil
+        var plant: FeedGoodSchemaV3.Plant?
+
+        init(
+            id: UUID = UUID(),
+            date: Date = .now,
+            note: String,
+            photoData: Data? = nil,
+            milestoneRaw: String? = nil,
+            changeKindRaw: String? = nil,
+            plant: FeedGoodSchemaV3.Plant
+        ) {
+            self.id = id
+            self.date = date
+            self.note = note
+            self.photoData = photoData
+            self.milestoneRaw = milestoneRaw
+            self.changeKindRaw = changeKindRaw
+            self.plant = plant
+        }
+    }
+
+    @Model
+    final class PlantTag {
+        var id: UUID = UUID()
+        var name: String = ""
+        var normalizedName: String = ""
+        @Relationship(inverse: \FeedGoodSchemaV3.Plant.tags) var plants: [FeedGoodSchemaV3.Plant]? = []
+
+        init(id: UUID = UUID(), name: String, normalizedName: String) {
+            self.id = id
+            self.name = name
+            self.normalizedName = normalizedName
+        }
+    }
+}
+
+/// Current schema. V4 adds the QuietPeriod history and its captured task
+/// snapshots. V1/V2/V3 above are immutable historical model graphs.
+enum FeedGoodSchemaV4: VersionedSchema {
+    static var versionIdentifier = Schema.Version(4, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self]
+    }
 }
 
 enum FeedGoodMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self]
+        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self]
     }
 
     static var stages: [MigrationStage] {
         [
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV1.self, toVersion: FeedGoodSchemaV2.self),
-            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV2.self, toVersion: FeedGoodSchemaV3.self)
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV2.self, toVersion: FeedGoodSchemaV3.self),
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV3.self, toVersion: FeedGoodSchemaV4.self)
         ]
     }
 }
