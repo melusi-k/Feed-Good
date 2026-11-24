@@ -55,6 +55,8 @@ final class Plant {
     /// Optional user-authored tags (#75). No cascade: deleting a plant removes its
     /// assignments but never the shared tags; deleting a tag never deletes a plant.
     @Relationship var tags: [PlantTag]? = []
+    /// Quiet Period history is owned by the plant and removed on hard deletion.
+    @Relationship(deleteRule: .cascade, inverse: \\QuietPeriod.plant) var quietPeriods: [QuietPeriod]? = []
     var createdAt: Date
     /// Reversible archive marker. Nil means active. Archiving never deletes the plant or any related record.
     var archivedAt: Date?
