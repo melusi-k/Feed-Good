@@ -161,6 +161,7 @@ final class CareReminderScheduler: ObservableObject {
 
 struct CareRemindersLifecycle: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var context
     @EnvironmentObject private var scheduler: CareReminderScheduler
     @Query private var tasks: [CareTask]
     @Query private var plants: [Plant]
@@ -170,16 +171,32 @@ struct CareRemindersLifecycle: ViewModifier {
             "\($0.id)|\($0.dueDate.timeIntervalSince1970)|\($0.isEnabled)|\($0.reminderEnabled)|\($0.title)"
         }.joined(separator: ";")
         let plantState = plants.sorted { $0.id.uuidString < $1.id.uuidString }.map {
-            "\($0.id)|\($0.name)|\($0.archivedAt?.timeIntervalSince1970 ?? 0)"
+            let quietState = ($0.quietPeriods ?? []).sorted { $0.id.uuidString < $1.id.uuidString }.map { period in
+                let members = (period.taskSnapshots ?? []).sorted { $0.taskID.uuidString < $1.taskID.uuidString }.map {
+                    "\($0.taskID)|\($0.membershipStatusRaw)"
+                }.joined(separator: ",")
+                return "\(period.id)|\(period.statusRaw)|\(period.startAt.timeIntervalSince1970)|\(period.endAt?.timeIntervalSince1970 ?? 0)|\(members)"
+            }.joined(separator: ";")
+            return "\($0.id)|\($0.name)|\($0.archivedAt?.timeIntervalSince1970 ?? 0)|\(quietState)"
         }.joined(separator: ";")
         return taskState + "#" + plantState
     }
 
     func body(content: Content) -> some View {
         content
-            .task(id: revision) { await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks)) }
+            .task(id: revision) {
+                do { try QuietPeriodLifecycle.advanceAll(in: context) }
+                catch { /* Keep care reminders available; the next foreground pass retries lifecycle catch-up. */ }
+                await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
+            }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks)) } }
+                if phase == .active {
+                    Task {
+                        do { try QuietPeriodLifecycle.advanceAll(in: context) }
+                        catch { /* The next foreground pass retries lifecycle catch-up. */ }
+                        await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
+                    }
+                }
             }
     }
 }
