@@ -104,7 +104,20 @@ final class CareReminderScheduler: ObservableObject {
     }
 
     static func reminders(for tasks: [CareTask], now: Date = .now) -> [CareReminder] {
-        tasks.filter { $0.isEnabled && $0.reminderEnabled && $0.plant != nil && $0.plant?.archivedAt == nil && $0.dueDate > now }
+        tasks.filter {
+            $0.isEnabled &&
+            $0.reminderEnabled &&
+            $0.plant != nil &&
+            $0.plant?.archivedAt == nil &&
+            $0.dueDate > now &&
+            !($0.plant?.quietPeriods ?? []).contains { period in
+                period.statusRaw == QuietPeriodStatus.active.rawValue &&
+                (period.taskSnapshots ?? []).contains {
+                    $0.taskID == $0.id &&
+                    $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+                }
+            }
+        }
             .sorted { $0.dueDate == $1.dueDate ? $0.id.uuidString < $1.id.uuidString : $0.dueDate < $1.dueDate }
             .map {
                 CareReminder(id: prefix + $0.id.uuidString, title: "A moment with \($0.plant!.name)", body: "\($0.title): check what your plant needs before following your own routine.", date: $0.dueDate, taskID: $0.id, plantID: $0.plant!.id)
