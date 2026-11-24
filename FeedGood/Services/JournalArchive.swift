@@ -403,6 +403,8 @@ struct JournalArchive: Codable {
         let existingEntries = try recoveryContext.fetch(FetchDescriptor<JournalEntry>())
         let existingTasks = try recoveryContext.fetch(FetchDescriptor<CareTask>())
         let existingEvents = try recoveryContext.fetch(FetchDescriptor<CareEvent>())
+        let existingQuietPeriods = try recoveryContext.fetch(FetchDescriptor<QuietPeriod>())
+        let existingSnapshots = try recoveryContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>())
 
         let existingTags = try recoveryContext.fetch(FetchDescriptor<PlantTag>())
         var plants = Dictionary(uniqueKeysWithValues: existingPlants.map { ($0.id, $0) })
@@ -410,6 +412,8 @@ struct JournalArchive: Codable {
         let tasks = Dictionary(uniqueKeysWithValues: existingTasks.map { ($0.id, $0) })
         let events = Dictionary(uniqueKeysWithValues: existingEvents.map { ($0.id, $0) })
         var tags = Dictionary(uniqueKeysWithValues: existingTags.map { ($0.id, $0) })
+        let quietPeriods = Dictionary(uniqueKeysWithValues: existingQuietPeriods.map { ($0.id, $0) })
+        let quietSnapshots = Dictionary(uniqueKeysWithValues: existingSnapshots.map { ($0.id, $0) })
 
         // Complete conflict validation before touching the context.
         for record in archive.entries {
@@ -446,6 +450,33 @@ struct JournalArchive: Codable {
                       CareEventRecord(
                         id: event.id, plantID: plantID, taskID: event.taskID, taskTitle: event.taskTitle,
                         completedAt: event.completedAt, note: event.note
+                      ) == record else {
+                    throw JournalArchiveError.conflictingRecord
+                }
+            }
+        }
+        for record in archive.quietPeriods ?? [] {
+            if let period = quietPeriods[record.id] {
+                guard let plantID = period.plant?.id,
+                      QuietPeriodRecord(
+                        id: period.id, plantID: plantID, createdAt: period.createdAt,
+                        startAt: period.startAt, endAt: period.endAt, statusRaw: period.statusRaw,
+                        reason: period.reason, activatedAt: period.activatedAt, endedAt: period.endedAt
+                      ) == record else {
+                    throw JournalArchiveError.conflictingRecord
+                }
+            }
+        }
+        for record in archive.quietPeriodTaskSnapshots ?? [] {
+            if let snapshot = quietSnapshots[record.id] {
+                guard let periodID = snapshot.quietPeriod?.id,
+                      QuietPeriodTaskSnapshotRecord(
+                        id: snapshot.id, quietPeriodID: periodID, taskID: snapshot.taskID,
+                        taskTitleSnapshot: snapshot.taskTitleSnapshot, membershipStatusRaw: snapshot.membershipStatusRaw,
+                        remainingCalendarDays: snapshot.remainingCalendarDays,
+                        originalDueHour: snapshot.originalDueHour, originalDueMinute: snapshot.originalDueMinute,
+                        originalDueSecond: snapshot.originalDueSecond, frozenIntervalDays: snapshot.frozenIntervalDays,
+                        nextCareOverrideAt: snapshot.nextCareOverrideAt, capturedAt: snapshot.capturedAt, updatedAt: snapshot.updatedAt
                       ) == record else {
                     throw JournalArchiveError.conflictingRecord
                 }
@@ -521,6 +552,31 @@ struct JournalArchive: Codable {
                     note: record.note,
                     plant: plant
                 ))
+            }
+            for record in archive.quietPeriods ?? [] where quietPeriods[record.id] == nil {
+                guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
+                let period = QuietPeriod(
+                    id: record.id, createdAt: record.createdAt, startAt: record.startAt,
+                    endAt: record.endAt, statusRaw: record.statusRaw, reason: record.reason,
+                    activatedAt: record.activatedAt, endedAt: record.endedAt, plant: plant
+                )
+                recoveryContext.insert(period)
+            }
+            let periodLookup = Dictionary(uniqueKeysWithValues:
+                (try recoveryContext.fetch(FetchDescriptor<QuietPeriod>())).map { ($0.id, $0) }
+            )
+            for record in archive.quietPeriodTaskSnapshots ?? [] where quietSnapshots[record.id] == nil {
+                guard let period = periodLookup[record.quietPeriodID] else { throw JournalArchiveError.invalidRecord }
+                let snapshot = QuietPeriodTaskSnapshot(
+                    id: record.id, taskID: record.taskID, taskTitleSnapshot: record.taskTitleSnapshot,
+                    membershipStatusRaw: record.membershipStatusRaw,
+                    remainingCalendarDays: record.remainingCalendarDays,
+                    originalDueHour: record.originalDueHour, originalDueMinute: record.originalDueMinute,
+                    originalDueSecond: record.originalDueSecond, frozenIntervalDays: record.frozenIntervalDays,
+                    nextCareOverrideAt: record.nextCareOverrideAt, capturedAt: record.capturedAt,
+                    updatedAt: record.updatedAt, quietPeriod: period
+                )
+                recoveryContext.insert(snapshot)
             }
             try save(recoveryContext)
         } catch {
