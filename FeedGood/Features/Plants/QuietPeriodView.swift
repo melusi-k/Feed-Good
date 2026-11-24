@@ -55,6 +55,13 @@ struct QuietPeriodView: View {
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
         .feedGoodHeader("Quiet Period")
+        .onChange(of: startDate) { _, newStart in
+            guard hasEndDate else { return }
+            let earliestEnd = max(newStart, Date.now)
+            if endDate <= earliestEnd {
+                endDate = Calendar.current.date(byAdding: .minute, value: 1, to: earliestEnd) ?? earliestEnd.addingTimeInterval(60)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
@@ -117,7 +124,7 @@ struct QuietPeriodView: View {
 
             Section("Before you confirm") {
                 LabeledContent("Tasks affected", value: "\(selectedTaskIDs.count)")
-                Text("The remaining time on each selected task is frozen using calendar days. Due dates and reminders are suppressed while the period is active, then care resumes using your saved routine.")
+                Text("The remaining time on each selected task is frozen using calendar days. Its stored due date is preserved, it is hidden from Today, and its local reminder is withheld while the period is active. Care resumes using your saved routine.")
                     .font(.callout)
                 Text(hasEndDate
                      ? "Care resumes at \(endDate.formatted(date: .complete, time: .shortened))."
@@ -169,6 +176,13 @@ struct QuietPeriodView: View {
                      : "Cancelling removes the scheduled pause. Your normal care routine continues until then.")
             }
         }
+    }
+
+    private func impactDescription(for task: CareTask) -> String {
+        let appearsOnToday = TodayCare.items(from: tasks).contains { $0.task.id == task.id }
+        let todayImpact = appearsOnToday ? "Today item will be hidden" : "Not currently on Today"
+        let reminderImpact = task.reminderEnabled ? "reminder will be paused" : "no reminder is enabled"
+        return "\(todayImpact) · \(reminderImpact)"
     }
 
     private func selectionBinding(for task: CareTask) -> Binding<Bool> {
