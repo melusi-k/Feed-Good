@@ -6,9 +6,9 @@ import SwiftData
 @Model
 final class QuietPeriod {
     var id: UUID = UUID()
-    var createdAt: Date = .now
+    var createdAt: Date = Date.now
     /// Absolute instant selected for immediate or scheduled activation.
-    var startAt: Date = .now
+    var startAt: Date = Date.now
     /// Nil means explicitly open-ended.
     var endAt: Date?
     var statusRaw: String = "scheduled"
@@ -60,8 +60,8 @@ final class QuietPeriodTaskSnapshot {
     var frozenIntervalDays: Int?
     /// Exact-instant override from an explicit Next care edit.
     var nextCareOverrideAt: Date?
-    var capturedAt: Date = .now
-    var updatedAt: Date = .now
+    var capturedAt: Date = Date.now
+    var updatedAt: Date = Date.now
     var quietPeriod: QuietPeriod?
 
     init(
