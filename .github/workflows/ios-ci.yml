@@ -99,6 +99,7 @@ jobs:
               127)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodLifecycleTests")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/TodayCareTests")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/CareReminderTests")
                 TEST_ARGS+=("-only-testing:FeedGoodUITests/QuietPeriodUITests")
                 ;;
               125)
