@@ -96,7 +96,7 @@ struct PlantStoryView: View {
             case QuietPeriodMembershipStatus.removed.rawValue: return "Quiet Period · removed task"
             case QuietPeriodMembershipStatus.disabled.rawValue: return "Quiet Period · disabled task"
             default:
-                switch snapshot.quietPeriod?.statusRaw {
+                switch snapshot.quietPeriod?.statusRaw ?? QuietPeriodStatus.ended.rawValue {
                 case QuietPeriodStatus.scheduled.rawValue: return "Quiet Period · scheduled task"
                 case QuietPeriodStatus.active.rawValue: return "Quiet Period · paused task"
                 case QuietPeriodStatus.cancelled.rawValue: return "Quiet Period · cancelled"
