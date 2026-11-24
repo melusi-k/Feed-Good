@@ -4,7 +4,7 @@
 **Stage:** Product definition — care analytics, care-activity streaks and evidence-based plant insights  
 **Priority:** Proposed P2 understanding and retention capability  
 **Release:** Incremental, after the relevant source-record contracts are approved  
-**Primary surfaces:** Plant Profile, Plant Story, Care History, optional Today reflection
+**Primary surfaces:** Plant Profile, User Profile streaks highlight, Care History, Plant Story and optional Insights/history
 
 ## 1. One-line goal
 
@@ -31,7 +31,8 @@ The app remains local-first. Derived values must be reproducible from current so
 
 - A user wants to see which care actions they have recorded over a useful period.
 - A user wants to understand whether their current care routine is being followed, but only when the app has reliable historical schedule data to make that comparison fair.
-- A user wants recognition for a sustainable care rhythm without being expected to interact with the app every day.
+- A user wants recognition for a sustainable care rhythm without being expected to interact with the app every day, with current and longest recorded-care runs visible side by side.
+- A user wants a quiet collection-wide streaks highlight on their User Profile, with clear wording that it describes recorded activity across plants rather than the health or care quality of every plant.
 - A user wants to revisit a plant's observations, milestones, changes and care context in one coherent story.
 - A user notices a possible issue and wants to understand which observations support it, what is still unknown and where the original records came from.
 - A user has sparse history, an archived plant, a disabled routine or a Quiet Period and must receive an accurate, non-judgmental result.
@@ -69,9 +70,9 @@ The app remains local-first. Derived values must be reproducible from current so
 - Never compare people, plants or collections with rankings, leaderboards or normative “good/bad” thresholds.
 - Do not use percentages when the denominator is absent, incomplete, inferred or not user-understandable.
 
-#### Scheduled adherence release gate
+#### Scheduled adherence: committed capability with a required data-contract phase
 
-Scheduled adherence is valuable, but it is not safe to calculate from the current CareTask alone. Before implementing it, the product/technical contract must specify how the app records or deterministically reconstructs each eligible scheduled opportunity across:
+Scheduled adherence is in the approved product scope. It is not safe to calculate from the current CareTask alone, so implementation must first define and build a historical opportunity record/ledger (or an equivalently reliable immutable schedule-snapshot design). The contract must specify how the app records each eligible scheduled opportunity across:
 - Task creation, enable/disable, interval and due-date edits.
 - Completion, late completion, backdated completion, correction and deletion.
 - Task deletion while retaining CareEvent history.
@@ -80,7 +81,7 @@ Scheduled adherence is valuable, but it is not safe to calculate from the curren
 - Calendar/time-zone changes and daylight-saving transitions.
 - Imported archives, legacy records and missing historical schedule data.
 
-PRD-022 explicitly avoids a general persisted CareOccurrence model unless a concrete requirement proves it necessary. PRD-024 does not override that decision. A separate decision must compare immutable schedule snapshots, a bounded opportunity ledger and other migration-safe approaches. Until then, ship event counts and current-state snapshots only; do not ship adherence percentages or historic missed-care counts.
+PRD-022 explicitly avoids a general persisted CareOccurrence model unless a concrete requirement proves it necessary. This PRD now establishes scheduled adherence as a concrete product requirement, but does not prescribe the CareOccurrence name or implementation. The Phase 0 technical design must compare immutable schedule snapshots, a bounded opportunity ledger and other migration-safe approaches, then document the selected model and its interaction with PRD-022 before implementation. Adherence percentages and historical missed-opportunity counts may ship only after that model is implemented, migrated safely and validated against the edge cases above.
 
 ### 4.2 Care-activity streaks
 
@@ -93,7 +94,8 @@ PRD-022 explicitly avoids a general persisted CareOccurrence model unless a conc
 - The UI must say “recorded-care weeks” or “care activity,” not “perfect weeks,” “care compliance” or “plant health streak.”
 - The current week may be in progress. It counts once a qualifying event exists; it is not declared broken while the week is still underway.
 - A week with no CareEvent is simply a week with no recorded care. Do not show failure language, red states, loss animations or negative notifications.
-- A user may view the longest recorded-care run as a historical fact, but it must not be framed as a target or competitive achievement.
+- Show the current recorded-care run and the longest historical recorded-care run side by side. Give the current run visual priority; present the longest run as a quiet historical reference, never as a target or competitive achievement.
+- On Plant Profile, show the per-plant current and longest runs. On User Profile, show a compact collection-wide streaks highlight, with a route to the fuller history. Label it clearly as recorded care activity across the selected plant collection; it must not imply that every plant received care.
 
 #### Eligibility and edge cases
 
@@ -189,14 +191,15 @@ The app currently has CareTask and CareEvent as distinct records. CareEvent reta
 
 ## 7. User experience and surfaces
 
-- **Plant Profile:** compact per-plant care activity summary and links to Plant Story / Growth Review.
+- **Plant Profile:** compact per-plant care activity summary, showing current and longest recorded-care runs side by side, plus links to Plant Story / Growth Review.
+- **User Profile:** a quiet collection-wide streaks highlight showing current and longest recorded-care runs across the user's selected plant collection, with explicit scope and a link to the fuller streak history. This is a descriptive activity summary, not a collection health or care-quality score.
 - **Care History:** period-filtered recorded-care counts and action breakdown. Current overdue state, if shown, is visually and semantically separate from historical metrics.
 - **Plant Story:** one chronological source timeline, with source-specific labels and links. Do not create a competing duplicate history.
 - **Insights section:** evidence-backed summaries, each with a date range, evidence label and source navigation.
 - **Optional Today reflection:** a quiet route to a weekly look-back; follow PRD-013's opt-in, non-interruptive tone. No push notification or forced card.
 - **Empty and sparse states:** distinguish “no records in this period,” “not enough information,” “feature/source not available yet” and “archived plant.”
 - **Archived plants:** historical care and insight views are read-only. Never show active overdue tasks or imply that an archived routine remains due.
-- **Collection view:** if later included, present aggregate counts with explicit plant scope and period. Do not rank plants or imply that plants receiving more care are healthier.
+- **Collection view:** Phase 1 remains per-plant for detailed analytics. Include the approved compact collection-wide streaks highlight on User Profile in the initial streak phase. Deeper collection-wide metric totals, trends and breakdowns remain a later phase; when introduced, present aggregate counts with explicit plant scope and period. Do not rank plants or imply that plants receiving more care are healthier.
 
 No new top-level navigation destination is approved by this PRD. Prefer integration into existing Plant Profile, Care History and Plant Story surfaces.
 
@@ -231,7 +234,7 @@ No new top-level navigation destination is approved by this PRD. Prefer integrat
 - AI interpretation of photos or free-form journal text; automated symptom extraction or sentiment analysis.
 - Causal inference between care actions, plant changes, environmental context and later observations.
 - Daily app-use streaks, consecutive daily care expectations, streak freezes/repairs, loss-aversion mechanics or punitive notifications.
-- Scheduled-care adherence percentages or historical missed-opportunity counts before the historical opportunity contract is implemented and validated.
+- Scheduled-care adherence percentages or historical missed-opportunity counts before the approved historical opportunity contract is implemented and validated. Building that contract and the supporting data model is in scope; publishing unvalidated metrics is not.
 - Automatic care schedule changes, reminder changes or treatment recommendations.
 - Remote analytics, cloud processing, social comparison or network-dependent insights.
 - A duplicate analytics database, a second care ledger, a second journal/photo library or a competing plant timeline.
@@ -244,7 +247,7 @@ No new top-level navigation destination is approved by this PRD. Prefer integrat
 2. Confirm the first-slice metrics and period defaults.
 3. Confirm whether recorded-care weeks are an acceptable descriptive streak, including wording and opt-in placement.
 4. Review CareTask, CareEvent, QuietPeriod, JournalEntry and archive contracts on the implementation branch.
-5. Record whether historical scheduled adherence is deferred or requires a separate schedule-opportunity design. Do not add a CareOccurrence model by assumption.
+5. Confirm the historical scheduled-opportunity data contract as a committed requirement. Compare immutable schedule snapshots, a bounded opportunity ledger and other migration-safe approaches; align the selected model with PRD-022 rather than assuming a CareOccurrence model by name.
 6. Confirm the PRD-014 observation model and safety/editorial ownership; confirm the PRD-023 outcome field/model contract before consuming either.
 
 ### Phase 1 — Care activity analytics and source timeline
@@ -271,13 +274,13 @@ No new top-level navigation destination is approved by this PRD. Prefer integrat
 4. Permit curated interpretation only after a separate content/evidence review defines allowed inputs, wording, uncertainty and source provenance.
 5. Test unsupported, sparse, contradictory, stale and unknown evidence paths; verify every claim's source links.
 
-### Phase 4 — Scheduled adherence (separately gated)
+### Phase 4 — Historical scheduled opportunities and adherence
 
-1. Produce a data-contract proposal for historical scheduled opportunities and eligibility.
-2. Compare migration-safe snapshot/ledger alternatives against PRD-022's decision to avoid a general CareOccurrence model without evidence.
-3. Validate Quiet Periods, schedule edits, deleted tasks, archives, imports, time zones, DST and historical corrections.
-4. Only then define numerator, denominator, late grace semantics and user-facing labels.
-5. Do not block Phases 1–3 on this deferred capability.
+1. Design and approve the historical scheduled-opportunity contract as part of Phase 0, then implement the selected migration-safe model after the source lifecycle is agreed.
+2. Compare immutable schedule snapshots and a bounded opportunity ledger against PRD-022's current data-model constraints; record why the selected approach is the minimum reliable solution.
+3. Validate Quiet Periods, schedule edits, deleted tasks, archives, imports, time zones, DST and historical corrections before exposing adherence.
+4. Define numerator, denominator, late-completion/grace semantics, eligibility rules and user-facing labels from the approved contract.
+5. Ship adherence only when opportunity history is complete for the displayed period. Legacy periods without sufficient history must show “Not enough historical schedule data,” not a fabricated percentage or missed-care count.
 
 ## 12. Acceptance criteria
 
@@ -287,12 +290,13 @@ No new top-level navigation destination is approved by this PRD. Prefer integrat
 - The period and local-calendar semantics are visible and deterministic.
 - Legacy or unknown task kinds are not guessed from mutable task titles.
 - Current overdue state is not presented as historical missed care.
-- No adherence percentage appears without a complete, defensible opportunity denominator.
+- No adherence percentage appears without a complete, defensible opportunity denominator. Once the historical opportunity model is shipped, each displayed percentage exposes its eligible opportunity and completion counts, and excludes periods with incomplete history.
 - Editing/deleting a source event updates every affected metric without changing the active routine.
 
 ### Streaks
 
 - The first streak is explicitly a recorded-care-week run, not a daily or schedule-compliance streak.
+- Plant Profile shows current and longest runs side by side; User Profile shows a clearly scoped collection-wide streaks highlight.
 - The current incomplete week is not prematurely treated as broken.
 - A week with no event produces neutral language only.
 - Quiet Periods, disabled routines and reminder settings do not create fake events or punitive messaging.
@@ -330,12 +334,18 @@ No new top-level navigation destination is approved by this PRD. Prefer integrat
 
 These are the remaining product decisions; source-record safety rules above are constraints, not open questions.
 
-1. **Recorded-care week presentation:** Should the first release show only the current run, or both current and longest recorded-care runs? Recommendation: current run first; longest run only if usability testing shows it is encouraging rather than competitive.
-2. **Streak placement:** Should the recorded-care run appear on each Plant Profile, or only in an optional reflection? Recommendation: Plant Profile, visually quiet and dismissible; no push notifications.
-3. **Collection analytics:** Is a collection-level count useful in the first release, or should Phase 1 remain per-plant? Recommendation: per-plant first, then aggregate only with explicit scope labels.
-4. **Period defaults:** Should analytics default to the current calendar month or the last 30 days? Recommendation: current local calendar month, because it is easier to understand and compare without rolling-window ambiguity.
-5. **Health insight scope:** Should Phase 3 initially remain strictly descriptive, or include reviewed educational interpretations once PRD-014 ownership exists? Recommendation: descriptive first; interpretations are a separately gated expansion.
-6. **Scheduled adherence:** Is this important enough to fund a historical opportunity data contract? Recommendation: defer until event analytics and source contracts are shipped and user value is validated.
+All six product decisions have been made and are locked for this scope:
+
+| Decision | Locked direction | Product implications |
+| --- | --- | --- |
+| Recorded-care week presentation | **Current and longest runs side by side** | Show both on Plant Profile and in the relevant history; give the current run priority and keep the longest run as a neutral historical reference. |
+| Streak placement | **Plant Profile, User Profile and optional deeper history** | Plant Profile gets a per-plant summary. User Profile gets a collection-wide streaks highlight. A fuller history remains optional; no push notifications or pressure-based prompts. |
+| Collection analytics | **Phased: per-plant detail first, collection summary included for streaks** | Detailed care analytics begin per plant. The User Profile streaks highlight is included; deeper collection-wide totals, trends and breakdowns follow later. |
+| Default analytics period | **Current local calendar month** | The initial analytics view uses the current local calendar month, with the period clearly displayed. |
+| Health insight scope | **Descriptive first; curated interpretations later** | First release reports source-linked observations and milestones. Curated educational interpretations require a separate evidence, editorial and safety review. |
+| Scheduled-care adherence | **Build the historical opportunity data model** | A migration-safe historical opportunity contract and supporting model are in scope. Adherence metrics ship only after completeness, eligibility and lifecycle behavior are validated. |
+
+These decisions replace the former open questions and recommendations. Remaining engineering choices—especially the exact historical opportunity representation—are implementation design work under the approved product requirement, not unresolved product scope.
 
 ## 15. Replaces
 
