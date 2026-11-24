@@ -14,18 +14,6 @@ enum QuietPeriodTaskIntegration {
         }
     }
 
-    static func applyCompletion(
-        to task: CareTask,
-        at date: Date,
-        in context: ModelContext
-    ) throws -> Bool {
-        guard let snapshot = try activeSnapshot(for: task.id, in: context) else { return false }
-        snapshot.frozenIntervalDays = max(1, task.intervalDays)
-        snapshot.nextCareOverrideAt = nil
-        snapshot.updatedAt = date
-        return true
-    }
-
     static func applyEditorChanges(
         to task: CareTask,
         previousIntervalDays: Int,
