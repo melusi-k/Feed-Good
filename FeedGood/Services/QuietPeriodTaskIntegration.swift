@@ -44,7 +44,14 @@ enum QuietPeriodTaskIntegration {
         at date: Date,
         in context: ModelContext
     ) throws {
-        guard let snapshot = try activeSnapshot(for: taskID, in: context) else { return }
+        let descriptor = FetchDescriptor<QuietPeriodTaskSnapshot>(
+            predicate: #Predicate { $0.taskID == taskID }
+        )
+        guard let snapshot = try context.fetch(descriptor).first(where: {
+            $0.quietPeriod?.statusRaw == QuietPeriodStatus.active.rawValue &&
+            ($0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue ||
+             $0.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue)
+        }) else { return }
         snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
         snapshot.updatedAt = date
         guard let period = snapshot.quietPeriod else { return }
