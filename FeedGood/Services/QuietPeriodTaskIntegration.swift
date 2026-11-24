@@ -35,6 +35,7 @@ enum QuietPeriodTaskIntegration {
         }
         // Re-enabling does not restore active membership during this period.
         snapshot.updatedAt = date
+        try reconcileEmptyPeriod(for: snapshot, at: date, in: context)
     }
 
     static func markDeleted(
