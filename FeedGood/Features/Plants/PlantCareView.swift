@@ -20,6 +20,16 @@ struct PlantCareView: View {
         events.first { $0.taskID == event.taskID }?.id == event.id
     }
 
+    private func isPausedByQuietPeriod(_ task: CareTask) -> Bool {
+        (plant.quietPeriods ?? []).contains { period in
+            period.statusRaw == QuietPeriodStatus.active.rawValue &&
+            (period.taskSnapshots ?? []).contains { snapshot in
+                snapshot.taskID == task.id &&
+                snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+        }
+    }
+
     var body: some View {
         List {
             Section {
@@ -47,7 +57,7 @@ struct PlantCareView: View {
                         Button { editing = task } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(task.title).font(.headline)
-                                Text(task.isEnabled ? "\(CareSchedule.state(for: task.dueDate).rawValue.capitalized) · \(task.dueDate.formatted(date: .abbreviated, time: .shortened))" : "Paused")
+                                Text(!task.isEnabled ? "Paused" : (isPausedByQuietPeriod(task) ? "Quiet Period · paused" : "\(CareSchedule.state(for: task.dueDate).rawValue.capitalized) · \(task.dueDate.formatted(date: .abbreviated, time: .shortened))"))
                                     .font(.subheadline).foregroundStyle(.secondary)
                                 Text("Every \(task.intervalDays) days · user-defined").font(.caption).foregroundStyle(.secondary)
                             }
