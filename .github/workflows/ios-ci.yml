@@ -34,6 +34,7 @@ jobs:
       - name: Generate project
         run: xcodegen generate
       - name: Generate fixture using the shipped V3 model graph
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 121
         run: |
           LEGACY_DIR="$RUNNER_TEMP/feedgood-v3-source"
           git worktree add "$LEGACY_DIR" b6f65c9cbe8464d0d053ecf643fdd4408297e274
