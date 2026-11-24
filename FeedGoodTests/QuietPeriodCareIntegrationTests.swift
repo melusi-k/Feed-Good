@@ -180,9 +180,11 @@ struct QuietPeriodCareIntegrationTests {
         )
 
         #expect(snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue)
+        #expect(period.statusRaw == QuietPeriodStatus.ended.rawValue)
         task.isEnabled = true
         try context.save()
         #expect(snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue)
+        #expect(period.statusRaw == QuietPeriodStatus.ended.rawValue)
         #expect(task.isEnabled)
     }
 
