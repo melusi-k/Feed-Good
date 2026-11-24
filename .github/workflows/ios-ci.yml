@@ -70,9 +70,9 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
               121)
-                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/legacyStoreMigratesPlantAndRelatedRecordsWithArchiveStateDefaultingToActive")
-                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema")
-                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/version3StoreWithTagsMigratesToVersion4WithoutLosingRecords")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/legacyStoreMigratesPlantAndRelatedRecordsWithArchiveStateDefaultingToActive()")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/build52EraStoreOpensAndMigratesToCurrentSchema()")
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests/version3StoreWithTagsMigratesToVersion4WithoutLosingRecords()")
                 ;;
               120)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
