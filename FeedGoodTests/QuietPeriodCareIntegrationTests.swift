@@ -65,6 +65,7 @@ struct QuietPeriodCareIntegrationTests {
         context.insert(snapshot)
         try context.save()
 
+        task.intervalDays = 21
         try QuietPeriodTaskIntegration.applyEditorChanges(
             to: task,
             previousIntervalDays: 7,
@@ -73,8 +74,6 @@ struct QuietPeriodCareIntegrationTests {
             at: date("2026-11-25T10:00:00Z"),
             in: context
         )
-        task.intervalDays = 21
-        snapshot.frozenIntervalDays = 21
         let selectedNextCare = date("2026-12-08T16:45:00Z")
         task.dueDate = selectedNextCare
         try QuietPeriodTaskIntegration.applyEditorChanges(
@@ -103,6 +102,7 @@ struct QuietPeriodCareIntegrationTests {
         context.insert(snapshot)
         try context.save()
 
+        task.isEnabled = false
         try QuietPeriodTaskIntegration.applyEditorChanges(
             to: task,
             previousIntervalDays: 14,
@@ -111,8 +111,6 @@ struct QuietPeriodCareIntegrationTests {
             at: .now,
             in: context
         )
-        task.isEnabled = false
-        snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.disabled.rawValue
 
         #expect(snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue)
         task.isEnabled = true
