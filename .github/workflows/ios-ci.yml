@@ -54,7 +54,7 @@ jobs:
             -scheme FeedGood \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
             -derivedDataPath "$RUNNER_TEMP/legacy-v3-derived" \
-            -only-testing:FeedGoodTests/LegacyV3FixtureGeneratorTests/generateStoreUsingShippedV3ModelGraph() \
+            "-only-testing:FeedGoodTests/LegacyV3FixtureGeneratorTests/generateStoreUsingShippedV3ModelGraph()" \
             CODE_SIGNING_ALLOWED=NO
           test -s /tmp/feedgood-v3-fixture/garden.store
           cd "$GITHUB_WORKSPACE"
