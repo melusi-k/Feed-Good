@@ -110,7 +110,6 @@ jobs:
       - name: Run PR-specific test (or full main-branch suite)
         run: |
           TEST_ARGS=()
-          SKIP_TESTS=0
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
               127)
@@ -175,11 +174,6 @@ jobs:
             esac
           else
             echo "Main branch run: executing the complete FeedGood test suite."
-          fi
-
-          if [ "$SKIP_TESTS" = "1" ]; then
-            echo "Skipping simulator tests for this explicitly classified documentation-only PR."
-            exit 0
           fi
 
           SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ && /[0-9A-F-]{36}/ { print $2; exit }')"
