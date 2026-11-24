@@ -305,11 +305,17 @@ enum QuietPeriodLifecycle {
         calendar: Calendar
     ) {
         let startOfActivationDay = calendar.startOfDay(for: activationDate)
+        let allPlantTasks = period.plant?.careTasks ?? []
         for snapshot in period.taskSnapshots ?? [] {
-            guard let task = tasks.first(where: { $0.id == snapshot.taskID }) else {
+            guard let task = allPlantTasks.first(where: { $0.id == snapshot.taskID }) else {
                 if snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue {
                     snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
                 }
+                continue
+            }
+            guard task.isEnabled, tasks.contains(where: { $0.id == task.id }) else {
+                snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.disabled.rawValue
+                snapshot.updatedAt = activationDate
                 continue
             }
             let dueDay = calendar.startOfDay(for: task.dueDate)
