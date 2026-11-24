@@ -74,7 +74,7 @@ struct CareReminderTests {
     @Test func onlyFutureEnabledOptInTasksWithAPlantAreScheduled() {
         let plant = Plant(name: "Fern")
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let task = CareTask(kind: .watering, intervalDays: 3, dueDate: now.addingTimeInterval(3600), reminderEnabled: true, plant: plant)
+        let task = CareTask(kind: .watering, intervalDays: 3, dueDate: now.addingTimeInterval(3600), plant: plant)
         #expect(CareReminderScheduler.reminders(for: [task], now: now).isEmpty)
         task.reminderEnabled = true
         #expect(CareReminderScheduler.reminders(for: [task], now: now).count == 1)
