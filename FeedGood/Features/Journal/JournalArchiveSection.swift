@@ -10,6 +10,7 @@ struct JournalArchiveSection: View {
     @Query private var careEvents: [CareEvent]
     @Query private var quietPeriods: [QuietPeriod]
     @Query private var quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshot]
+    @Query private var tags: [PlantTag]
     @State private var errorMessage: String?
     @State private var exporting = false
     @State private var importing = false
@@ -90,7 +91,8 @@ struct JournalArchiveSection: View {
                 careTasks: careTasks,
                 careEvents: careEvents,
                 quietPeriods: quietPeriods,
-                quietPeriodTaskSnapshots: quietPeriodTaskSnapshots
+                quietPeriodTaskSnapshots: quietPeriodTaskSnapshots,
+                tags: tags
             ))
             exporting = true
         } catch {
