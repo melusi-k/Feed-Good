@@ -283,7 +283,7 @@ enum QuietPeriodLifecycle {
         period.reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
 
         if wasScheduled && effectiveStart <= now {
-            let selectedIDs = Set((period.taskSnapshots ?? []).map(\\.taskID))
+            let selectedIDs = Set((period.taskSnapshots ?? []).map(\.taskID))
             let selectedTasks = (period.plant?.careTasks ?? []).filter {
                 selectedIDs.contains($0.id) && $0.isEnabled
             }
