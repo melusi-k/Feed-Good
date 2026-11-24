@@ -181,7 +181,7 @@ struct QuietPeriodView: View {
                         DatePicker(
                             "Care resumes",
                             selection: $editEndDate,
-                            in: max(period.statusRaw == QuietPeriodStatus.scheduled.rawValue ? editStartDate : Date.now, Date.now)...,
+                            in: max(editStartDate, Date.now)...,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .accessibilityIdentifier("quietPeriod.editEndDate")
@@ -189,7 +189,7 @@ struct QuietPeriodView: View {
                     TextField("Optional reason or label", text: $editReason)
                         .accessibilityIdentifier("quietPeriod.editReason")
                     Button("Save changes") { updatePeriod(period) }
-                        .disabled(isSaving || (editHasEndDate && editEndDate <= (period.statusRaw == QuietPeriodStatus.scheduled.rawValue ? editStartDate : Date.now)))
+                        .disabled(isSaving || (editHasEndDate && editEndDate <= max(period.statusRaw == QuietPeriodStatus.scheduled.rawValue ? editStartDate : Date.now, Date.now)))
                         .accessibilityIdentifier("quietPeriod.saveEdit")
                     Button("Cancel editing", role: .cancel) { isEditingPeriod = false }
                         .accessibilityIdentifier("quietPeriod.cancelEdit")
@@ -215,9 +215,10 @@ struct QuietPeriodView: View {
                         .accessibilityIdentifier("quietPeriod.cancel")
                     }
                 } footer: {
-                Text(period.statusRaw == QuietPeriodStatus.active.rawValue
-                     ? "Care resumes using the saved task schedules and current reminder settings. Existing care and journal history is preserved."
-                     : "Cancelling removes the scheduled pause. Your normal care routine continues until then.")
+                    Text(period.statusRaw == QuietPeriodStatus.active.rawValue
+                         ? "Care resumes using the saved task schedules and current reminder settings. Existing care and journal history is preserved."
+                         : "Cancelling removes the scheduled pause. Your normal care routine continues until then.")
+                }
             }
         }
     }
