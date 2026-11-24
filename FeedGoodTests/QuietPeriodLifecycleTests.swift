@@ -235,6 +235,79 @@ struct QuietPeriodLifecycleTests {
         }
     }
 
+    @Test func resumeMovesDSTGapToNextValidLocalTime() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let newYork = calendar("America/New_York")
+        let task = CareTask(
+            kind: .watering,
+            intervalDays: 7,
+            dueDate: date("2026-03-07T02:30:00-05:00"),
+            plant: plant
+        )
+        context.insert(task)
+        let period = QuietPeriod(startAt: date("2026-03-06T12:00:00-05:00"), plant: plant)
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 1,
+            originalDueHour: 2,
+            originalDueMinute: 30,
+            originalDueSecond: 0,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        try context.save()
+
+        try QuietPeriodLifecycle.end(
+            period,
+            at: date("2026-03-07T12:00:00-05:00"),
+            in: context,
+            calendar: newYork
+        )
+
+        #expect(newYork.component(.hour, from: task.dueDate) == 3)
+        #expect(newYork.component(.minute, from: task.dueDate) == 0)
+    }
+
+    @Test func resumeChoosesFirstOccurrenceDuringDSTFold() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let newYork = calendar("America/New_York")
+        let task = CareTask(
+            kind: .watering,
+            intervalDays: 7,
+            dueDate: date("2026-10-31T01:30:00-04:00"),
+            plant: plant
+        )
+        context.insert(task)
+        let period = QuietPeriod(startAt: date("2026-10-30T12:00:00-04:00"), plant: plant)
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 1,
+            originalDueHour: 1,
+            originalDueMinute: 30,
+            originalDueSecond: 0,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        try context.save()
+
+        try QuietPeriodLifecycle.end(
+            period,
+            at: date("2026-10-31T12:00:00-04:00"),
+            in: context,
+            calendar: newYork
+        )
+
+        #expect(task.dueDate == date("2026-11-01T05:30:00Z"))
+    }
+
     @Test func archivingCancelsScheduledPeriodAndRetainsHistory() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
