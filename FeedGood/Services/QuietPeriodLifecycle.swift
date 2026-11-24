@@ -49,7 +49,8 @@ enum QuietPeriodLifecycle {
         }) else {
             throw QuietPeriodLifecycleError.activePeriodAlreadyExists
         }
-        guard endAt == nil || endAt! > startAt else {
+        let effectiveStartAt = startAt > now ? calendar.startOfDay(for: startAt) : now
+        guard endAt == nil || endAt! > effectiveStartAt else {
             throw QuietPeriodLifecycleError.invalidDateRange
         }
         let uniqueIDs = Set(selectedTaskIDs)
@@ -70,10 +71,10 @@ enum QuietPeriodLifecycle {
             selected.append(task)
         }
 
-        let status: QuietPeriodStatus = startAt > now ? .scheduled : .active
+        let status: QuietPeriodStatus = effectiveStartAt > now ? .scheduled : .active
         let period = QuietPeriod(
             createdAt: now,
-            startAt: startAt,
+            startAt: effectiveStartAt,
             endAt: endAt,
             statusRaw: status.rawValue,
             reason: reason?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
