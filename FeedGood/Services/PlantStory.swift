@@ -17,7 +17,12 @@ enum PlantStoryItem: Identifiable {
         switch self {
         case .care(let event): return event.completedAt
         case .journal(let entry): return entry.date
-        case .quietPeriod(let snapshot): return snapshot.updatedAt
+        case .quietPeriod(let snapshot):
+            if snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue,
+               let endedAt = snapshot.quietPeriod?.endedAt {
+                return endedAt
+            }
+            return snapshot.updatedAt
         }
     }
 }
