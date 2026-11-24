@@ -13,7 +13,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: classify
+        run: bash scripts/ci/classify-changes.sh "${{ github.event_name }}" "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+      - name: Test change classifier
+        run: bash scripts/ci/test-classify-changes.sh
+
   build-and-test:
+    needs: classify-changes
+    if: github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true'
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -132,10 +149,7 @@ jobs:
               120)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
-              104)
-                SKIP_TESTS=1
-                echo "Documentation-only PR: app tests are not required."
-                ;;
+
               118)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
