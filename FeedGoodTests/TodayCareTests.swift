@@ -65,7 +65,7 @@ struct TodayCareTests {
             calendar: calendar("Africa/Johannesburg")
         )
 
-        #expect(TodayCare.items(from: [selected, unaffected], now: now, calendar: calendar("Africa/Johannesburg")).map(\\.task.id) == [unaffected.id])
+        #expect(TodayCare.items(from: [selected, unaffected], now: now, calendar: calendar("Africa/Johannesburg")).map(\.task.id) == [unaffected.id])
         #expect(selected.isEnabled == true)
         #expect(selected.dueDate == date("2026-11-20T09:00:00+02:00"))
     }
