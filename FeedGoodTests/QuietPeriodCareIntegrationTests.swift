@@ -139,6 +139,58 @@ struct QuietPeriodCareIntegrationTests {
         #expect(reminders.first?.taskID == excluded.id)
     }
 
+    @Test func taskDisabledBeforeScheduledActivationRemainsAuditOnly() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: date("2026-12-01T09:00:00Z"), plant: plant)
+        context.insert(task)
+        try context.save()
+        let start = date("2026-12-01T00:00:00Z")
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: start,
+            endAt: nil,
+            now: date("2026-11-24T12:00:00Z"),
+            in: context
+        )
+        task.isEnabled = false
+
+        try QuietPeriodLifecycle.advance(period, now: start, in: context)
+
+        #expect(period.statusRaw == QuietPeriodStatus.ended.rawValue)
+        #expect(period.taskSnapshots?.first?.membershipStatusRaw == QuietPeriodMembershipStatus.disabled.rawValue)
+        #expect(task.isEnabled == false)
+    }
+
+    @Test func plantCannotHaveOverlappingScheduledOrActiveQuietPeriods() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Aloe")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        context.insert(task)
+        let start = date("2026-12-01T00:00:00Z")
+        _ = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [task.id],
+            startAt: start,
+            endAt: nil,
+            now: date("2026-11-24T12:00:00Z"),
+            in: context
+        )
+        #expect(throws: QuietPeriodLifecycleError.activePeriodAlreadyExists) {
+            try QuietPeriodLifecycle.create(
+                for: plant,
+                selectedTaskIDs: [task.id],
+                startAt: start.addingTimeInterval(86_400),
+                endAt: nil,
+                now: date("2026-11-24T12:00:00Z"),
+                in: context
+            )
+        }
+    }
+
     @Test func archivingPlantEndsActivePeriodAndCancelsScheduledPeriod() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
