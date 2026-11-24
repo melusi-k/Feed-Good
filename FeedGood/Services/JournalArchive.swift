@@ -320,7 +320,7 @@ struct JournalArchive: Codable {
             guard plantIDs.contains(period.plantID),
                   QuietPeriodStatus(rawValue: period.statusRaw) != nil,
                   period.endAt == nil || period.endAt! > period.startAt,
-                  period.endedAt == nil || period.activatedAt != nil else {
+                  period.endedAt == nil || period.activatedAt != nil || period.statusRaw == QuietPeriodStatus.cancelled.rawValue else {
                 throw JournalArchiveError.invalidRecord
             }
         }
@@ -347,6 +347,12 @@ struct JournalArchive: Codable {
             let active = snapshotRecords.filter { $0.quietPeriodID == period.id && $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue }
             guard !active.isEmpty else { throw JournalArchiveError.invalidRecord }
             guard Set(active.map(\.taskID)).count == active.count else { throw JournalArchiveError.invalidRecord }
+        }
+        let openPeriods = periodRecords.filter {
+            $0.statusRaw == QuietPeriodStatus.scheduled.rawValue || $0.statusRaw == QuietPeriodStatus.active.rawValue
+        }
+        guard Set(openPeriods.map(\.plantID)).count == openPeriods.count else {
+            throw JournalArchiveError.invalidRecord
         }
     }
 
