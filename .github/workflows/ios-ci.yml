@@ -97,6 +97,7 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
               124)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodLifecycleTests")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodCareIntegrationTests")
                 ;;
               123)
