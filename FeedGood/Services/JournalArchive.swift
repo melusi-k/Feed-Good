@@ -447,6 +447,32 @@ struct JournalArchive: Codable {
         let quietPeriods = Dictionary(uniqueKeysWithValues: existingQuietPeriods.map { ($0.id, $0) })
         let quietSnapshots = Dictionary(uniqueKeysWithValues: existingSnapshots.map { ($0.id, $0) })
 
+        // A valid archive must also remain valid against the destination store.
+        // Existing plants are intentionally preserved, so an archived local plant
+        // cannot receive an imported open period even if the archive's copy is active.
+        let archivedPlantIDs = Set(existingPlants.filter { $0.archivedAt != nil }.map(\\.id))
+        let existingOpenPeriods = existingQuietPeriods.filter {
+            $0.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+            $0.statusRaw == QuietPeriodStatus.active.rawValue
+        }
+        for record in archive.quietPeriods ?? []
+        where record.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+              record.statusRaw == QuietPeriodStatus.active.rawValue {
+            guard !archivedPlantIDs.contains(record.plantID) else {
+                throw JournalArchiveError.invalidRecord
+            }
+            if existingOpenPeriods.contains(where: { $0.id != record.id && $0.plant?.id == record.plantID }) {
+                throw JournalArchiveError.conflictingRecord
+            }
+        }
+        for record in archive.quietPeriodTaskSnapshots ?? [] {
+            if let existing = existingSnapshots.first(where: {
+                $0.quietPeriod?.id == record.quietPeriodID && $0.taskID == record.taskID
+            }), existing.id != record.id {
+                throw JournalArchiveError.conflictingRecord
+            }
+        }
+
         // Complete conflict validation before touching the context.
         for record in archive.entries {
             if let entry = entries[record.id] {
