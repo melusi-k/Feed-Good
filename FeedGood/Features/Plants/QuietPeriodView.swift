@@ -16,6 +16,11 @@ struct QuietPeriodView: View {
     @State private var selectedTaskIDs: Set<UUID>
     @State private var isSaving = false
     @State private var isEnding = false
+    @State private var isEditingPeriod = false
+    @State private var editStartDate = Date.now
+    @State private var editHasEndDate = false
+    @State private var editEndDate = Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
+    @State private var editReason = ""
     @State private var errorMessage: String?
 
     private var tasks: [CareTask] {
@@ -60,6 +65,13 @@ struct QuietPeriodView: View {
             let earliestEnd = max(newStart, Date.now)
             if endDate <= earliestEnd {
                 endDate = Calendar.current.date(byAdding: .minute, value: 1, to: earliestEnd) ?? earliestEnd.addingTimeInterval(60)
+            }
+        }
+        .onChange(of: editStartDate) { _, newStart in
+            guard editHasEndDate else { return }
+            let earliestEnd = max(newStart, Date.now)
+            if editEndDate <= earliestEnd {
+                editEndDate = Calendar.current.date(byAdding: .minute, value: 1, to: earliestEnd) ?? earliestEnd.addingTimeInterval(60)
             }
         }
         .toolbar {
@@ -157,23 +169,52 @@ struct QuietPeriodView: View {
                 Text("\((period.taskSnapshots ?? []).filter { $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue }.count) care tasks are currently included.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+
+                if isEditingPeriod {
+                    if period.statusRaw == QuietPeriodStatus.scheduled.rawValue {
+                        DatePicker("Start date", selection: $editStartDate, in: Date.now..., displayedComponents: .date)
+                            .accessibilityIdentifier("quietPeriod.editStartDate")
+                    }
+                    Toggle("Set an end date", isOn: $editHasEndDate)
+                        .accessibilityIdentifier("quietPeriod.editHasEndDate")
+                    if editHasEndDate {
+                        DatePicker(
+                            "Care resumes",
+                            selection: $editEndDate,
+                            in: max(period.statusRaw == QuietPeriodStatus.scheduled.rawValue ? editStartDate : Date.now, Date.now)...,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        .accessibilityIdentifier("quietPeriod.editEndDate")
+                    }
+                    TextField("Optional reason or label", text: $editReason)
+                        .accessibilityIdentifier("quietPeriod.editReason")
+                    Button("Save changes") { updatePeriod(period) }
+                        .disabled(isSaving || (editHasEndDate && editEndDate <= (period.statusRaw == QuietPeriodStatus.scheduled.rawValue ? editStartDate : Date.now)))
+                        .accessibilityIdentifier("quietPeriod.saveEdit")
+                    Button("Cancel editing", role: .cancel) { isEditingPeriod = false }
+                        .accessibilityIdentifier("quietPeriod.cancelEdit")
+                } else {
+                    Button("Edit schedule") { beginEditing(period) }
+                        .accessibilityIdentifier("quietPeriod.edit")
+                }
             }
 
-            Section {
-                if period.statusRaw == QuietPeriodStatus.active.rawValue {
-                    Button("End Quiet Period", role: .destructive) {
-                        finishPeriod(period, cancel: false)
+            if !isEditingPeriod {
+                Section {
+                    if period.statusRaw == QuietPeriodStatus.active.rawValue {
+                        Button("End Quiet Period", role: .destructive) {
+                            finishPeriod(period, cancel: false)
+                        }
+                        .disabled(isEnding)
+                        .accessibilityIdentifier("quietPeriod.end")
+                    } else {
+                        Button("Cancel scheduled period", role: .destructive) {
+                            finishPeriod(period, cancel: true)
+                        }
+                        .disabled(isEnding)
+                        .accessibilityIdentifier("quietPeriod.cancel")
                     }
-                    .disabled(isEnding)
-                    .accessibilityIdentifier("quietPeriod.end")
-                } else {
-                    Button("Cancel scheduled period", role: .destructive) {
-                        finishPeriod(period, cancel: true)
-                    }
-                    .disabled(isEnding)
-                    .accessibilityIdentifier("quietPeriod.cancel")
-                }
-            } footer: {
+                } footer: {
                 Text(period.statusRaw == QuietPeriodStatus.active.rawValue
                      ? "Care resumes using the saved task schedules and current reminder settings. Existing care and journal history is preserved."
                      : "Cancelling removes the scheduled pause. Your normal care routine continues until then.")
@@ -217,6 +258,36 @@ struct QuietPeriodView: View {
         } catch {
             isSaving = false
             errorMessage = "Couldn't save this Quiet Period. Your care routines and history are unchanged. Check the selected tasks and dates, then try again."
+        }
+    }
+
+    private func beginEditing(_ period: QuietPeriod) {
+        editStartDate = period.startAt
+        editHasEndDate = period.endAt != nil
+        editEndDate = period.endAt ?? Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
+        editReason = period.reason ?? ""
+        isEditingPeriod = true
+    }
+
+    private func updatePeriod(_ period: QuietPeriod) {
+        guard !isSaving else { return }
+        isSaving = true
+        do {
+            try QuietPeriodLifecycle.updateSchedule(
+                period,
+                startAt: period.statusRaw == QuietPeriodStatus.scheduled.rawValue ? editStartDate : nil,
+                endAt: editHasEndDate ? editEndDate : nil,
+                reason: editReason,
+                in: context
+            )
+            isEditingPeriod = false
+            Task { @MainActor in
+                await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
+                isSaving = false
+            }
+        } catch {
+            isSaving = false
+            errorMessage = "Couldn't update this Quiet Period. Its current schedule and affected tasks are unchanged. Check the dates and try again."
         }
     }
 
