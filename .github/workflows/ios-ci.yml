@@ -69,6 +69,9 @@ jobs:
           SKIP_TESTS=0
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
+              120)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
+                ;;
               104)
                 SKIP_TESTS=1
                 echo "Documentation-only PR: app tests are not required."
