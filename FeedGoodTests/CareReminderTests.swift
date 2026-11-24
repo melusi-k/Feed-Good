@@ -85,6 +85,45 @@ struct CareReminderTests {
         #expect(CareReminderScheduler.reminders(for: [task], now: now).isEmpty)
     }
 
+    @Test func quietPeriodWithholdsOnlySelectedRemindersAndRestoresEligibilityOnEnd() throws {
+        let schema = Schema([Plant.self, CareTask.self, CareEvent.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self])
+        let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true))
+        let context = ModelContext(container)
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let selected = CareTask(
+            kind: .watering,
+            intervalDays: 7,
+            dueDate: now.addingTimeInterval(3 * 86_400),
+            reminderEnabled: true,
+            plant: plant
+        )
+        let unaffected = CareTask(
+            kind: .feeding,
+            intervalDays: 14,
+            dueDate: now.addingTimeInterval(5 * 86_400),
+            reminderEnabled: true,
+            plant: plant
+        )
+        context.insert(selected)
+        context.insert(unaffected)
+        try context.save()
+
+        let period = try QuietPeriodLifecycle.create(
+            for: plant,
+            selectedTaskIDs: [selected.id],
+            startAt: now,
+            endAt: nil,
+            now: now,
+            in: context
+        )
+        #expect(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).map(\\.taskID) == [unaffected.id])
+
+        try QuietPeriodLifecycle.end(period, at: now.addingTimeInterval(2 * 86_400), in: context)
+        #expect(CareReminderScheduler.reminders(for: [selected, unaffected], now: now).map(\\.taskID) == [selected.id, unaffected.id])
+    }
+
     @Test func capacityPreservesUnrelatedRequestsAndConcurrentLatestCancelWins() async {
         let fake = FakeCareNotifications()
         let unrelated = CareReminder(id: "other.feature", title: "Other", body: "", date: .distantFuture)
