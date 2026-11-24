@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build-ipa:
     name: Archive and package Feed Good IPA
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     permissions:
       contents: write
