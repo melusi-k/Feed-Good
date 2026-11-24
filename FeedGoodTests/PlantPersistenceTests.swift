@@ -426,4 +426,58 @@ struct PlantPersistenceTests {
         }
     }
 
+
+    @Test func shippedTopLevelV3StoreMigratesToVersion4WithoutLosingRecords() throws {
+        // CI creates this store by compiling the exact pre-PR #121 source and
+        // writing it with its original top-level V3 SwiftData model types.
+        let storeURL = URL(fileURLWithPath: "/tmp/feedgood-v3-fixture/garden.store")
+        guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
+
+        let schema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+        let configuration = ModelConfiguration(schema: schema, url: storeURL)
+        let container = try ModelContainer(
+            for: schema,
+            migrationPlan: FeedGoodMigrationPlan.self,
+            configurations: [configuration]
+        )
+        let context = ModelContext(container)
+
+        let plants = try context.fetch(FetchDescriptor<Plant>())
+        let plant = try #require(plants.first { $0.name == "Historical V3 Monstera" })
+        #expect(plants.count == 1)
+        #expect(plant.species == "Monstera deliciosa")
+        #expect(plant.notes == "Created by the pre-PR #121 model graph")
+        #expect(plant.growingEnvironment == .balcony)
+        #expect(plant.lightCondition == .indirect)
+        #expect(plant.photoData == Data([0x11, 0x22, 0x33]))
+        #expect(plant.createdAt == Date(timeIntervalSince1970: 1_700_000_000))
+        #expect(plant.archivedAt == nil)
+        #expect(plant.tags?.map(\.name) == ["V3 tag"])
+
+        let tasks = try context.fetch(FetchDescriptor<CareTask>())
+        #expect(tasks.count == 1)
+        #expect(tasks.first?.kind == .watering)
+        #expect(tasks.first?.intervalDays == 9)
+        #expect(tasks.first?.dueDate == Date(timeIntervalSince1970: 1_710_000_000))
+        #expect(tasks.first?.plant?.id == plant.id)
+
+        let events = try context.fetch(FetchDescriptor<CareEvent>())
+        #expect(events.count == 1)
+        #expect(events.first?.taskTitle == "Watering")
+        #expect(events.first?.note == "Historical care event")
+        #expect(events.first?.completedAt == Date(timeIntervalSince1970: 1_705_000_000))
+        #expect(events.first?.plant?.id == plant.id)
+
+        let entries = try context.fetch(FetchDescriptor<JournalEntry>())
+        #expect(entries.count == 1)
+        #expect(entries.first?.note == "Historical journal entry")
+        #expect(entries.first?.photoData == Data([0x44, 0x55]))
+        #expect(entries.first?.milestoneRaw == "newLeaf")
+        #expect(entries.first?.changeKindRaw == "repotted")
+        #expect(entries.first?.plant?.id == plant.id)
+
+        #expect(try context.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
+    }
+
 }
