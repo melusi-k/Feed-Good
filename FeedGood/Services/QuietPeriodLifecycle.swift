@@ -20,6 +20,7 @@ enum QuietPeriodLifecycleError: Error, Equatable {
     case noTasksSelected
     case taskUnavailable
     case taskNotEnabled
+    case activePeriodAlreadyExists
     case taskBelongsToAnotherPlant
     case periodUnavailable
     case periodAlreadyFinished
@@ -42,6 +43,12 @@ enum QuietPeriodLifecycle {
         save: (ModelContext) throws -> Void = { try $0.save() }
     ) throws -> QuietPeriod {
         guard plant.archivedAt == nil else { throw QuietPeriodLifecycleError.archivedPlant }
+        guard !(plant.quietPeriods ?? []).contains(where: {
+            $0.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+            $0.statusRaw == QuietPeriodStatus.active.rawValue
+        }) else {
+            throw QuietPeriodLifecycleError.activePeriodAlreadyExists
+        }
         guard endAt == nil || endAt! > startAt else {
             throw QuietPeriodLifecycleError.invalidDateRange
         }
