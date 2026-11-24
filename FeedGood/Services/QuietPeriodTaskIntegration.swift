@@ -25,7 +25,8 @@ enum QuietPeriodTaskIntegration {
         guard let snapshot = try activeSnapshot(for: task.id, in: context) else { return }
         if task.intervalDays != previousIntervalDays {
             snapshot.frozenIntervalDays = max(1, task.intervalDays)
-            snapshot.nextCareOverrideAt = nil
+            // An explicit Next care date is authoritative, even if the
+            // recurrence interval is edited afterwards.
         }
         if task.dueDate != previousDueDate {
             snapshot.nextCareOverrideAt = task.dueDate
