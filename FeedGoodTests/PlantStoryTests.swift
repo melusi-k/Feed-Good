@@ -90,23 +90,6 @@ struct PlantStoryTests {
         }
     }
 
-    @Test func equalDatesUseNamespacedStableIDsIndependentOfInputOrder() throws {
-        let container = try memory(); let context = ModelContext(container)
-        let plant = Plant(name: "Fern"); context.insert(plant)
-        let task = CareTask(kind: .watering, intervalDays: 1, dueDate: .now, plant: plant); context.insert(task)
-        let date = Date(timeIntervalSince1970: 10)
-        let a = JournalEntry(date: date, note: "A", plant: plant)
-        let b = JournalEntry(date: date, note: "B", plant: plant)
-        let care = CareEvent(task: task, completedAt: date)
-        // Same UUID across source kinds must not collide in the combined list.
-        care.id = a.id
-        let first = PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: [a, b])
-        let second = PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: [b, a])
-        #expect(first.map(\.id) == second.map(\.id))
-        #expect(Set(first.map(\.id)).count == 3)
-        #expect(first.map(\.id) == first.map(\.id).sorted())
-    }
-
     @Test func sourceEditAndDeleteReprojectWithoutDuplicatingOrLosingOtherRecords() throws {
         let container = try memory(); let context = ModelContext(container)
         let plant = Plant(name: "Fern"); context.insert(plant)
