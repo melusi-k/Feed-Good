@@ -264,8 +264,11 @@ enum QuietPeriodLifecycle {
         let effectiveStart = wasScheduled
             ? max(now, calendar.startOfDay(for: startAt ?? period.startAt))
             : period.startAt
-        guard endAt == nil || endAt! > effectiveStart else {
-            throw QuietPeriodLifecycleError.invalidDateRange
+        if let endAt {
+            let minimumEnd = wasScheduled ? effectiveStart : now
+            guard endAt > minimumEnd else {
+                throw QuietPeriodLifecycleError.invalidDateRange
+            }
         }
 
         let previousStart = period.startAt
