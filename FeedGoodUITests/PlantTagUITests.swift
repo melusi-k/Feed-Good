@@ -16,14 +16,19 @@ final class PlantTagUITests: XCTestCase {
         let edit = app.buttons["plantDetail.edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let field = app.textFields["editPlant.newTag"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        // The Tags section closes a long form, so the field starts clipped at
-        // the bottom edge: XCTest still reports it hittable while its centre
-        // sits off-screen, and a tap there cannot take keyboard focus. Scroll
-        // until the whole field is on screen, as a user would.
+        // iOS 26 materializes lazy Form rows only once they scroll into view,
+        // so scroll the Tags section on screen before expecting the field.
         var scrolls = 0
-        while field.frame.maxY > app.frame.height - 8, scrolls < 8 { app.swipeUp(); scrolls += 1 }
-        XCTAssertTrue(field.frame.maxY <= app.frame.height - 8)
+        while field.exists == false, scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        // The Tags section closes a long form, so the field can still start
+        // clipped at the bottom edge: XCTest still reports it hittable while
+        // its centre sits off-screen, and a tap there cannot take keyboard
+        // focus. Scroll until the whole field is on screen, as a user would.
+        if field.exists {
+            while field.frame.maxY > app.frame.height - 8, scrolls < 8 { app.swipeUp(); scrolls += 1 }
+            XCTAssertTrue(field.frame.maxY <= app.frame.height - 8)
+        }
         field.tap(); field.typeText(tag)
         app.buttons["editPlant.addTag"].tap()
         app.buttons["editPlant.save"].tap()
