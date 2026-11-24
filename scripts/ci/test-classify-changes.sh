@@ -35,9 +35,10 @@ printf 'mixed source change\n' >> "$tmp/FeedGood.swift"
 git -C "$tmp" commit -qam "mixed source and docs change"
 assert_classification false
 
-printf 'workflow change\n' > "$tmp/.github-workflow-change"
+mkdir -p "$tmp/.github/workflows"
+printf 'name: workflow change\n' > "$tmp/.github/workflows/test.yml"
 git -C "$tmp" add .
-git -C "$tmp" commit -qm "workflow-like change"
+git -C "$tmp" commit -qm "workflow change"
 assert_classification false
 
 actual="$(cd "$tmp" && bash "$classifier" push "" "" | sed -n 's/^Documentation-only change: //p')"
