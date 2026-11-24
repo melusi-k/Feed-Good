@@ -418,8 +418,8 @@ struct PlantPersistenceTests {
             #expect(entries.first?.changeKindRaw == "repotted")
             #expect(entries.first?.plant?.id == plantID)
 
-            #expect(plant.tags?.map(\\.id) == [tagID])
-            #expect(plant.tags?.map(\\.normalizedName) == ["balcony"])
+            #expect(plant.tags?.map(\.id) == [tagID])
+            #expect(plant.tags?.map(\.normalizedName) == ["balcony"])
             #expect(plant.quietPeriods?.isEmpty != false)
             #expect(try context.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
             #expect(try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
