@@ -99,6 +99,22 @@ enum QuietPeriodLifecycle {
         }
     }
 
+    /// Advances all persisted periods when the app becomes active. This
+    /// provides reliable foreground catch-up for scheduled starts and finite ends.
+    static func advanceAll(
+        in context: ModelContext,
+        now: Date = .now,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        let periods = try context.fetch(FetchDescriptor<QuietPeriod>())
+        for period in periods where
+            period.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+            period.statusRaw == QuietPeriodStatus.active.rawValue {
+            try advance(period, now: now, in: context, calendar: calendar, save: save)
+        }
+    }
+
     /// Activates scheduled periods at their selected local start instant and
     /// ends finite active periods inclusively at endAt.
     static func advance(
