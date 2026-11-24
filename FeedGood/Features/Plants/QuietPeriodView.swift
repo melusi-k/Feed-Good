@@ -112,6 +112,9 @@ struct QuietPeriodView: View {
                             Text("Next care: \(task.dueDate.formatted(date: .abbreviated, time: .shortened))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            Text(selectedTaskIDs.contains(task.id) ? impactDescription(for: task) : "This task will continue as normal.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityIdentifier("quietPeriod.task.\(task.id.uuidString)")
