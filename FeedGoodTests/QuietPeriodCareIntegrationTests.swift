@@ -139,6 +139,79 @@ struct QuietPeriodCareIntegrationTests {
         #expect(reminders.first?.taskID == excluded.id)
     }
 
+    @Test func archivingPlantEndsActivePeriodAndCancelsScheduledPeriod() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: date("2026-12-01T09:00:00Z"), plant: plant)
+        context.insert(task)
+        let active = QuietPeriod(
+            startAt: date("2026-11-24T00:00:00Z"),
+            statusRaw: QuietPeriodStatus.active.rawValue,
+            activatedAt: date("2026-11-24T00:00:00Z"),
+            plant: plant
+        )
+        let activeSnapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 7,
+            originalDueHour: 9,
+            originalDueMinute: 0,
+            originalDueSecond: 0,
+            quietPeriod: active
+        )
+        let scheduled = QuietPeriod(startAt: date("2026-12-01T00:00:00Z"), plant: plant)
+        context.insert(active)
+        context.insert(activeSnapshot)
+        context.insert(scheduled)
+        try context.save()
+
+        try PlantArchive.archive(plant, at: date("2026-11-25T12:00:00Z"), in: context)
+
+        #expect(plant.archivedAt == date("2026-11-25T12:00:00Z"))
+        #expect(active.statusRaw == QuietPeriodStatus.ended.rawValue)
+        #expect(scheduled.statusRaw == QuietPeriodStatus.cancelled.rawValue)
+        #expect(task.dueDate == date("2026-12-02T09:00:00Z"))
+    }
+
+    @Test func failedArchiveRestoresQuietPeriodLifecycleAndTaskDueDate() throws {
+        enum SaveFailure: Error { case injected }
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Aloe")
+        context.insert(plant)
+        let due = date("2026-12-01T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(
+            startAt: date("2026-11-24T00:00:00Z"),
+            statusRaw: QuietPeriodStatus.active.rawValue,
+            activatedAt: date("2026-11-24T00:00:00Z"),
+            plant: plant
+        )
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 7,
+            originalDueHour: 9,
+            originalDueMinute: 0,
+            originalDueSecond: 0,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        try context.save()
+
+        #expect(throws: SaveFailure.self) {
+            try PlantArchive.archive(plant, at: date("2026-11-25T12:00:00Z"), in: context) { _ in
+                throw SaveFailure.injected
+            }
+        }
+        #expect(plant.archivedAt == nil)
+        #expect(period.statusRaw == QuietPeriodStatus.active.rawValue)
+        #expect(period.endedAt == nil)
+        #expect(task.dueDate == due)
+    }
+
     @Test func deletingLastIncludedTaskEndsPeriodAndRetainsSnapshotAudit() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Fern")
