@@ -44,7 +44,14 @@ final class QuietPeriodUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5))
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
-        // Reopen management to verify the active period and its end control.
+        // The active period leaves the journal available from the plant profile.
+        XCTAssertTrue(app.buttons["plantDetail.journal"].exists)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Active Quiet Period with journal available"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        // Reopen management to verify editing and the end control.
         app.buttons["plantDetail.quietPeriod"].tap()
         XCTAssertTrue(app.buttons["quietPeriod.end"].waitForExistence(timeout: 5))
         app.buttons["quietPeriod.edit"].tap()
@@ -57,9 +64,5 @@ final class QuietPeriodUITests: XCTestCase {
         app.buttons["quietPeriod.end"].tap()
         XCTAssertTrue(app.buttons["plantDetail.care"].waitForExistence(timeout: 5))
 
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Quiet Period active while journal remains available"
-        attachment.lifetime = .keepAlways
-        add(attachment)
     }
 }
