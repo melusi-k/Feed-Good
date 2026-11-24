@@ -20,6 +20,7 @@ enum QuietPeriodLifecycleError: Error, Equatable {
     case noTasksSelected
     case taskUnavailable
     case taskNotEnabled
+    case activePeriodAlreadyExists
     case taskBelongsToAnotherPlant
     case periodUnavailable
     case periodAlreadyFinished
@@ -42,7 +43,14 @@ enum QuietPeriodLifecycle {
         save: (ModelContext) throws -> Void = { try $0.save() }
     ) throws -> QuietPeriod {
         guard plant.archivedAt == nil else { throw QuietPeriodLifecycleError.archivedPlant }
-        guard endAt == nil || endAt! > startAt else {
+        guard !(plant.quietPeriods ?? []).contains(where: {
+            $0.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+            $0.statusRaw == QuietPeriodStatus.active.rawValue
+        }) else {
+            throw QuietPeriodLifecycleError.activePeriodAlreadyExists
+        }
+        let effectiveStartAt = max(now, calendar.startOfDay(for: startAt))
+        guard endAt == nil || endAt! > effectiveStartAt else {
             throw QuietPeriodLifecycleError.invalidDateRange
         }
         let uniqueIDs = Set(selectedTaskIDs)
@@ -63,10 +71,10 @@ enum QuietPeriodLifecycle {
             selected.append(task)
         }
 
-        let status: QuietPeriodStatus = startAt > now ? .scheduled : .active
+        let status: QuietPeriodStatus = effectiveStartAt > now ? .scheduled : .active
         let period = QuietPeriod(
             createdAt: now,
-            startAt: startAt,
+            startAt: effectiveStartAt,
             endAt: endAt,
             statusRaw: status.rawValue,
             reason: reason?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
@@ -96,6 +104,22 @@ enum QuietPeriodLifecycle {
         } catch {
             context.delete(period)
             throw error
+        }
+    }
+
+    /// Advances all persisted periods when the app becomes active. This
+    /// provides reliable foreground catch-up for scheduled starts and finite ends.
+    static func advanceAll(
+        in context: ModelContext,
+        now: Date = .now,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        let periods = try context.fetch(FetchDescriptor<QuietPeriod>())
+        for period in periods where
+            period.statusRaw == QuietPeriodStatus.scheduled.rawValue ||
+            period.statusRaw == QuietPeriodStatus.active.rawValue {
+            try advance(period, now: now, in: context, calendar: calendar, save: save)
         }
     }
 
@@ -289,11 +313,17 @@ enum QuietPeriodLifecycle {
         calendar: Calendar
     ) {
         let startOfActivationDay = calendar.startOfDay(for: activationDate)
+        let allPlantTasks = period.plant?.careTasks ?? []
         for snapshot in period.taskSnapshots ?? [] {
-            guard let task = tasks.first(where: { $0.id == snapshot.taskID }) else {
+            guard let task = allPlantTasks.first(where: { $0.id == snapshot.taskID }) else {
                 if snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue {
                     snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.removed.rawValue
                 }
+                continue
+            }
+            guard task.isEnabled, tasks.contains(where: { $0.id == task.id }) else {
+                snapshot.membershipStatusRaw = QuietPeriodMembershipStatus.disabled.rawValue
+                snapshot.updatedAt = activationDate
                 continue
             }
             let dueDay = calendar.startOfDay(for: task.dueDate)

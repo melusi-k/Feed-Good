@@ -16,11 +16,27 @@ enum PlantArchive {
         save: (ModelContext) throws -> Void = { try $0.save() }
     ) throws {
         guard plant.archivedAt == nil else { return }
-        plant.archivedAt = date
+        let periods = plant.quietPeriods ?? []
+        let periodState = periods.map { ($0, $0.statusRaw, $0.endedAt) }
+        let taskDueDates = (plant.careTasks ?? []).map { ($0, $0.dueDate) }
         do {
+            for period in periods {
+                try QuietPeriodLifecycle.endForArchive(
+                    period,
+                    at: date,
+                    in: context,
+                    save: { _ in }
+                )
+            }
+            plant.archivedAt = date
             try save(context)
         } catch {
             plant.archivedAt = nil
+            for (period, status, endedAt) in periodState {
+                period.statusRaw = status
+                period.endedAt = endedAt
+            }
+            for (task, dueDate) in taskDueDates { task.dueDate = dueDate }
             throw error
         }
     }

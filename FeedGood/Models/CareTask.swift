@@ -104,12 +104,27 @@ enum CareRecorder {
     static func complete(_ task: CareTask, note: String, at date: Date = .now, in context: ModelContext, calendar: Calendar = .current) throws {
         guard let plant = task.plant, plant.archivedAt == nil else { throw CareRecorderError.archivedPlant }
         let previousDate = task.dueDate
+        let snapshot = try QuietPeriodTaskIntegration.activeSnapshot(for: task.id, in: context)
+        let previousFrozenInterval = snapshot?.frozenIntervalDays
+        let previousOverride = snapshot?.nextCareOverrideAt
+        let previousSnapshotUpdate = snapshot?.updatedAt
+        let isPaused = snapshot != nil
+        if let snapshot {
+            snapshot.frozenIntervalDays = max(1, task.intervalDays)
+            snapshot.nextCareOverrideAt = nil
+            snapshot.updatedAt = date
+        }
         let event = CareEvent(task: task, completedAt: date, note: note)
         context.insert(event)
-        task.dueDate = CareSchedule.nextDate(after: date, intervalDays: task.intervalDays, calendar: calendar)
+        if !isPaused {
+            task.dueDate = CareSchedule.nextDate(after: date, intervalDays: task.intervalDays, calendar: calendar)
+        }
         do { try context.save() }
         catch {
             task.dueDate = previousDate
+            snapshot?.frozenIntervalDays = previousFrozenInterval
+            snapshot?.nextCareOverrideAt = previousOverride
+            if let previousSnapshotUpdate { snapshot?.updatedAt = previousSnapshotUpdate }
             context.delete(event)
             throw error
         }

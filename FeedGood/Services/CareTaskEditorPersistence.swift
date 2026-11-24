@@ -60,12 +60,23 @@ enum CareTaskEditorPersistence {
             writeContext.insert(record)
         }
 
+        let previousIntervalDays = record.intervalDays
+        let previousDueDate = record.dueDate
+        let previousEnabled = record.isEnabled
         record.kindRaw = kind.rawValue
         record.customTitle = customTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         record.intervalDays = max(1, intervalDays)
         record.dueDate = dueDate
         record.isEnabled = isEnabled
         record.reminderEnabled = reminderEnabled
+        try QuietPeriodTaskIntegration.applyEditorChanges(
+            to: record,
+            previousIntervalDays: previousIntervalDays,
+            previousDueDate: previousDueDate,
+            previousEnabled: previousEnabled,
+            at: now,
+            in: writeContext
+        )
 
         // Build the post-commit reminder projection before saving. The caller
         // receives it only if persistence succeeds, so failure cannot trigger
@@ -140,6 +151,7 @@ enum CareTaskEditorPersistence {
             throw CareTaskEditorPersistenceError.taskBelongsToAnotherPlant
         }
 
+        try QuietPeriodTaskIntegration.markDeleted(taskID: taskID, at: now, in: writeContext)
         writeContext.delete(task)
         let remainingTasks = try writeContext.fetch(FetchDescriptor<CareTask>())
         let reminders = CareReminderScheduler.reminders(for: remainingTasks, now: now)
