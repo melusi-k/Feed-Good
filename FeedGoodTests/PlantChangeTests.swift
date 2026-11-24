@@ -98,7 +98,7 @@ struct PlantChangeTests {
         let entries = try context.fetch(FetchDescriptor<JournalEntry>())
         let data = try JournalArchive.export(plants: [plant], entries: entries)
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 2)
+        #expect(archive.version == 3)
         #expect(archive.entries.first?.changeKindRaw == "movedIndoorsOrOutdoors")
         let destination = try memory(); let recovery = ModelContext(destination)
         #expect(try JournalArchive.recover(data, context: recovery) == 1)
