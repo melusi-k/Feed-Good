@@ -153,7 +153,11 @@ struct QuietPeriodArchiveTests {
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
         context.insert(task)
         let period = QuietPeriod(startAt: .now, statusRaw: QuietPeriodStatus.active.rawValue, activatedAt: .now, plant: plant)
-        let snapshot = QuietPeriodTaskSnapshot(taskID: task.id, taskTitleSnapshot: task.title, quietPeriod: period)
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id, taskTitleSnapshot: task.title,
+            remainingCalendarDays: 3, originalDueHour: 9, originalDueMinute: 0, originalDueSecond: 0,
+            quietPeriod: period
+        )
         context.insert(period)
         context.insert(snapshot)
         try context.save()
