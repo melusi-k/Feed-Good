@@ -149,8 +149,15 @@ enum QuietPeriodLifecycle {
             } else if let endAt = period.endAt, now >= endAt {
                 try end(period, at: endAt, in: context, calendar: calendar, save: save)
             }
-        case .active where period.endAt.map({ now >= $0 }) == true:
-            try end(period, at: period.endAt!, in: context, calendar: calendar, save: save)
+        case .active:
+            let hasActiveMembers = (period.taskSnapshots ?? []).contains {
+                $0.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+            if !hasActiveMembers {
+                try end(period, at: now, in: context, calendar: calendar, save: save)
+            } else if let endAt = period.endAt, now >= endAt {
+                try end(period, at: endAt, in: context, calendar: calendar, save: save)
+            }
         default:
             return
         }
