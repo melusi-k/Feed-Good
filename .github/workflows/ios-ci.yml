@@ -13,7 +13,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: classify
+        run: bash scripts/ci/classify-changes.sh "${{ github.event_name }}" "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+      - name: Test change classifier
+        run: bash scripts/ci/test-classify-changes.sh
+
   build-and-test:
+    needs: classify-changes
+    if: github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true'
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -93,7 +110,6 @@ jobs:
       - name: Run PR-specific test (or full main-branch suite)
         run: |
           TEST_ARGS=()
-          SKIP_TESTS=0
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
               127)
@@ -132,10 +148,7 @@ jobs:
               120)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
-              104)
-                SKIP_TESTS=1
-                echo "Documentation-only PR: app tests are not required."
-                ;;
+
               118)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
@@ -165,18 +178,11 @@ jobs:
                 TEST_ARGS+=("-only-testing:FeedGoodUITests/NavigationMotionProofUITests")
                 ;;
               *)
-                echo "No focused test is mapped for PR #${PR_NUMBER}."
-                echo "Add that PR's test identifier to this workflow rather than silently running the full suite."
-                exit 1
+                echo "No focused test is mapped for PR #${PR_NUMBER}; running the complete FeedGood test suite."
                 ;;
             esac
           else
             echo "Main branch run: executing the complete FeedGood test suite."
-          fi
-
-          if [ "$SKIP_TESTS" = "1" ]; then
-            echo "Skipping simulator tests for this explicitly classified documentation-only PR."
-            exit 0
           fi
 
           SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ && /[0-9A-F-]{36}/ { print $2; exit }')"
