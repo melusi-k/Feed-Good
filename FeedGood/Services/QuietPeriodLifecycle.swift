@@ -214,46 +214,47 @@ enum QuietPeriodLifecycle {
             in: context
         )
 
-        for (task, _) in previousDueDates {
-            guard let snapshot = snapshots.first(where: { $0.taskID == task.id }) else { continue }
-            if let override = snapshot.nextCareOverrideAt {
-                task.dueDate = override
-            } else if let interval = snapshot.frozenIntervalDays {
-                task.dueDate = reconstructedDate(
-                    from: date,
-                    dayOffset: max(1, interval),
-                    hour: snapshot.originalDueHour,
-                    minute: snapshot.originalDueMinute,
-                    second: snapshot.originalDueSecond,
-                    calendar: calendar
-                )
-            } else if let remaining = snapshot.remainingCalendarDays {
-                task.dueDate = reconstructedDate(
-                    from: date,
-                    dayOffset: remaining,
-                    hour: snapshot.originalDueHour,
-                    minute: snapshot.originalDueMinute,
-                    second: snapshot.originalDueSecond,
-                    calendar: calendar
-                )
-            }
-        }
-
-        for (task, previousDueDate) in previousDueDates {
-            try CareOpportunityLifecycle.applyScheduleChange(
-                to: task,
-                previousDueDate: previousDueDate,
-                at: date,
-                in: context
-            )
-        }
-
         let previousStatus = period.statusRaw
         let previousEndedAt = period.endedAt
-        period.statusRaw = QuietPeriodStatus.ended.rawValue
-        period.endedAt = date
-        do { try save(context) }
-        catch {
+        do {
+            for (task, _) in previousDueDates {
+                guard let snapshot = snapshots.first(where: { $0.taskID == task.id }) else { continue }
+                if let override = snapshot.nextCareOverrideAt {
+                    task.dueDate = override
+                } else if let interval = snapshot.frozenIntervalDays {
+                    task.dueDate = reconstructedDate(
+                        from: date,
+                        dayOffset: max(1, interval),
+                        hour: snapshot.originalDueHour,
+                        minute: snapshot.originalDueMinute,
+                        second: snapshot.originalDueSecond,
+                        calendar: calendar
+                    )
+                } else if let remaining = snapshot.remainingCalendarDays {
+                    task.dueDate = reconstructedDate(
+                        from: date,
+                        dayOffset: remaining,
+                        hour: snapshot.originalDueHour,
+                        minute: snapshot.originalDueMinute,
+                        second: snapshot.originalDueSecond,
+                        calendar: calendar
+                    )
+                }
+            }
+
+            for (task, previousDueDate) in previousDueDates {
+                try CareOpportunityLifecycle.applyScheduleChange(
+                    to: task,
+                    previousDueDate: previousDueDate,
+                    at: date,
+                    in: context
+                )
+            }
+
+            period.statusRaw = QuietPeriodStatus.ended.rawValue
+            period.endedAt = date
+            try save(context)
+        } catch {
             for (task, dueDate) in previousDueDates { task.dueDate = dueDate }
             period.statusRaw = previousStatus
             period.endedAt = previousEndedAt
