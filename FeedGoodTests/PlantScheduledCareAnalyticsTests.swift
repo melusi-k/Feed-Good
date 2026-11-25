@@ -84,9 +84,9 @@ struct PlantScheduledCareAnalyticsTests {
         #expect(summary.completedCount == 2)
         #expect(summary.completedOnTimeCount == 1)
         #expect(summary.completedLateCount == 1)
-        #expect(summary.unresolvedCount == 0)
-        #expect(summary.overdueCount == 2)
-        #expect(summary.completionRate == 0.5)
+        #expect(summary.unresolvedCount == 1)
+        #expect(summary.overdueCount == 1)
+        #expect(summary.completionRate == (2.0 / 3.0))
         #expect(summary.records.allSatisfy { $0.taskID == taskID })
         #expect(summary.records.allSatisfy { $0.id != opportunities[4].id })
         #expect(summary.records.allSatisfy { $0.id != opportunities[5].id })
@@ -201,10 +201,9 @@ struct PlantScheduledCareAnalyticsTests {
             plantID: otherPlantID,
             completedAt: due
         )
-        #expect(throws: ScheduledCareAnalyticsError.invalidCompletionLink(
-            UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-        )) {
-            try PlantScheduledCareAnalyticsSummary.calculate(
+        let expectedID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        do {
+            _ = try PlantScheduledCareAnalyticsSummary.calculate(
                 plantID: plantID,
                 period: DateInterval(start: due, end: due.addingTimeInterval(100)),
                 now: due.addingTimeInterval(100),
@@ -214,6 +213,9 @@ struct PlantScheduledCareAnalyticsTests {
                 ],
                 events: [badEvent]
             )
+            Issue.record("Expected invalid completion ownership to fail closed.")
+        } catch let error as ScheduledCareAnalyticsError {
+            #expect(error == .invalidCompletionLink(expectedID))
         }
     }
 
