@@ -359,3 +359,45 @@ Implementation and source/archive compatibility are tracked in issue #143. PRD-0
 - **Due window:** An open opportunity is due/unresolved at `effectiveDueAt`; it is definitively overdue only after the approved completion window expires. Analytics and streak calculations must use the same boundary.
 - **Explicit edits:** Since defer/snooze are excluded, an explicit Next care edit is a cancellation/replacement, not an in-place deferral.
 - **Quiet Period:** `scheduledDueAt` remains immutable for audit. `effectiveDueAt` is updated to the resumed due instant under PRD-020's existing calendar/DST rules, preserving opportunity identity and excluding paused time.
+
+
+## 16. Design extension — care consistency is not habit formation (2026-11-25)
+
+### 16.1 Definitions
+
+These concepts must remain separate in product language, data contracts and reporting:
+
+| Concept | Product definition | What Feed Good can validly observe |
+| --- | --- | --- |
+| Care routine | A user-configured recurring care task for a particular plant, with its own stable identity and schedule | Task configuration, schedule and lifecycle |
+| Care activity | A care action recorded by the user | Authoritative CareEvent and its source linkage |
+| Consistency | How scheduled opportunities for one task are completed over a defined period | Eligible opportunities, on-time completions, completion rate and interruptions under the approved lifecycle contract |
+| Streak | A descriptive run of consecutive eligible opportunities for one task completed within the approved completion window | Current and longest per-task sequences; never a plant-wide or user-wide sequence |
+| Habit | A repeated behaviour that has become sufficiently automatic or integrated into a person's routine | Not directly observable from task completion, app opens or streak length alone |
+
+A care task is a plant-care requirement, not proof of a human habit. Some healthy routines are intentionally infrequent or seasonal. The product must never imply that a longer streak, more frequent care or a higher completion count is inherently better.
+
+### 16.2 Approved product decision
+
+For this release, Feed Good measures **care activity and scheduled-care consistency**, not habit formation.
+
+- Streaks remain private, descriptive, task-scoped histories governed by §5.2 and the approved PRD-022/PRD-024 opportunity lifecycle.
+- Completion rate and other consistency measures remain descriptive operational metrics. They must disclose scope, period, numerator/denominator where applicable, eligibility rules and source coverage.
+- A streak is one view of consecutive consistency; it is not a habit score, habit milestone, habit-strength proxy or success criterion.
+- Do not introduce labels such as “habit formed”, “strong habit”, “habit health”, “habit score” or “habit strength” based solely on care records.
+- Do not infer user motivation, effort, automaticity, commitment or intent from completed, late, cancelled or unresolved opportunities.
+- Do not encourage additional or early care to preserve a streak. Plant need and the authoritative task schedule always take precedence.
+- Existing CareEvents remain activity history only unless explicitly linked to a scheduled opportunity under the approved source contract. No historical habit or streak backfill is permitted.
+
+### 16.3 Future discovery boundary
+
+If the product later needs to understand whether a user has developed a habit, that is a separate research and product-design question—not an extension of the streak formula. It would require an explicit, voluntary user-level behaviour definition and a validated measurement approach (for example, a lightweight self-report of automaticity), with clear privacy, cadence, interpretation and opt-out decisions. It must not be inferred from plant-care completion data, and it is not authorised by this PRD.
+
+### 16.4 Acceptance criteria for this extension
+
+- [ ] Product copy and analytics distinguish care routine, activity, consistency, streak and habit.
+- [ ] No habit-formation or habit-strength metric is calculated from streaks, opportunities, CareEvents or app engagement.
+- [ ] Per-task streaks remain separate and do not aggregate into plant, garden or user-wide totals.
+- [ ] Consistency metrics disclose their period, scope, eligibility definition and denominator where applicable.
+- [ ] No UX, notification or growth mechanic rewards unnecessary, early or excessive plant care.
+- [ ] Any future habit research is separately scoped and requires explicit product approval before instrumentation or implementation.
