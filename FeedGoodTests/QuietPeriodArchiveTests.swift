@@ -6,11 +6,11 @@ import Testing
 @MainActor
 struct QuietPeriodArchiveTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
-    @Test func versionFourRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
+    @Test func versionFiveRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
         let source = try memory()
         let context = ModelContext(source)
         let plant = Plant(name: "Fern")
@@ -53,7 +53,7 @@ struct QuietPeriodArchiveTests {
             quietPeriodTaskSnapshots: [snapshot]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 4)
+        #expect(archive.version == 5)
         #expect(archive.quietPeriods?.count == 1)
         #expect(archive.quietPeriodTaskSnapshots?.count == 1)
 
@@ -175,7 +175,7 @@ struct QuietPeriodArchiveTests {
         #expect(try verify.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
     }
 
-    @Test func versionFourRoundTripsOpportunityIdentityAndCompletionLink() throws {
+    @Test func versionFiveRoundTripsOpportunityIdentityAndCompletionLink() throws {
         let source = try memory()
         let context = ModelContext(source)
         let plant = Plant(name: "Fern")
@@ -183,13 +183,15 @@ struct QuietPeriodArchiveTests {
         let due = Date(timeIntervalSince1970: 1_800_000_000)
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let completedAt = due.addingTimeInterval(300)
+        let effectiveDue = due.addingTimeInterval(2 * 86_400)
+        let completedAt = effectiveDue.addingTimeInterval(300)
         let event = CareEvent(task: task, completedAt: completedAt, note: "Watered")
         context.insert(event)
         let opportunity = CareOpportunity(
             taskID: task.id,
             plantID: plant.id,
             scheduledDueAt: due,
+            effectiveDueAt: effectiveDue,
             status: .completed,
             careEventID: event.id,
             createdAt: due.addingTimeInterval(-86_400),
@@ -206,7 +208,7 @@ struct QuietPeriodArchiveTests {
             careOpportunities: [opportunity]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 4)
+        #expect(archive.version == 5)
         #expect(archive.careOpportunities?.count == 1)
 
         let destination = try memory()
@@ -219,6 +221,7 @@ struct QuietPeriodArchiveTests {
         #expect(restored.taskID == task.id)
         #expect(restored.plantID == plant.id)
         #expect(restored.scheduledDueAt == due)
+        #expect(restored.effectiveDueAt == effectiveDue)
         #expect(restored.status == .completed)
         #expect(restored.careEventID == event.id)
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
@@ -228,6 +231,45 @@ struct QuietPeriodArchiveTests {
         #expect(throws: JournalArchiveError.conflictingRecord) {
             try JournalArchive.recover(data, context: recovery)
         }
+    }
+
+    @Test func versionFourOpportunityArchiveDefaultsEffectiveDueToOriginalScheduledInstant() throws {
+        let plantID = UUID()
+        let taskID = UUID()
+        let opportunityID = UUID()
+        let due = Date(timeIntervalSince1970: 1_800_000_000)
+        var legacy = JournalArchive(
+            plants: [
+                .init(id: plantID, name: "Legacy Fern", species: "", notes: "", createdAt: due)
+            ],
+            entries: [],
+            careTasks: [
+                .init(
+                    id: taskID, plantID: plantID, kindRaw: CareKind.watering.rawValue,
+                    customTitle: "", intervalDays: 7, dueDate: due,
+                    isEnabled: true, reminderEnabled: false
+                )
+            ],
+            careEvents: [],
+            careOpportunities: [
+                .init(
+                    id: opportunityID, taskID: taskID, plantID: plantID,
+                    scheduledDueAt: due, statusRaw: CareOpportunityStatus.open.rawValue,
+                    careEventID: nil, createdAt: due.addingTimeInterval(-60),
+                    updatedAt: due.addingTimeInterval(-60)
+                )
+            ]
+        )
+        legacy.version = 4
+        let data = try JSONEncoder().encode(legacy)
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+        let restored = try #require(recovery.fetch(FetchDescriptor<CareOpportunity>()).first)
+        #expect(restored.id == opportunityID)
+        #expect(restored.scheduledDueAt == due)
+        #expect(restored.effectiveDueAt == due)
     }
 
     @Test func invalidOpportunityStatesAndEventReferencesRejectBeforeWrites() throws {

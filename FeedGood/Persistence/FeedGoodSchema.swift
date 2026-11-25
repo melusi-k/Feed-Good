@@ -425,11 +425,52 @@ enum FeedGoodSchemaV4: VersionedSchema {
     }
 }
 
-/// V5 adds the narrow scheduled-opportunity ledger. Existing V4 care history
-/// remains untouched; opportunities are created by runtime lifecycle handling,
-/// never reconstructed from historical CareEvents during migration.
+/// V5 is frozen at the original scheduled-opportunity shape. Keep its nested
+/// model immutable so existing V5 stores can migrate to V6 without checksum drift.
 enum FeedGoodSchemaV5: VersionedSchema {
     static var versionIdentifier = Schema.Version(5, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self, CareOpportunity.self]
+    }
+
+    @Model
+    final class CareOpportunity {
+        var id: UUID = UUID()
+        var taskID: UUID
+        var plantID: UUID
+        var scheduledDueAt: Date
+        var statusRaw: String = "open"
+        var careEventID: UUID?
+        var createdAt: Date
+        var updatedAt: Date
+
+        init(
+            id: UUID = UUID(),
+            taskID: UUID,
+            plantID: UUID,
+            scheduledDueAt: Date,
+            statusRaw: String = "open",
+            careEventID: UUID? = nil,
+            createdAt: Date = .now,
+            updatedAt: Date = .now
+        ) {
+            self.id = id
+            self.taskID = taskID
+            self.plantID = plantID
+            self.scheduledDueAt = scheduledDueAt
+            self.statusRaw = statusRaw
+            self.careEventID = careEventID
+            self.createdAt = createdAt
+            self.updatedAt = updatedAt
+        }
+    }
+}
+
+/// V6 adds the mutable effective due boundary. Existing V5 opportunities keep
+/// their IDs and original due instant; migration initializes effectiveDueAt
+/// from scheduledDueAt rather than reconstructing any historical care.
+enum FeedGoodSchemaV6: VersionedSchema {
+    static var versionIdentifier = Schema.Version(6, 0, 0)
     static var models: [any PersistentModel.Type] {
         [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self, CareOpportunity.self]
     }
@@ -437,7 +478,7 @@ enum FeedGoodSchemaV5: VersionedSchema {
 
 enum FeedGoodMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self, FeedGoodSchemaV5.self]
+        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self, FeedGoodSchemaV5.self, FeedGoodSchemaV6.self]
     }
 
     static var stages: [MigrationStage] {
@@ -456,13 +497,24 @@ enum FeedGoodMigrationPlan: SchemaMigrationPlan {
                         guard task.isEnabled,
                               let plant = task.plant,
                               plant.archivedAt == nil else { continue }
-                        context.insert(CareOpportunity(
+                        context.insert(FeedGoodSchemaV5.CareOpportunity(
                             taskID: task.id,
                             plantID: plant.id,
                             scheduledDueAt: task.dueDate,
                             createdAt: migrationDate,
                             updatedAt: migrationDate
                         ))
+                    }
+                    try context.save()
+                }
+            ),
+            MigrationStage.custom(
+                fromVersion: FeedGoodSchemaV5.self,
+                toVersion: FeedGoodSchemaV6.self,
+                willMigrate: { _ in },
+                didMigrate: { context in
+                    for opportunity in try context.fetch(FetchDescriptor<CareOpportunity>()) {
+                        opportunity.effectiveDueAt = opportunity.scheduledDueAt
                     }
                     try context.save()
                 }

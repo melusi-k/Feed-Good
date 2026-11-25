@@ -176,7 +176,7 @@ struct PlantPersistenceTests {
         // Open that same store with the exact schema and migration plan used
         // by the production app. Existing plants must become active by default.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV6.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -274,7 +274,7 @@ struct PlantPersistenceTests {
         }
 
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV6.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -377,7 +377,7 @@ struct PlantPersistenceTests {
         // Open the same on-disk V3 store with the production V5 schema and
         // complete V1 -> V2 -> V3 -> V4 -> V5 migration plan.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV6.self)
             let configuration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let container = try ModelContainer(
                 for: currentSchema,
@@ -433,7 +433,7 @@ struct PlantPersistenceTests {
         let storeURL = URL(fileURLWithPath: "/tmp/feedgood-v3-fixture/garden.store")
         guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
 
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         let configuration = ModelConfiguration(schema: schema, url: storeURL)
         let container = try ModelContainer(
             for: schema,

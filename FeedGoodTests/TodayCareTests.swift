@@ -14,7 +14,7 @@ struct TodayCareTests {
     private func date(_ iso: String) -> Date { ISO8601DateFormatter().date(from: iso)! }
 
     private func makeContext() throws -> ModelContext {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true))
         return ModelContext(container)
     }

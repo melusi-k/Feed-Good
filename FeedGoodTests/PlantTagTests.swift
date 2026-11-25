@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct PlantTagTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 

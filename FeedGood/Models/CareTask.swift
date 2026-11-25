@@ -134,7 +134,7 @@ enum CareRecorder {
         context.insert(event)
 
         if !isPaused {
-            if let opportunity, date >= opportunity.scheduledDueAt {
+            if let opportunity, date >= opportunity.effectiveDueAt {
                 try CareOpportunityLifecycle.complete(opportunity, with: event.id, at: date)
             }
             let nextDueDate = CareSchedule.nextDate(
@@ -143,11 +143,11 @@ enum CareRecorder {
                 calendar: calendar
             )
             if let opportunity,
-               date < opportunity.scheduledDueAt,
+               date < opportunity.effectiveDueAt,
                nextDueDate != previousDate {
                 try CareOpportunityLifecycle.cancelOpen(
                     for: task.id,
-                    scheduledDueAt: opportunity.scheduledDueAt,
+                    effectiveDueAt: opportunity.effectiveDueAt,
                     at: date,
                     in: context
                 )

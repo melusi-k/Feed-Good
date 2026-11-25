@@ -87,7 +87,7 @@ struct CareReminderTests {
     }
 
     @Test func quietPeriodWithholdsOnlySelectedRemindersAndRestoresEligibilityOnEnd() throws {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true))
         let context = ModelContext(container)
         let now = Date(timeIntervalSince1970: 1_800_000_000)

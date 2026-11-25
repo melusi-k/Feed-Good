@@ -8,7 +8,7 @@ private enum QuietPeriodLifecycleTestFailure: Error { case expected }
 @MainActor
 struct QuietPeriodLifecycleTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         return try ModelContainer(
             for: schema,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)

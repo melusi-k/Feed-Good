@@ -18,6 +18,7 @@ final class CareOpportunity {
     var taskID: UUID
     var plantID: UUID
     var scheduledDueAt: Date
+    var effectiveDueAt: Date = Date.now
     var statusRaw: String = "open"
     var careEventID: UUID?
     var createdAt: Date
@@ -32,6 +33,7 @@ final class CareOpportunity {
         taskID: UUID,
         plantID: UUID,
         scheduledDueAt: Date,
+        effectiveDueAt: Date? = nil,
         status: CareOpportunityStatus = .open,
         careEventID: UUID? = nil,
         createdAt: Date = .now,
@@ -41,6 +43,7 @@ final class CareOpportunity {
         self.taskID = taskID
         self.plantID = plantID
         self.scheduledDueAt = scheduledDueAt
+        self.effectiveDueAt = effectiveDueAt ?? scheduledDueAt
         self.statusRaw = status.rawValue
         self.careEventID = careEventID
         self.createdAt = createdAt
