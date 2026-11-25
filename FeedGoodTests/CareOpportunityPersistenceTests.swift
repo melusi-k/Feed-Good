@@ -347,6 +347,12 @@ struct CareOpportunityPersistenceTests {
         context.insert(snapshot)
         let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
         task.dueDate = overrideDue
+        try CareOpportunityLifecycle.applyScheduleChange(
+            to: task,
+            previousDueDate: originalDue,
+            at: date("2026-11-25T12:00:00Z"),
+            in: context
+        )
 
         try QuietPeriodLifecycle.end(
             period,
