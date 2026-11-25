@@ -206,7 +206,7 @@ struct QuietPeriodArchiveTests {
             careOpportunities: [opportunity]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 4)
+        #expect(archive.version == 5)
         #expect(archive.careOpportunities?.count == 1)
 
         let destination = try memory()
