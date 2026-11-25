@@ -94,7 +94,7 @@ struct GardenProfileSummaryTests {
 
         #expect(period != nil)
         #expect(period.map { calendar.component(.weekday, from: $0.start) } == 2)
-        #expect(period.map { $0.duration } == 7 * 24 * 60 * 60)
+        #expect(period.map { calendar.dateComponents([.day], from: $0.start, to: $0.end).day } == 7)
     }
 
     @Test @MainActor func emptyCareActivityHasNoInventedTimestampsOrCounts() {
