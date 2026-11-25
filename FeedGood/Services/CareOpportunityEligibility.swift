@@ -16,4 +16,9 @@ enum CareOpportunityEligibility {
     static func streakDeadline(for effectiveDueAt: Date) -> Date {
         effectiveDueAt.addingTimeInterval(streakGracePeriod)
     }
+
+    /// The grace period remains open through the exact deadline instant.
+    static func gracePeriodHasExpired(now: Date, effectiveDueAt: Date) -> Bool {
+        now > streakDeadline(for: effectiveDueAt)
+    }
 }
