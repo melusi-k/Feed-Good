@@ -214,7 +214,6 @@ struct CareRemindersLifecycle: ViewModifier {
                 guard !Task.isCancelled else { return }
                 do {
                     try QuietPeriodLifecycle.advanceAll(in: context)
-                    try CareOpportunityLifecycle.bootstrap(in: context.container)
                 } catch {
                     // Foreground and next-transition passes retry lifecycle catch-up.
                 }
