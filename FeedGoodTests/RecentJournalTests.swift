@@ -19,7 +19,7 @@ struct RecentJournalTests {
     }
 
     @Test func sourceEditsAndDeletionAreReflectedWithoutCopies() throws {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let context = ModelContext(container)
         let first = Plant(name: "Fern"); let second = Plant(name: "Aloe")
