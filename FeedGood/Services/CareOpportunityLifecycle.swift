@@ -94,7 +94,7 @@ enum CareOpportunityLifecycle {
         }
 
         if task.dueDate != previousDueDate {
-            try cancelOpen(for: task.id, scheduledDueAt: previousDueDate, at: date, in: context)
+            try cancelOpen(for: task.id, effectiveDueAt: previousDueDate, at: date, in: context)
         }
         _ = try ensureCurrent(for: task, at: date, in: context)
     }
