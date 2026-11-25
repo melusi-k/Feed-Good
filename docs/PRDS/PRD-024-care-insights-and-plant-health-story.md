@@ -55,6 +55,7 @@ Success means users can understand their own records, spot meaningful changes, a
 - Automated interpretation of free-text notes or photos in this release.
 - Cloud analytics, account requirements, remote processing or third-party tracking.
 - A new source-of-truth care ledger or replacement for schedules, care events, check-ins, journal, Plant Story or Growth Review.
+- Habit formation, habit strength, automaticity or behavioural adoption scores inferred from care-task completion, streaks or app activity.
 
 ## 5. Scope and capability areas
 
