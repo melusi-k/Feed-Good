@@ -445,7 +445,28 @@ enum FeedGoodMigrationPlan: SchemaMigrationPlan {
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV1.self, toVersion: FeedGoodSchemaV2.self),
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV2.self, toVersion: FeedGoodSchemaV3.self),
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV3.self, toVersion: FeedGoodSchemaV4.self),
-            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV4.self, toVersion: FeedGoodSchemaV5.self)
+            MigrationStage.custom(
+                fromVersion: FeedGoodSchemaV4.self,
+                toVersion: FeedGoodSchemaV5.self,
+                willMigrate: { _ in },
+                didMigrate: { context in
+                    let migrationDate = Date.now
+                    let tasks = try context.fetch(FetchDescriptor<CareTask>())
+                    for task in tasks {
+                        guard task.isEnabled,
+                              let plant = task.plant,
+                              plant.archivedAt == nil else { continue }
+                        context.insert(CareOpportunity(
+                            taskID: task.id,
+                            plantID: plant.id,
+                            scheduledDueAt: task.dueDate,
+                            createdAt: migrationDate,
+                            updatedAt: migrationDate
+                        ))
+                    }
+                    try context.save()
+                }
+            )
         ]
     }
 }
