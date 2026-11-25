@@ -210,7 +210,7 @@ enum QuietPeriodLifecycle {
         }
         let previousDueDates = affectedTasks.map { ($0, $0.dueDate) }
         let opportunitySnapshot = try CareOpportunityLifecycle.snapshot(
-            for: Set(affectedTasks.map(\\.id)),
+            for: Set(affectedTasks.map(\.id)),
             in: context
         )
 
