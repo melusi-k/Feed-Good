@@ -199,8 +199,12 @@ struct CareRemindersLifecycle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .task(id: revision) {
-                do { try QuietPeriodLifecycle.advanceAll(in: context) }
-                catch { /* Keep care reminders available; the next foreground pass retries lifecycle catch-up. */ }
+                do {
+                    try QuietPeriodLifecycle.advanceAll(in: context)
+                    try CareOpportunityLifecycle.bootstrap(in: context.container)
+                } catch {
+                    // Keep care reminders available; the next foreground pass retries lifecycle catch-up.
+                }
                 await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
             }
             .task(id: nextQuietPeriodTransition) {
@@ -209,15 +213,23 @@ struct CareRemindersLifecycle: ViewModifier {
                 do { try await Task.sleep(for: .seconds(delay)) }
                 catch { return }
                 guard !Task.isCancelled else { return }
-                do { try QuietPeriodLifecycle.advanceAll(in: context) }
-                catch { /* Foreground and next-transition passes retry lifecycle catch-up. */ }
+                do {
+                    try QuietPeriodLifecycle.advanceAll(in: context)
+                    try CareOpportunityLifecycle.bootstrap(in: context.container)
+                } catch {
+                    // Foreground and next-transition passes retry lifecycle catch-up.
+                }
                 await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     Task {
-                        do { try QuietPeriodLifecycle.advanceAll(in: context) }
-                        catch { /* The next foreground pass retries lifecycle catch-up. */ }
+                        do {
+                            try QuietPeriodLifecycle.advanceAll(in: context)
+                            try CareOpportunityLifecycle.bootstrap(in: context.container)
+                        } catch {
+                            // The next foreground pass retries lifecycle catch-up.
+                        }
                         await scheduler.reconcile(CareReminderScheduler.reminders(for: tasks))
                     }
                 }
