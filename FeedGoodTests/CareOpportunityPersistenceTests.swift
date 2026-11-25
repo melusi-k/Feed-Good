@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct CareOpportunityPersistenceTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         return try ModelContainer(
             for: schema,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
@@ -54,7 +54,7 @@ struct CareOpportunityPersistenceTests {
         #expect(fetched.careEventID == event.id)
     }
 
-    @Test func v4StoreMigratesToV5SeedsOnlyCurrentDueOpportunityWithoutLinkingHistoricalCareEvents() throws {
+    @Test func v4StoreMigratesThroughV6SeedsOnlyCurrentDueOpportunityWithoutLinkingHistoricalCareEvents() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -226,7 +226,7 @@ struct CareOpportunityPersistenceTests {
     }
 
 
-    @Test func quietPeriodResumeCancelsSupersededOpportunityAndCreatesResumedOne() throws {
+    @Test func quietPeriodResumePreservesOpportunityIdentityAndOriginalDueInstant() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Calathea")
         context.insert(plant)
@@ -261,10 +261,12 @@ struct CareOpportunityPersistenceTests {
         )
 
         let opportunities = try context.fetch(FetchDescriptor<CareOpportunity>())
-        #expect(original.status == .cancelled)
+        #expect(original.status == .open)
         #expect(task.dueDate == date("2026-12-03T09:00:00Z"))
-        #expect(opportunities.filter { $0.status == .open }.count == 1)
-        #expect(opportunities.first { $0.status == .open }?.scheduledDueAt == task.dueDate)
+        #expect(opportunities.count == 1)
+        #expect(opportunities.first?.id == original.id)
+        #expect(opportunities.first?.scheduledDueAt == originalDue)
+        #expect(opportunities.first?.effectiveDueAt == task.dueDate)
     }
 
     @Test func failedQuietPeriodResumeRestoresOriginalOpportunityIdentityAndDueDate() throws {
