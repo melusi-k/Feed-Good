@@ -362,4 +362,89 @@ struct CareTaskEditorPersistenceTests {
 
 private enum TestSaveError: Error {
     case failed
+
+    @Test func taskCreationRescheduleDisableAndDeleteMaintainOpportunityLedger() throws {
+        let container = try memory()
+        let context = container.mainContext
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        try context.save()
+        let now = Date(timeIntervalSince1970: 1_900_000_000)
+        let firstDue = Date(timeIntervalSince1970: 2_000_000_000)
+
+        _ = try CareTaskEditorPersistence.save(
+            plantID: plant.id,
+            taskID: nil,
+            kind: .watering,
+            customTitle: "",
+            intervalDays: 7,
+            dueDate: firstDue,
+            isEnabled: true,
+            reminderEnabled: false,
+            in: container,
+            now: now
+        )
+        var verify = ModelContext(container)
+        var task = try #require(verify.fetch(FetchDescriptor<CareTask>()).first)
+        let taskID = task.id
+        var opportunities = try verify.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(opportunities.count == 1)
+        let firstOpportunity = try #require(opportunities.first)
+        #expect(firstOpportunity.status == .open)
+        #expect(firstOpportunity.scheduledDueAt == firstDue)
+
+        let replacementDue = Date(timeIntervalSince1970: 2_050_000_000)
+        _ = try CareTaskEditorPersistence.save(
+            plantID: plant.id,
+            taskID: taskID,
+            kind: .watering,
+            customTitle: "",
+            intervalDays: 7,
+            dueDate: replacementDue,
+            isEnabled: true,
+            reminderEnabled: false,
+            in: container,
+            now: now
+        )
+        verify = ModelContext(container)
+        opportunities = try verify.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(opportunities.count == 2)
+        #expect(opportunities.first { $0.id == firstOpportunity.id }?.status == .cancelled)
+        #expect(opportunities.first { $0.status == .open }?.scheduledDueAt == replacementDue)
+
+        _ = try CareTaskEditorPersistence.save(
+            plantID: plant.id,
+            taskID: taskID,
+            kind: .watering,
+            customTitle: "",
+            intervalDays: 7,
+            dueDate: replacementDue,
+            isEnabled: false,
+            reminderEnabled: false,
+            in: container,
+            now: now
+        )
+        verify = ModelContext(container)
+        opportunities = try verify.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(opportunities.allSatisfy { $0.status == .cancelled })
+
+        _ = try CareTaskEditorPersistence.save(
+            plantID: plant.id,
+            taskID: taskID,
+            kind: .watering,
+            customTitle: "",
+            intervalDays: 7,
+            dueDate: replacementDue,
+            isEnabled: true,
+            reminderEnabled: false,
+            in: container,
+            now: now
+        )
+        try CareTaskEditorPersistence.delete(plantID: plant.id, taskID: taskID, in: container, now: now)
+        verify = ModelContext(container)
+        opportunities = try verify.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(opportunities.allSatisfy { $0.status == .cancelled })
+        #expect(try verify.fetch(FetchDescriptor<CareTask>()).isEmpty)
+    }
+
 }
