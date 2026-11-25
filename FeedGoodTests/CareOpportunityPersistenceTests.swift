@@ -120,8 +120,57 @@ struct CareOpportunityPersistenceTests {
             #expect(opportunities.first?.taskID == taskID)
             #expect(opportunities.first?.plantID == plantID)
             #expect(opportunities.first?.scheduledDueAt == due)
+            #expect(opportunities.first?.effectiveDueAt == due)
             #expect(opportunities.first?.status == .open)
             #expect(opportunities.first?.careEventID == nil)
+        }
+    }
+
+    @Test func v5StoreMigratesEffectiveDueAtWithoutChangingOpportunityIdentityOrOriginalSchedule() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let storeURL = folder.appendingPathComponent("v5-garden.store")
+        let plantID = UUID()
+        let taskID = UUID()
+        let opportunityID = UUID()
+        let due = date("2026-12-01T09:00:00Z")
+
+        do {
+            let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+            let configuration = ModelConfiguration(schema: schema, url: storeURL)
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            let context = ModelContext(container)
+            let plant = Plant(id: plantID, name: "Migration Fern")
+            let task = CareTask(id: taskID, kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+            context.insert(plant)
+            context.insert(task)
+            context.insert(FeedGoodSchemaV5.CareOpportunity(
+                id: opportunityID,
+                taskID: taskID,
+                plantID: plantID,
+                scheduledDueAt: due,
+                createdAt: due.addingTimeInterval(-86_400),
+                updatedAt: due.addingTimeInterval(-86_400)
+            ))
+            try context.save()
+        }
+
+        do {
+            let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
+            let configuration = ModelConfiguration(schema: schema, url: storeURL)
+            let container = try ModelContainer(
+                for: schema,
+                migrationPlan: FeedGoodMigrationPlan.self,
+                configurations: [configuration]
+            )
+            let context = ModelContext(container)
+            let restored = try #require(context.fetch(FetchDescriptor<CareOpportunity>()).first)
+            #expect(restored.id == opportunityID)
+            #expect(restored.taskID == taskID)
+            #expect(restored.plantID == plantID)
+            #expect(restored.scheduledDueAt == due)
+            #expect(restored.effectiveDueAt == due)
         }
     }
 
