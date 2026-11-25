@@ -9,6 +9,22 @@ struct ScheduledCareOpportunitySnapshot: Equatable {
     let statusRaw: String
     let careEventID: UUID?
 
+    init(
+        id: UUID,
+        taskID: UUID,
+        plantID: UUID,
+        effectiveDueAt: Date,
+        statusRaw: String,
+        careEventID: UUID?
+    ) {
+        self.id = id
+        self.taskID = taskID
+        self.plantID = plantID
+        self.effectiveDueAt = effectiveDueAt
+        self.statusRaw = statusRaw
+        self.careEventID = careEventID
+    }
+
     @MainActor
     init(opportunity: CareOpportunity) {
         id = opportunity.id
@@ -26,6 +42,13 @@ struct ScheduledCareEventSnapshot: Equatable {
     let plantID: UUID?
     let completedAt: Date
 
+    init(id: UUID, taskID: UUID, plantID: UUID?, completedAt: Date) {
+        self.id = id
+        self.taskID = taskID
+        self.plantID = plantID
+        self.completedAt = completedAt
+    }
+
     @MainActor
     init(event: CareEvent) {
         id = event.id
@@ -41,6 +64,12 @@ struct ScheduledCareQuietPeriodSnapshot: Equatable {
     let taskID: UUID
     let plantID: UUID
     let startAt: Date
+
+    init(taskID: UUID, plantID: UUID, startAt: Date) {
+        self.taskID = taskID
+        self.plantID = plantID
+        self.startAt = startAt
+    }
 
     @MainActor
     init?(membership: QuietPeriodTaskSnapshot) {
