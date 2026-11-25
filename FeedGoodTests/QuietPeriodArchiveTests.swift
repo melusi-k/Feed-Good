@@ -233,6 +233,45 @@ struct QuietPeriodArchiveTests {
         }
     }
 
+    @Test func versionFourOpportunityArchiveDefaultsEffectiveDueToOriginalScheduledInstant() throws {
+        let plantID = UUID()
+        let taskID = UUID()
+        let opportunityID = UUID()
+        let due = Date(timeIntervalSince1970: 1_800_000_000)
+        var legacy = JournalArchive(
+            plants: [
+                .init(id: plantID, name: "Legacy Fern", species: "", notes: "", createdAt: due)
+            ],
+            entries: [],
+            careTasks: [
+                .init(
+                    id: taskID, plantID: plantID, kindRaw: CareKind.watering.rawValue,
+                    customTitle: "", intervalDays: 7, dueDate: due,
+                    isEnabled: true, reminderEnabled: false
+                )
+            ],
+            careEvents: [],
+            careOpportunities: [
+                .init(
+                    id: opportunityID, taskID: taskID, plantID: plantID,
+                    scheduledDueAt: due, statusRaw: CareOpportunityStatus.open.rawValue,
+                    careEventID: nil, createdAt: due.addingTimeInterval(-60),
+                    updatedAt: due.addingTimeInterval(-60)
+                )
+            ]
+        )
+        legacy.version = 4
+        let data = try JSONEncoder().encode(legacy)
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+        let restored = try #require(recovery.fetch(FetchDescriptor<CareOpportunity>()).first)
+        #expect(restored.id == opportunityID)
+        #expect(restored.scheduledDueAt == due)
+        #expect(restored.effectiveDueAt == due)
+    }
+
     @Test func invalidOpportunityStatesAndEventReferencesRejectBeforeWrites() throws {
         let plant = Plant(name: "Aloe")
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
