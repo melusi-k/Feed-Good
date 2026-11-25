@@ -139,7 +139,7 @@ struct PlantArchiveTests {
         )
         context.insert(period)
         context.insert(snapshot)
-        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: periodStart, in: context))
+        let opportunity = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: periodStart, in: context))
         try context.save()
 
         #expect(throws: InjectedFailure.self) {
