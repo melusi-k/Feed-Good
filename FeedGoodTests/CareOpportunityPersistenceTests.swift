@@ -360,6 +360,7 @@ struct CareOpportunityPersistenceTests {
         #expect(period.statusRaw == QuietPeriodStatus.active.rawValue)
         #expect(task.dueDate == originalDue)
         #expect(original.status == .open)
+        #expect(original.effectiveDueAt == originalDue)
         #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).count == 1)
     }
 
