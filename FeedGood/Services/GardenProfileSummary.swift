@@ -8,7 +8,7 @@ struct GardenProfileSummary: Equatable {
 
     @MainActor
     init(plants: [Plant], careEvents: [CareEvent], journalEntries: [JournalEntry]) {
-        let plantIDs = Set(plants.map(\\.id))
+        let plantIDs = Set(plants.map(\.id))
         plantCount = plantIDs.count
         careEventCount = careEvents.filter { event in
             event.plant.map { plantIDs.contains($0.id) } ?? false
