@@ -334,4 +334,25 @@ struct CareOpportunityPersistenceTests {
         #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).count == 1)
     }
 
+
+    @Test func deletingCompletionAfterItsTaskWasDeletedDoesNotReopenOrphanOpportunity() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let due = date("2026-11-25T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        try CareRecorder.complete(task, note: "Watered", at: due, in: context)
+        let event = try #require(try context.fetch(FetchDescriptor<CareEvent>()).first)
+        context.delete(task)
+        try context.save()
+
+        try CareRecorder.delete(event, in: context, at: date("2026-11-26T12:00:00Z"))
+
+        #expect(opportunity.status == .cancelled)
+        #expect(opportunity.careEventID == nil)
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+    }
+
 }
