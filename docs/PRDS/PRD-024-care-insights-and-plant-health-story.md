@@ -300,7 +300,7 @@ The following findings were checked against the current `main` source and existi
 
 ### 13.3 Technical contracts approved for implementation planning
 
-1. **Scheduled-opportunity identity dependency:** PRD-022 must approve the minimum reliable way to identify an individual scheduled opportunity, its original/current due instants, owning stable care-task/plant identity, lifecycle transitions and any linked completion event. PRD-024 does not mandate a general persisted `CareOccurrence` model: PRD-022 may select the smallest design that satisfies traceability and history integrity. A reschedule remains the same logical opportunity and must not create a second eligible count. Skip, cancellation, disable, pause and task-removal semantics must be explicit. Do not infer historical opportunities by repeatedly subtracting intervals from today's `CareTask.dueDate`.
+1. **Scheduled-opportunity identity dependency — approved 2026-11-25:** use a minimal persisted opportunity record with immutable UUID, stable CareTask/plant identity, immutable scheduled-due instant, `open`/`completed`/`cancelled` state and optional linked CareEvent UUID. This is not a general-purpose occurrence engine. Explicit reschedule cancels the superseded opportunity and creates a replacement; disable/delete cancels an open opportunity. Quiet Period suppression preserves the approved pause/resume contract and excludes paused time. Skip/snooze/defer are excluded from the first release. Do not infer historical opportunities by repeatedly subtracting intervals from today's `CareTask.dueDate`. Implementation is tracked in issue #143.
 2. **Backward compatibility:** Existing `CareEvent` records without an occurrence ID remain valid historical care events. They contribute to activity history but must not be retroactively assigned to a scheduled opportunity or included in completion-rate/streak denominators without reliable evidence.
 3. **Eligible opportunity boundary:** Use the occurrence lifecycle contract from PRD-022. The due instant and completion/grace window must be explicit. An occurrence becomes definitively overdue only after that window expires. PRD-024 does not invent a grace period.
 4. **Outcome mapping:** Completed requires an authoritative linked completion event. Skipped is a final non-completion outcome. Deferred/rescheduled remains the same occurrence with a new due boundary. Disabled/cancelled and paused/quiet-period intervals are excluded according to the lifecycle transition history. An unresolved opportunity is not included in the resolved completion-rate denominator.
@@ -322,7 +322,7 @@ The following findings were checked against the current `main` source and existi
 
 These cannot be honestly marked resolved by PRD-024 alone:
 
-- **PRD-022:** minimum reliable scheduled-opportunity identity, skip/defer/cancel transitions, completion window, task edits/removal and history links. This does not presume a general persisted `CareOccurrence` model.
+- **PRD-022:** the minimum scheduled-opportunity identity/lifecycle contract is approved on 2026-11-25 and implementation is tracked in issue #143. Skip/snooze/defer are explicitly excluded from the first release. The remaining gate is implementation plus migration/archive compatibility, not another product identity decision.
 - **PRD-020:** exact quiet-period pause/resume policy, affected-task scope and persisted interval representation.
 - **PRD-023:** final typed care-outcome fields, validation and archive representation.
 - **PRD-014:** `JournalEntry` extension versus a dedicated `PlantCheckIn` model, plus its export/restore and evidence semantics.
@@ -343,5 +343,12 @@ These are dependency gates, not reasons to block the PRD document. Phase 0 must 
 - **Reflection:** [PRD-013 — Weekly Garden Reflection](PRD-013-weekly-garden-reflection.md), which continues to exclude streaks and scores; do not add task streaks to the reflection.
 - **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to record the approved narrow exception for private, descriptive per-task streak histories. PRD-013 Weekly Garden Reflection remains streak-free.
 - **Related proposals:** [#64 — Growth Review](https://github.com/melusi-k/Feed-Good/issues/64), [#65 — Weekly Garden Reflection](https://github.com/melusi-k/Feed-Good/issues/65), [#66 — Plant Check-ins](https://github.com/melusi-k/Feed-Good/issues/66), [#72 — Plant Changes Timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- **Implementation issue:** Not created. Create the parent implementation issue and phase sub-issues after this PRD is approved. Keep each dependent implementation phase gated on its upstream source contracts, especially PRD-022's scheduled-opportunity identity/lifecycle contract and archive compatibility.
+- **Implementation issue:** Scheduled-opportunity identity/lifecycle implementation is tracked in [issue #143](https://github.com/melusi-k/Feed-Good/issues/143). Scheduled-care analytics and per-task streak UI remain separate later slices, gated on #143 implementation and archive compatibility.
 - **Implementation status:** Not started. This document records the expanded product and technical contract for review.
+
+
+## 15. Scheduled-opportunity contract status — 2026-11-25
+
+The PRD-022 identity/lifecycle contract is approved. The minimum persisted record has immutable opportunity UUID, CareTask UUID, plant ownership, scheduled-due instant, `open`/`completed`/`cancelled` state and optional CareEvent UUID. Unresolved/overdue is derived from an open opportunity after its due instant. Completion and task schedule advancement must be atomic; explicit reschedule cancels/replaces; disable/delete cancels; Quiet Period pause/resume remains governed by PRD-020. Skip/snooze/defer are excluded. Existing CareEvents remain unlinked and are never backfilled.
+
+Implementation and source/archive compatibility are tracked in issue #143. PRD-024 scheduled-care analytics and private per-task streak UI remain blocked until that implementation is merged and verified. The recorded-care activity foundation in PR #140 remains complete and unchanged.
