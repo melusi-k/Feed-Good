@@ -76,7 +76,7 @@ struct PlantScheduledCareAnalyticsView: View {
                     LabeledContent("Due · within 24-hour window", value: "\(summary.unresolvedCount)")
                     LabeledContent("Overdue · window expired", value: "\(summary.overdueCount)")
                 } header: {
-                    Text("Scheduled outcomes · \\(selectedRange.title)")
+                    Text("Scheduled outcomes · \(selectedRange.title)")
                 } footer: {
                     Text(periodDescription(summary))
                 }
