@@ -10,7 +10,7 @@ struct FeedGoodApp: App {
 
     init() {
         FeedGoodNavigationAppearance.apply()
-        let schema = Schema(versionedSchema: FeedGoodSchemaV2.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
         let isUITesting = ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
         let configuration = ModelConfiguration(
             schema: schema,
