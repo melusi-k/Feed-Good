@@ -94,7 +94,7 @@ enum ScheduledCareAnalyticsRange: String, CaseIterable, Identifiable {
         case .last90Days:
             start = calendar.date(byAdding: .day, value: -89, to: today.start)
         case .last12Months:
-            start = calendar.date(byAdding: .month, value: -11, to: today.start)
+            start = calendar.date(byAdding: .month, value: -12, to: today.start)
         }
         guard let start else { return nil }
         return DateInterval(start: start, end: today.end)
