@@ -39,6 +39,9 @@ final class CareRoutineUITests: XCTestCase {
         eventNote.typeText("Corrected care note")
         app.buttons["care.eventSave"].tap()
         XCTAssertTrue(app.staticTexts["Corrected care note"].waitForExistence(timeout: 5))
+        // Let the editor sheet finish dismissing before reopening it: a tap
+        // on the history row during the dismissal transition is swallowed.
+        XCTAssertTrue(eventNote.waitForNonExistence(timeout: 5))
 
         app.buttons["care.eventEdit.Watering"].tap()
         app.buttons["care.eventDelete"].tap()
