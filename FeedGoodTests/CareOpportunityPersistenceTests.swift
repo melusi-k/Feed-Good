@@ -475,4 +475,52 @@ struct CareOpportunityPersistenceTests {
         #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
     }
 
+
+    @Test func quietPeriodResumeRetimesCurrentOpportunityWithoutChangingReopenedHistoricalOpportunity() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let originalDue = date("2026-11-25T09:00:00Z")
+        let completedAt = date("2026-11-25T09:05:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
+        context.insert(task)
+        let historical = try #require(
+            try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context)
+        )
+
+        try CareRecorder.complete(task, note: "Watered", at: completedAt, in: context)
+        let event = try #require(context.fetch(FetchDescriptor<CareEvent>()).first)
+        let currentDue = task.dueDate
+        let current = try #require(
+            try CareOpportunityLifecycle.ensureCurrent(for: task, at: completedAt, in: context)
+        )
+        #expect(current.id != historical.id)
+        #expect(current.effectiveDueAt == currentDue)
+
+        // Deleting an earlier completion reopens its historical opportunity,
+        // but does not rewind the task or replace its current opportunity.
+        try CareRecorder.delete(event, in: context, at: date("2026-11-26T12:00:00Z"))
+        #expect(historical.status == .open)
+        #expect(current.status == .open)
+        #expect(task.dueDate == currentDue)
+
+        let resumedDue = currentDue.addingTimeInterval(3 * 24 * 60 * 60)
+        task.dueDate = resumedDue
+        try CareOpportunityLifecycle.resumeAfterQuietPeriod(
+            for: task,
+            previousDueDate: currentDue,
+            at: date("2026-11-27T12:00:00Z"),
+            in: context
+        )
+
+        #expect(historical.status == .open)
+        #expect(historical.scheduledDueAt == originalDue)
+        #expect(historical.effectiveDueAt == originalDue)
+        #expect(historical.careEventID == nil)
+        #expect(current.status == .open)
+        #expect(current.scheduledDueAt == currentDue)
+        #expect(current.effectiveDueAt == resumedDue)
+        #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).count == 2)
+    }
+
 }
