@@ -52,7 +52,8 @@ struct JournalArchivePreview: Equatable {
 }
 
 /// Version 1 is journal-only, version 2 adds the complete garden record and tags,
-/// version 3 adds Quiet Period history, and version 4 adds scheduled-care opportunities.
+/// version 3 adds Quiet Period history, version 4 adds scheduled-care opportunities,
+/// and version 5 adds the effective due boundary.
 /// Optional record keys preserve decoding of older archives.
 struct JournalArchive: Codable {
     var version = 5
