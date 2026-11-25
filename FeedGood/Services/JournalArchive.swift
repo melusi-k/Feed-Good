@@ -55,7 +55,7 @@ struct JournalArchivePreview: Equatable {
 /// version 3 adds Quiet Period history, and version 4 adds scheduled-care opportunities.
 /// Optional record keys preserve decoding of older archives.
 struct JournalArchive: Codable {
-    var version = 4
+    var version = 5
     var plants: [PlantRecord]
     var entries: [EntryRecord]
     var careTasks: [CareTaskRecord]?
@@ -123,6 +123,7 @@ struct JournalArchive: Codable {
         var taskID: UUID
         var plantID: UUID
         var scheduledDueAt: Date
+        var effectiveDueAt: Date? = nil
         var statusRaw: String
         var careEventID: UUID?
         var createdAt: Date
@@ -205,6 +206,7 @@ struct JournalArchive: Codable {
                 taskID: opportunity.taskID,
                 plantID: opportunity.plantID,
                 scheduledDueAt: opportunity.scheduledDueAt,
+                effectiveDueAt: opportunity.effectiveDueAt,
                 statusRaw: opportunity.statusRaw,
                 careEventID: opportunity.careEventID,
                 createdAt: opportunity.createdAt,
@@ -260,7 +262,7 @@ struct JournalArchive: Codable {
     }
 
     func validate() throws {
-        guard (1...4).contains(version) else { throw JournalArchiveError.unsupportedVersion }
+        guard (1...5).contains(version) else { throw JournalArchiveError.unsupportedVersion }
         guard plants.count <= Self.maxRecords,
               entries.count <= Self.maxRecords,
               (careTasks?.count ?? 0) <= Self.maxRecords,
@@ -357,6 +359,7 @@ struct JournalArchive: Codable {
         }
         for opportunity in opportunityRecords {
             guard plantIDs.contains(opportunity.plantID),
+                  (version < 5 || opportunity.effectiveDueAt != nil),
                   let status = CareOpportunityStatus(rawValue: opportunity.statusRaw),
                   opportunity.createdAt <= opportunity.updatedAt else {
                 throw JournalArchiveError.invalidRecord
@@ -594,6 +597,7 @@ struct JournalArchive: Codable {
                     taskID: existing.taskID,
                     plantID: existing.plantID,
                     scheduledDueAt: existing.scheduledDueAt,
+                    effectiveDueAt: existing.effectiveDueAt,
                     statusRaw: existing.statusRaw,
                     careEventID: existing.careEventID,
                     createdAt: existing.createdAt,
@@ -714,6 +718,7 @@ struct JournalArchive: Codable {
                     taskID: record.taskID,
                     plantID: record.plantID,
                     scheduledDueAt: record.scheduledDueAt,
+                    effectiveDueAt: record.effectiveDueAt ?? record.scheduledDueAt,
                     status: status,
                     careEventID: record.careEventID,
                     createdAt: record.createdAt,
