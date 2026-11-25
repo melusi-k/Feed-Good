@@ -107,7 +107,7 @@ struct JournalTests {
             careEvents: [event]
         )
         let decoded = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(decoded.version == 3)
+        #expect(decoded.version == 4)
         #expect(decoded.careTasks?.count == 1)
         #expect(decoded.careEvents?.count == 1)
 
@@ -187,7 +187,7 @@ struct JournalTests {
         try destinationContext.save()
 
         let preview = try JournalArchive.preview(data, context: destinationContext)
-        #expect(preview.version == 3)
+        #expect(preview.version == 4)
         #expect(preview.plantsToAdd == 0)
         #expect(preview.plantsAlreadyPresent == 1)
         #expect(preview.entriesToAdd == 1)
