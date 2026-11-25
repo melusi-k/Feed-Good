@@ -203,6 +203,43 @@ struct CareOpportunityPersistenceTests {
         #expect(replacement.id != first.id)
     }
 
+    @Test func explicitRescheduleAfterQuietPeriodUsesEffectiveBoundaryForCancellation() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let originalDue = date("2026-12-01T09:00:00Z")
+        let resumedDue = date("2026-12-04T09:00:00Z")
+        let replacementDue = date("2026-12-10T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
+        context.insert(task)
+        let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+
+        task.dueDate = resumedDue
+        try CareOpportunityLifecycle.resumeAfterQuietPeriod(
+            for: task,
+            previousDueDate: originalDue,
+            at: date("2026-11-26T12:00:00Z"),
+            in: context
+        )
+        #expect(original.id == original.id)
+        #expect(original.scheduledDueAt == originalDue)
+        #expect(original.effectiveDueAt == resumedDue)
+
+        task.dueDate = replacementDue
+        try CareOpportunityLifecycle.applyScheduleChange(
+            to: task,
+            previousDueDate: resumedDue,
+            at: date("2026-11-27T12:00:00Z"),
+            in: context
+        )
+
+        #expect(original.status == .cancelled)
+        let current = try #require(try context.fetch(FetchDescriptor<CareOpportunity>()).first { $0.status == .open })
+        #expect(current.id != original.id)
+        #expect(current.scheduledDueAt == replacementDue)
+        #expect(current.effectiveDueAt == replacementDue)
+    }
+
     @Test func acceptedCompletionLinksExactlyOneEventAndDeletingItReopensWithoutRewindingTask() throws {
         let context = ModelContext(try memory())
         let plant = Plant(name: "Aloe")
