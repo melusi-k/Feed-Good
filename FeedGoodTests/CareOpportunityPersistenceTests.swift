@@ -133,8 +133,8 @@ struct CareOpportunityPersistenceTests {
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
         context.insert(task)
 
-        let first = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-25T12:00:00Z"), in: context))
-        let repeated = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-25T12:01:00Z"), in: context))
+        let first = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-25T12:00:00Z"), in: context))
+        let repeated = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-25T12:01:00Z"), in: context))
         #expect(first.id == repeated.id)
 
         let replacementDue = date("2026-12-05T09:00:00Z")
@@ -162,7 +162,7 @@ struct CareOpportunityPersistenceTests {
         let completedAt = date("2026-11-25T09:05:00Z")
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        let opportunity = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
 
         try CareRecorder.complete(task, note: "Watered", at: completedAt, in: context)
         let event = try #require(try context.fetch(FetchDescriptor<CareEvent>()).first)
@@ -187,7 +187,7 @@ struct CareOpportunityPersistenceTests {
         let completedAt = date("2026-11-25T09:00:00Z")
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let original = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: completedAt, in: context))
+        let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: completedAt, in: context))
 
         try CareRecorder.complete(task, note: "Early check", at: completedAt, in: context)
 
@@ -209,7 +209,7 @@ struct CareOpportunityPersistenceTests {
         let due = date("2026-11-25T09:00:00Z")
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        let opportunity = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
         try context.save()
 
         #expect(throws: InjectedFailure.self) {
@@ -251,7 +251,7 @@ struct CareOpportunityPersistenceTests {
         )
         context.insert(period)
         context.insert(snapshot)
-        let original = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
 
         try QuietPeriodLifecycle.end(
             period,
@@ -293,7 +293,7 @@ struct CareOpportunityPersistenceTests {
         )
         context.insert(period)
         context.insert(snapshot)
-        let original = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
         try context.save()
 
         #expect(throws: InjectedFailure.self) {
@@ -320,7 +320,7 @@ struct CareOpportunityPersistenceTests {
         let due = date("2026-11-25T09:00:00Z")
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        let opportunity = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
         try CareRecorder.complete(task, note: "Watered", at: due, in: context)
         let event = try #require(try context.fetch(FetchDescriptor<CareEvent>()).first)
         context.delete(task)
