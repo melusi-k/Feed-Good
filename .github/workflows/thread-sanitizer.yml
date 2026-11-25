@@ -27,13 +27,19 @@ jobs:
           fetch-depth: 0
       - name: Classify changed paths
         id: classify
-        run: bash scripts/ci/classify-changes.sh "${{ github.event_name }}" "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+        run: |
+          # Run the base branch's classifier, never the pull request's copy,
+          # so a pull request cannot weaken its own classification.
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE_SHA" ]; then BASE_SHA="HEAD"; fi
+          git show "$BASE_SHA:scripts/ci/classify-changes.sh" > "$RUNNER_TEMP/classify-changes.sh"
+          bash "$RUNNER_TEMP/classify-changes.sh" "${{ github.event_name }}" "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
       - name: Test change classifier
         run: bash scripts/ci/test-classify-changes.sh
 
   thread-sanitizer:
     needs: classify-changes
-    if: github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true'
+    if: always() && (github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true')
     runs-on: macos-26
     timeout-minutes: 45
     steps:
