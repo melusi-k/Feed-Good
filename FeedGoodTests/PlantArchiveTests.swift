@@ -7,7 +7,7 @@ import Testing
 struct PlantArchiveTests {
     private func makeContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]), configurations: configuration)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV5.self), configurations: configuration)
         return ModelContext(container)
     }
 
