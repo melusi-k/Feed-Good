@@ -243,8 +243,8 @@ enum QuietPeriodLifecycle {
             }
 
             for (task, previousDueDate) in previousDueDates {
-                try CareOpportunityLifecycle.applyScheduleChange(
-                    to: task,
+                try CareOpportunityLifecycle.resumeAfterQuietPeriod(
+                    for: task,
                     previousDueDate: previousDueDate,
                     at: date,
                     in: context
