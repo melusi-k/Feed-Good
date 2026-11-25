@@ -176,7 +176,7 @@ struct PlantPersistenceTests {
         // Open that same store with the exact schema and migration plan used
         // by the production app. Existing plants must become active by default.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -274,7 +274,7 @@ struct PlantPersistenceTests {
         }
 
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -301,7 +301,7 @@ struct PlantPersistenceTests {
     }
 
 
-    @Test func version3StoreWithTagsMigratesToVersion4WithoutLosingRecords() throws {
+    @Test func version3StoreWithTagsMigratesToVersion5WithoutLosingRecords() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -374,10 +374,10 @@ struct PlantPersistenceTests {
             try context.save()
         }
 
-        // Open the same on-disk V3 store with the production V4 schema and
-        // complete V1 -> V2 -> V3 -> V4 migration plan.
+        // Open the same on-disk V3 store with the production V5 schema and
+        // complete V1 -> V2 -> V3 -> V4 -> V5 migration plan.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
             let configuration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let container = try ModelContainer(
                 for: currentSchema,
@@ -427,13 +427,13 @@ struct PlantPersistenceTests {
     }
 
 
-    @Test func shippedTopLevelV3StoreMigratesToVersion4WithoutLosingRecords() throws {
+    @Test func shippedTopLevelV3StoreMigratesToVersion5WithoutLosingRecords() throws {
         // CI creates this store by compiling the exact pre-PR #121 source and
         // writing it with its original top-level V3 SwiftData model types.
         let storeURL = URL(fileURLWithPath: "/tmp/feedgood-v3-fixture/garden.store")
         guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
 
-        let schema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
         let configuration = ModelConfiguration(schema: schema, url: storeURL)
         let container = try ModelContainer(
             for: schema,

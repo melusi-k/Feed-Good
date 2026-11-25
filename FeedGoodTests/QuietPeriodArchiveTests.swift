@@ -6,14 +6,11 @@ import Testing
 @MainActor
 struct QuietPeriodArchiveTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema([
-            Plant.self, CareTask.self, CareEvent.self, JournalEntry.self,
-            PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self
-        ])
+        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
-    @Test func versionThreeRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
+    @Test func versionFourRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
         let source = try memory()
         let context = ModelContext(source)
         let plant = Plant(name: "Fern")
@@ -56,7 +53,7 @@ struct QuietPeriodArchiveTests {
             quietPeriodTaskSnapshots: [snapshot]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 3)
+        #expect(archive.version == 4)
         #expect(archive.quietPeriods?.count == 1)
         #expect(archive.quietPeriodTaskSnapshots?.count == 1)
 
@@ -144,7 +141,7 @@ struct QuietPeriodArchiveTests {
         #expect(try recovery.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
     }
 
-    @Test func failedVersionThreeRecoveryRollsBackPeriodsAndSnapshotsWithGardenRecords() throws {
+    @Test func failedVersionFourRecoveryRollsBackPeriodsAndSnapshotsWithGardenRecords() throws {
         enum InjectedFailure: Error { case save }
         let source = try memory()
         let context = ModelContext(source)
@@ -177,4 +174,146 @@ struct QuietPeriodArchiveTests {
         #expect(try verify.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
         #expect(try verify.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
     }
+
+    @Test func versionFourRoundTripsOpportunityIdentityAndCompletionLink() throws {
+        let source = try memory()
+        let context = ModelContext(source)
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let due = Date(timeIntervalSince1970: 1_800_000_000)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        let completedAt = due.addingTimeInterval(300)
+        let event = CareEvent(task: task, completedAt: completedAt, note: "Watered")
+        context.insert(event)
+        let opportunity = CareOpportunity(
+            taskID: task.id,
+            plantID: plant.id,
+            scheduledDueAt: due,
+            status: .completed,
+            careEventID: event.id,
+            createdAt: due.addingTimeInterval(-86_400),
+            updatedAt: completedAt
+        )
+        context.insert(opportunity)
+        try context.save()
+
+        let data = try JournalArchive.export(
+            plants: [plant],
+            entries: [],
+            careTasks: [task],
+            careEvents: [event],
+            careOpportunities: [opportunity]
+        )
+        let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
+        #expect(archive.version == 4)
+        #expect(archive.careOpportunities?.count == 1)
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        let preview = try JournalArchive.preview(data, context: recovery)
+        #expect(preview.careOpportunitiesToAdd == 1)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+        let restored = try #require(recovery.fetch(FetchDescriptor<CareOpportunity>()).first)
+        #expect(restored.id == opportunity.id)
+        #expect(restored.taskID == task.id)
+        #expect(restored.plantID == plant.id)
+        #expect(restored.scheduledDueAt == due)
+        #expect(restored.status == .completed)
+        #expect(restored.careEventID == event.id)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+
+        restored.updatedAt = completedAt.addingTimeInterval(1)
+        try recovery.save()
+        #expect(throws: JournalArchiveError.conflictingRecord) {
+            try JournalArchive.recover(data, context: recovery)
+        }
+    }
+
+    @Test func invalidOpportunityStatesAndEventReferencesRejectBeforeWrites() throws {
+        let plant = Plant(name: "Aloe")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        let eventID = UUID()
+        let event = JournalArchive.CareEventRecord(
+            id: eventID,
+            plantID: plant.id,
+            taskID: task.id,
+            taskTitle: task.title,
+            completedAt: .now,
+            note: "Watered"
+        )
+        let base = JournalArchive(
+            plants: [.init(id: plant.id, name: plant.name, species: "", notes: "", createdAt: plant.createdAt)],
+            entries: [],
+            careTasks: [.init(id: task.id, plantID: plant.id, kindRaw: task.kindRaw, customTitle: "", intervalDays: 7, dueDate: task.dueDate, isEnabled: true, reminderEnabled: false)],
+            careEvents: [event]
+        )
+        var missingLink = base
+        missingLink.careOpportunities = [
+            .init(
+                id: UUID(), taskID: task.id, plantID: plant.id, scheduledDueAt: task.dueDate,
+                statusRaw: CareOpportunityStatus.completed.rawValue, careEventID: UUID(),
+                createdAt: .now, updatedAt: .now
+            )
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try missingLink.validate() }
+
+        var disabledOpen = base
+        disabledOpen.careTasks?[0].isEnabled = false
+        disabledOpen.careOpportunities = [
+            .init(
+                id: UUID(), taskID: task.id, plantID: plant.id, scheduledDueAt: task.dueDate,
+                statusRaw: CareOpportunityStatus.open.rawValue, careEventID: nil,
+                createdAt: .now, updatedAt: .now
+            )
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try disabledOpen.validate() }
+
+        var duplicateLink = base
+        duplicateLink.careOpportunities = [
+            .init(
+                id: UUID(), taskID: task.id, plantID: plant.id, scheduledDueAt: task.dueDate,
+                statusRaw: CareOpportunityStatus.completed.rawValue, careEventID: eventID,
+                createdAt: .now, updatedAt: .now
+            ),
+            .init(
+                id: UUID(), taskID: task.id, plantID: plant.id, scheduledDueAt: task.dueDate,
+                statusRaw: CareOpportunityStatus.completed.rawValue, careEventID: eventID,
+                createdAt: .now, updatedAt: .now
+            )
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try duplicateLink.validate() }
+    }
+
+
+    @Test func legacyVersionThreeRestoreDoesNotInventMissingOpportunities() throws {
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Fern")
+        sourceContext.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        sourceContext.insert(task)
+        let event = CareEvent(task: task, completedAt: Date(timeIntervalSince1970: 1_700_000_000), note: "Historical")
+        sourceContext.insert(event)
+        try sourceContext.save()
+
+        let exported = try JournalArchive.export(
+            plants: [plant],
+            entries: [],
+            careTasks: [task],
+            careEvents: [event]
+        )
+        var legacy = try JSONDecoder().decode(JournalArchive.self, from: exported)
+        legacy.version = 3
+        legacy.careOpportunities = nil
+        let data = try JSONEncoder().encode(legacy)
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+        #expect(try recovery.fetch(FetchDescriptor<CareTask>()).count == 1)
+        #expect(try recovery.fetch(FetchDescriptor<CareEvent>()).count == 1)
+        #expect(try recovery.fetch(FetchDescriptor<CareOpportunity>()).isEmpty)
+    }
+
 }

@@ -416,8 +416,8 @@ enum FeedGoodSchemaV3: VersionedSchema {
     }
 }
 
-/// Current schema. V4 adds the QuietPeriod history and its captured task
-/// snapshots. V1/V2/V3 above are immutable historical model graphs.
+/// V4 is the frozen Quiet Period schema. Do not add models or properties here:
+/// existing V4 stores must continue to resolve against this exact model graph.
 enum FeedGoodSchemaV4: VersionedSchema {
     static var versionIdentifier = Schema.Version(4, 0, 0)
     static var models: [any PersistentModel.Type] {
@@ -425,16 +425,48 @@ enum FeedGoodSchemaV4: VersionedSchema {
     }
 }
 
+/// V5 adds the narrow scheduled-opportunity ledger. Existing V4 care history
+/// remains untouched; opportunities are created by runtime lifecycle handling,
+/// never reconstructed from historical CareEvents during migration.
+enum FeedGoodSchemaV5: VersionedSchema {
+    static var versionIdentifier = Schema.Version(5, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self, CareOpportunity.self]
+    }
+}
+
 enum FeedGoodMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self]
+        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self, FeedGoodSchemaV5.self]
     }
 
     static var stages: [MigrationStage] {
         [
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV1.self, toVersion: FeedGoodSchemaV2.self),
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV2.self, toVersion: FeedGoodSchemaV3.self),
-            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV3.self, toVersion: FeedGoodSchemaV4.self)
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV3.self, toVersion: FeedGoodSchemaV4.self),
+            MigrationStage.custom(
+                fromVersion: FeedGoodSchemaV4.self,
+                toVersion: FeedGoodSchemaV5.self,
+                willMigrate: { _ in },
+                didMigrate: { context in
+                    let migrationDate = Date.now
+                    let tasks = try context.fetch(FetchDescriptor<CareTask>())
+                    for task in tasks {
+                        guard task.isEnabled,
+                              let plant = task.plant,
+                              plant.archivedAt == nil else { continue }
+                        context.insert(CareOpportunity(
+                            taskID: task.id,
+                            plantID: plant.id,
+                            scheduledDueAt: task.dueDate,
+                            createdAt: migrationDate,
+                            updatedAt: migrationDate
+                        ))
+                    }
+                    try context.save()
+                }
+            )
         ]
     }
 }

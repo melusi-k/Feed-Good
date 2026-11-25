@@ -7,7 +7,7 @@ import Testing
 struct CareRoutineReviewTests {
     private func memory() throws -> ModelContainer {
         try ModelContainer(
-            for: Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]),
+            for: Schema(versionedSchema: FeedGoodSchemaV5.self),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }

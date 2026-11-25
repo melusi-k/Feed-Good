@@ -202,42 +202,63 @@ enum QuietPeriodLifecycle {
         }
         let snapshots = period.taskSnapshots ?? []
         let tasks = period.plant?.careTasks ?? []
-        var previousDueDates: [(CareTask, Date)] = []
-        for snapshot in snapshots where snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue {
-            guard let task = tasks.first(where: { $0.id == snapshot.taskID }), task.isEnabled else { continue }
-            previousDueDates.append((task, task.dueDate))
-            if let override = snapshot.nextCareOverrideAt {
-                task.dueDate = override
-            } else if let interval = snapshot.frozenIntervalDays {
-                task.dueDate = reconstructedDate(
-                    from: date,
-                    dayOffset: max(1, interval),
-                    hour: snapshot.originalDueHour,
-                    minute: snapshot.originalDueMinute,
-                    second: snapshot.originalDueSecond,
-                    calendar: calendar
-                )
-            } else if let remaining = snapshot.remainingCalendarDays {
-                task.dueDate = reconstructedDate(
-                    from: date,
-                    dayOffset: remaining,
-                    hour: snapshot.originalDueHour,
-                    minute: snapshot.originalDueMinute,
-                    second: snapshot.originalDueSecond,
-                    calendar: calendar
-                )
-            }
+        let affectedTasks = snapshots.compactMap { snapshot -> CareTask? in
+            guard snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue,
+                  let task = tasks.first(where: { $0.id == snapshot.taskID }),
+                  task.isEnabled else { return nil }
+            return task
         }
+        let previousDueDates = affectedTasks.map { ($0, $0.dueDate) }
+        let opportunitySnapshot = try CareOpportunityLifecycle.snapshot(
+            for: Set(affectedTasks.map(\.id)),
+            in: context
+        )
 
         let previousStatus = period.statusRaw
         let previousEndedAt = period.endedAt
-        period.statusRaw = QuietPeriodStatus.ended.rawValue
-        period.endedAt = date
-        do { try save(context) }
-        catch {
+        do {
+            for (task, _) in previousDueDates {
+                guard let snapshot = snapshots.first(where: { $0.taskID == task.id }) else { continue }
+                if let override = snapshot.nextCareOverrideAt {
+                    task.dueDate = override
+                } else if let interval = snapshot.frozenIntervalDays {
+                    task.dueDate = reconstructedDate(
+                        from: date,
+                        dayOffset: max(1, interval),
+                        hour: snapshot.originalDueHour,
+                        minute: snapshot.originalDueMinute,
+                        second: snapshot.originalDueSecond,
+                        calendar: calendar
+                    )
+                } else if let remaining = snapshot.remainingCalendarDays {
+                    task.dueDate = reconstructedDate(
+                        from: date,
+                        dayOffset: remaining,
+                        hour: snapshot.originalDueHour,
+                        minute: snapshot.originalDueMinute,
+                        second: snapshot.originalDueSecond,
+                        calendar: calendar
+                    )
+                }
+            }
+
+            for (task, previousDueDate) in previousDueDates {
+                try CareOpportunityLifecycle.applyScheduleChange(
+                    to: task,
+                    previousDueDate: previousDueDate,
+                    at: date,
+                    in: context
+                )
+            }
+
+            period.statusRaw = QuietPeriodStatus.ended.rawValue
+            period.endedAt = date
+            try save(context)
+        } catch {
             for (task, dueDate) in previousDueDates { task.dueDate = dueDate }
             period.statusRaw = previousStatus
             period.endedAt = previousEndedAt
+            CareOpportunityLifecycle.restore(opportunitySnapshot, in: context)
             throw error
         }
     }

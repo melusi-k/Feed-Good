@@ -19,6 +19,10 @@ enum PlantArchive {
         let periods = plant.quietPeriods ?? []
         let periodState = periods.map { ($0, $0.statusRaw, $0.endedAt) }
         let taskDueDates = (plant.careTasks ?? []).map { ($0, $0.dueDate) }
+        let opportunitySnapshot = try CareOpportunityLifecycle.snapshot(
+            for: Set(taskDueDates.map { $0.0.id }),
+            in: context
+        )
         do {
             for period in periods {
                 try QuietPeriodLifecycle.endForArchive(
@@ -37,6 +41,7 @@ enum PlantArchive {
                 period.endedAt = endedAt
             }
             for (task, dueDate) in taskDueDates { task.dueDate = dueDate }
+            CareOpportunityLifecycle.restore(opportunitySnapshot, in: context)
             throw error
         }
     }

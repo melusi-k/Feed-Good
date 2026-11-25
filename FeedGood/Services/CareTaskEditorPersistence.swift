@@ -77,6 +77,12 @@ enum CareTaskEditorPersistence {
             at: now,
             in: writeContext
         )
+        try CareOpportunityLifecycle.applyScheduleChange(
+            to: record,
+            previousDueDate: previousDueDate,
+            at: now,
+            in: writeContext
+        )
 
         // Build the post-commit reminder projection before saving. The caller
         // receives it only if persistence succeeds, so failure cannot trigger
@@ -152,6 +158,7 @@ enum CareTaskEditorPersistence {
         }
 
         try QuietPeriodTaskIntegration.markDeleted(taskID: taskID, at: now, in: writeContext)
+        try CareOpportunityLifecycle.cancelOpen(for: taskID, at: now, in: writeContext)
         writeContext.delete(task)
         let remainingTasks = try writeContext.fetch(FetchDescriptor<CareTask>())
         let reminders = CareReminderScheduler.reminders(for: remainingTasks, now: now)

@@ -216,8 +216,9 @@ struct PlantDetailView: View {
     }
 
     private func deletePlant() {
-        modelContext.delete(plant)
         do {
+            try CareOpportunityLifecycle.deleteAll(for: plant.id, in: modelContext)
+            modelContext.delete(plant)
             try modelContext.save()
             dismiss()
         } catch {

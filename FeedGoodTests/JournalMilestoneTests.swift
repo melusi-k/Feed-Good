@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 struct JournalMilestoneTests {
-    private var schema: Schema { Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self]) }
+    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV5.self) }
     private func memory() throws -> ModelContainer { try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true)) }
 
     @Test func milestoneOnlyDraftCanSaveEditAndClearWithoutChangingNote() throws {
@@ -34,7 +34,7 @@ struct JournalMilestoneTests {
         let entries = try context.fetch(FetchDescriptor<JournalEntry>())
         let data = try JournalArchive.export(plants: [plant], entries: entries)
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 3)
+        #expect(archive.version == 4)
         #expect(archive.entries.first?.milestoneRaw == "repotting")
         let destination = try memory(); let recovery = ModelContext(destination)
         #expect(try JournalArchive.recover(data, context: recovery) == 1)
@@ -77,7 +77,7 @@ struct JournalMilestoneTests {
         #expect(try recovery.fetch(FetchDescriptor<Plant>()).isEmpty)
         archive.entries[0].milestoneRaw = "newLeaf"; archive.version = 1
         #expect(throws: (any Error).self) { try archive.validate() }
-        archive.version = 4
+        archive.version = 5
         #expect(throws: (any Error).self) { try archive.validate() }
     }
 
