@@ -54,11 +54,11 @@ struct ScheduledCareQuietPeriodSnapshot: Equatable {
         taskID = membership.taskID
         self.plantID = plantID
         startAt = period.activatedAt ?? period.startAt
-        endAt = min(period.endAt ?? now, now)
+        endAt = period.endAt ?? .distantFuture
     }
 
-    func contains(dueAt: Date) -> Bool {
-        dueAt >= startAt && dueAt < endAt
+    func isActive(at now: Date) -> Bool {
+        now >= startAt && now < endAt
     }
 }
 
@@ -205,7 +205,7 @@ struct PlantScheduledCareAnalyticsSummary: Equatable {
                 let paused = quietPeriods.contains {
                     $0.taskID == opportunity.taskID &&
                     $0.plantID == opportunity.plantID &&
-                    $0.contains(dueAt: opportunity.effectiveDueAt)
+                    $0.isActive(at: now)
                 }
                 guard !paused else { continue }
 
