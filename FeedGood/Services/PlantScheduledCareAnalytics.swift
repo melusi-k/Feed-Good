@@ -43,7 +43,7 @@ struct ScheduledCareQuietPeriodSnapshot: Equatable {
     let startAt: Date
 
     @MainActor
-    init?(membership: QuietPeriodTaskSnapshot, now: Date) {
+    init?(membership: QuietPeriodTaskSnapshot) {
         guard membership.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue,
               let period = membership.quietPeriod,
               period.statusRaw == QuietPeriodStatus.active.rawValue,
@@ -67,6 +67,36 @@ enum ScheduledCareAnalyticsError: Error, Equatable {
     case duplicateCareEvent(UUID)
     case invalidOpportunityStatus(UUID)
     case invalidCompletionLink(UUID)
+}
+
+enum ScheduledCareAnalyticsRange: String, CaseIterable, Identifiable {
+    case last30Days
+    case last90Days
+    case last365Days
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .last30Days: "30 days"
+        case .last90Days: "90 days"
+        case .last365Days: "12 months"
+        }
+    }
+    var dayCount: Int {
+        switch self {
+        case .last30Days: 30
+        case .last90Days: 90
+        case .last365Days: 365
+        }
+    }
+
+    func period(now: Date, calendar: Calendar) -> DateInterval? {
+        PlantScheduledCareAnalyticsSummary.period(
+            days: dayCount,
+            now: now,
+            calendar: calendar
+        )
+    }
 }
 
 enum ScheduledCareOutcome: Equatable {
@@ -131,13 +161,18 @@ struct PlantScheduledCareAnalyticsSummary: Equatable {
         return Double(completedCount) / Double(denominator)
     }
 
-    /// Includes today and the previous 29 local calendar days.
-    static func recent30Days(now: Date, calendar: Calendar) -> DateInterval? {
-        guard let today = calendar.dateInterval(of: .day, for: now),
-              let start = calendar.date(byAdding: .day, value: -29, to: today.start) else {
+    /// Includes today and the preceding local calendar days.
+    static func period(days: Int, now: Date, calendar: Calendar) -> DateInterval? {
+        guard days > 0,
+              let today = calendar.dateInterval(of: .day, for: now),
+              let start = calendar.date(byAdding: .day, value: -(days - 1), to: today.start) else {
             return nil
         }
         return DateInterval(start: start, end: today.end)
+    }
+
+    static func recent30Days(now: Date, calendar: Calendar) -> DateInterval? {
+        period(days: 30, now: now, calendar: calendar)
     }
 
     /// Calculates scheduled outcomes only. Unlinked/manual CareEvents are
