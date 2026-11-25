@@ -1,0 +1,32 @@
+import XCTest
+
+final class PlantScheduledCareAnalyticsUITests: XCTestCase {
+    func testPlantProfileOpensScheduledCareAnalyticsWithExplicitSparseState() {
+        let app = XCUIApplication()
+        app.launchArguments = ["FEEDGOOD_UI_TESTING"]
+        app.launch()
+        app.tabBars.buttons["My Plants"].tap()
+
+        app.buttons["plants.add"].tap()
+        let name = app.textFields["plants.name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Analytics fern")
+        app.buttons["plants.save"].tap()
+
+        let plantRow = app.descendants(matching: .any)["plants.row.Analytics fern"]
+        XCTAssertTrue(plantRow.waitForExistence(timeout: 5))
+        plantRow.tap()
+
+        let analyticsLink = app.buttons["plantDetail.scheduledCareAnalytics"]
+        XCTAssertTrue(analyticsLink.waitForExistence(timeout: 5))
+        analyticsLink.tap()
+
+        XCTAssertTrue(app.staticTexts["Scheduled outcomes · 30 days"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Completion rate"].exists)
+        XCTAssertTrue(app.staticTexts["No scheduled outcomes yet"].exists)
+        XCTAssertTrue(app.staticTexts[
+            "A completion rate will appear when this period has completed or definitively overdue opportunities."
+        ].exists)
+    }
+}
