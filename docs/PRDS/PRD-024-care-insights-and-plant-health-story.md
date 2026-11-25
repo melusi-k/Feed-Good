@@ -4,7 +4,7 @@
 **Stage:** 3 — Care understanding, consistency and plant-health evidence  
 **Priority:** Proposed P2 capability  
 **Release:** Incremental delivery after the source-record contracts in PRD-022, PRD-023 and relevant plant-history foundations are stable  
-**Primary surfaces:** Plant Profile, Plant Story, Growth Review and Today  
+**Primary surfaces:** Plant Profile, User Profile (per-task streaks highlight), Plant Story, Growth Review and Today  
 **Data posture:** Local-first, derived from authoritative user records; no duplicate care ledger
 
 ## 1. One-line goal
@@ -195,6 +195,7 @@ Unknown future source types must be preserved in the underlying data and either 
 - Use neutral labels such as “completed opportunities”, “skipped”, “deferred”, “not scheduled” and “records available”.
 - Avoid judgemental labels, red failure states, guilt language, competitive rankings and celebratory prompts that imply extra care is desirable.
 - Show the definition or an explanatory detail for every metric and streak.
+- The User Profile streak highlight may show separate summaries for individual care tasks, but each task must remain clearly labelled; never display a composite plant/garden streak.
 - Every chart/list item must navigate to the correct source record and plant.
 - Sparse-data states explain what is and is not known, without manufacturing percentages or trends.
 - Archived plant history is read-only and clearly identified.
@@ -321,7 +322,7 @@ The following findings were checked against the current `main` source and existi
 
 These cannot be honestly marked resolved by PRD-024 alone:
 
-- **PRD-022:** persisted occurrence identity, skip/defer/cancel transitions, completion window, task edits/removal and history links.
+- **PRD-022:** minimum reliable scheduled-opportunity identity, skip/defer/cancel transitions, completion window, task edits/removal and history links. This does not presume a general persisted `CareOccurrence` model.
 - **PRD-020:** exact quiet-period pause/resume policy, affected-task scope and persisted interval representation.
 - **PRD-023:** final typed care-outcome fields, validation and archive representation.
 - **PRD-014:** `JournalEntry` extension versus a dedicated `PlantCheckIn` model, plus its export/restore and evidence semantics.
