@@ -24,7 +24,8 @@ final class PlantScheduledCareAnalyticsUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Scheduled outcomes · 30 days"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Completion rate"].exists)
-        XCTAssertTrue(app.staticTexts["No scheduled outcomes yet"].exists)
+        let emptyHistory = app.descendants(matching: .any)["scheduledCareAnalytics.emptyHistory"]
+        XCTAssertTrue(emptyHistory.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts[
             "A completion rate will appear when this period has completed or definitively overdue opportunities."
         ].exists)
