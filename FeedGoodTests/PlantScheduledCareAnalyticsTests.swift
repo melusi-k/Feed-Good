@@ -218,6 +218,30 @@ struct PlantScheduledCareAnalyticsTests {
         }
     }
 
+    @Test func archivedPlantRetainsCompletedHistoryButExcludesOpenOutcomes() throws {
+        let due = date(1_800_000_000)
+        let eventID = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
+        let summary = try PlantScheduledCareAnalyticsSummary.calculate(
+            plantID: plantID,
+            period: DateInterval(start: due, end: due.addingTimeInterval(100)),
+            now: due.addingTimeInterval(3 * 86_400),
+            calendar: calendar,
+            opportunities: [
+                opportunity(1, due: due, status: CareOpportunityStatus.completed.rawValue, eventID: eventID),
+                opportunity(2, due: due.addingTimeInterval(1))
+            ],
+            events: [
+                ScheduledCareEventSnapshot(id: eventID, taskID: taskID, plantID: plantID, completedAt: due)
+            ],
+            isArchived: true
+        )
+        #expect(summary.completedCount == 1)
+        #expect(summary.records.count == 1)
+        #expect(summary.records.first?.id == UUID(uuidString: "00000000-0000-0000-0000-000000000001")!)
+        #expect(summary.unresolvedCount == 0)
+        #expect(summary.overdueCount == 0)
+    }
+
     @Test func zeroResolvedDenominatorDoesNotProduceCompletionRate() throws {
         let due = date(1_800_000_000)
         let summary = try PlantScheduledCareAnalyticsSummary.calculate(
