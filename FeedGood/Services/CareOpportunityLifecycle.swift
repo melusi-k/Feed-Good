@@ -145,7 +145,14 @@ enum CareOpportunityLifecycle {
         guard opportunity.statusRaw == CareOpportunityStatus.completed.rawValue else {
             throw CareOpportunityLifecycleError.invalidLifecycleState
         }
-        opportunity.statusRaw = CareOpportunityStatus.open.rawValue
+        let taskID = opportunity.taskID
+        let taskDescriptor = FetchDescriptor<CareTask>(
+            predicate: #Predicate { $0.id == taskID }
+        )
+        let task = try context.fetch(taskDescriptor).first
+        opportunity.statusRaw = task?.isEnabled == true
+            ? CareOpportunityStatus.open.rawValue
+            : CareOpportunityStatus.cancelled.rawValue
         opportunity.careEventID = nil
         opportunity.updatedAt = date
         return opportunity
