@@ -18,7 +18,7 @@ final class CareOpportunity {
     var taskID: UUID
     var plantID: UUID
     var scheduledDueAt: Date
-    var statusRaw: String = CareOpportunityStatus.open.rawValue
+    var statusRaw: String = "open"
     var careEventID: UUID?
     var createdAt: Date
     var updatedAt: Date
