@@ -98,38 +98,17 @@ struct PlantScheduledCareAnalyticsView: View {
                         )
                     } else {
                         ForEach(summary.records) { record in
-                            NavigationLink {
-                                PlantCareView(plant: plant)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text(tasks.first { $0.id == record.taskID }?.title ?? "Removed care task")
-                                            .font(.headline)
-                                        Spacer()
-                                        Text(outcomeTitle(record.outcome))
-                                            .font(.caption.weight(.medium))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Text("Due \(record.effectiveDueAt.formatted(date: .abbreviated, time: .shortened))")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                    if let completedAt = record.completedAt {
-                                        Text("Recorded \(completedAt.formatted(date: .abbreviated, time: .shortened))")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Text("Opportunity \(record.id.uuidString)")
-                                        .font(.caption2.monospaced())
-                                        .foregroundStyle(.tertiary)
-                                    if let eventID = record.careEventID {
-                                        Text("Care record \(eventID.uuidString)")
-                                            .font(.caption2.monospaced())
-                                            .foregroundStyle(.tertiary)
-                                    }
+                            if plant.archivedAt == nil {
+                                NavigationLink {
+                                    PlantCareView(plant: plant)
+                                } label: {
+                                    recordRow(record)
                                 }
-                                .padding(.vertical, 3)
+                                .accessibilityIdentifier("scheduledCareAnalytics.record.\\(record.id.uuidString)")
+                            } else {
+                                recordRow(record)
+                                    .accessibilityIdentifier("scheduledCareAnalytics.record.\\(record.id.uuidString)")
                             }
-                            .accessibilityIdentifier("scheduledCareAnalytics.record.\(record.id.uuidString)")
                         }
                     }
                 }
@@ -147,6 +126,36 @@ struct PlantScheduledCareAnalyticsView: View {
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
         .feedGoodHeader("Scheduled care")
+    }
+
+    private func recordRow(_ record: ScheduledCareAnalyticsRecord) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(tasks.first { $0.id == record.taskID }?.title ?? "Removed care task")
+                    .font(.headline)
+                Spacer()
+                Text(outcomeTitle(record.outcome))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            Text("Due \\(record.effectiveDueAt.formatted(date: .abbreviated, time: .shortened))")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if let completedAt = record.completedAt {
+                Text("Recorded \\(completedAt.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text("Opportunity \\(record.id.uuidString)")
+                .font(.caption2.monospaced())
+                .foregroundStyle(.tertiary)
+            if let eventID = record.careEventID {
+                Text("Care record \\(eventID.uuidString)")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 3)
     }
 
     private func periodDescription(_ summary: PlantScheduledCareAnalyticsSummary) -> String {
