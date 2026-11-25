@@ -168,7 +168,7 @@ struct PlantScheduledCareAnalyticsTests {
             events: [],
             quietPeriods: [quiet]
         )
-        #expect(summary.records.map(\\.id) == [opportunities[2].id, opportunities[1].id])
+        #expect(summary.records.map(\.id) == [opportunities[2].id, opportunities[1].id])
     }
 
     @Test func halfOpenPeriodIncludesStartAndExcludesEndWithStableOrdering() throws {
@@ -189,7 +189,7 @@ struct PlantScheduledCareAnalyticsTests {
             opportunities: opportunities,
             events: []
         )
-        #expect(summary.records.map(\\.id) == [earlierID, laterID])
+        #expect(summary.records.map(\.id) == [earlierID, laterID])
     }
 
     @Test func invalidCompletionOwnershipFailsClosed() throws {
