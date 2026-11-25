@@ -183,13 +183,15 @@ struct QuietPeriodArchiveTests {
         let due = Date(timeIntervalSince1970: 1_800_000_000)
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
         context.insert(task)
-        let completedAt = due.addingTimeInterval(300)
+        let effectiveDue = due.addingTimeInterval(2 * 86_400)
+        let completedAt = effectiveDue.addingTimeInterval(300)
         let event = CareEvent(task: task, completedAt: completedAt, note: "Watered")
         context.insert(event)
         let opportunity = CareOpportunity(
             taskID: task.id,
             plantID: plant.id,
             scheduledDueAt: due,
+            effectiveDueAt: effectiveDue,
             status: .completed,
             careEventID: event.id,
             createdAt: due.addingTimeInterval(-86_400),
@@ -219,7 +221,7 @@ struct QuietPeriodArchiveTests {
         #expect(restored.taskID == task.id)
         #expect(restored.plantID == plant.id)
         #expect(restored.scheduledDueAt == due)
-        #expect(restored.effectiveDueAt == due)
+        #expect(restored.effectiveDueAt == effectiveDue)
         #expect(restored.status == .completed)
         #expect(restored.careEventID == event.id)
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
