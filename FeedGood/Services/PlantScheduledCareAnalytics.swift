@@ -215,7 +215,8 @@ struct PlantScheduledCareAnalyticsSummary: Equatable {
         calendar: Calendar,
         opportunities: [ScheduledCareOpportunitySnapshot],
         events: [ScheduledCareEventSnapshot],
-        quietPeriods: [ScheduledCareQuietPeriodSnapshot] = []
+        quietPeriods: [ScheduledCareQuietPeriodSnapshot] = [],
+        isArchived: Bool = false
     ) throws -> PlantScheduledCareAnalyticsSummary {
         var eventByID: [UUID: ScheduledCareEventSnapshot] = [:]
         for event in events {
@@ -268,7 +269,7 @@ struct PlantScheduledCareAnalyticsSummary: Equatable {
                     outcome: outcome
                 ))
             case CareOpportunityStatus.open.rawValue:
-                guard opportunity.effectiveDueAt <= now else { continue }
+                guard !isArchived, opportunity.effectiveDueAt <= now else { continue }
                 let paused = quietPeriods.contains {
                     $0.taskID == opportunity.taskID &&
                     $0.plantID == opportunity.plantID &&
