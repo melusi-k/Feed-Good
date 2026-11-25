@@ -160,6 +160,10 @@ jobs:
                 TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantCollectionUITests")
                 TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantTagUITests")
                 ;;
+              133)
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/NavigationHeaderUITests")
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/NavigationMotionProofUITests")
+                ;;
               *)
                 echo "No focused test is mapped for PR #${PR_NUMBER}."
                 echo "Add that PR's test identifier to this workflow rather than silently running the full suite."
