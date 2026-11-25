@@ -25,6 +25,6 @@ struct CareOpportunityEligibilityTests {
         ) == false)
         #expect(CareOpportunityEligibility.streakDeadline(for: due) == deadline)
         #expect(CareOpportunityEligibility.gracePeriodHasExpired(now: deadline, effectiveDueAt: due) == false)
-        #expect(CareOpportunityEligibility.gracePeriodHasExpired(now: deadline.addingTimeInterval(0.001), effectiveDueAt: due))
+        #expect(CareOpportunityEligibility.gracePeriodHasExpired(now: deadline.addingTimeInterval(0.001), effectiveDueAt: due) == true)
     }
 }
