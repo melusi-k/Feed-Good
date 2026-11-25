@@ -201,15 +201,22 @@ This matrix records the approved and implemented Quiet Period product transition
 
 The following narrow extension is approved for implementation in issue #143:
 
-- Persist one opportunity per active task schedule instance, with immutable UUID, stable CareTask UUID, plant ownership, immutable scheduled-due instant, lifecycle state (`open`, `completed`, `cancelled`) and optional linked CareEvent UUID.
+- Persist one opportunity per active task schedule instance, with immutable UUID, stable CareTask UUID, plant ownership, immutable original `scheduledDueAt`, mutable authoritative `effectiveDueAt` (initially equal to `scheduledDueAt`), lifecycle state (`open`, `completed`, `cancelled`) and optional linked CareEvent UUID. The original instant preserves what was scheduled; the effective instant governs current eligibility after approved pause/resume adjustments.
 - `CareTask` remains the reusable routine/current schedule source. `CareEvent` remains the actual recorded-care history. An opportunity is not a duplicate event or task.
-- A completed opportunity links to exactly one accepted CareEvent. Unresolved/overdue is derived from an open opportunity after its scheduled-due instant.
+- A completed opportunity links to exactly one accepted CareEvent. An open opportunity is unresolved after its effective due instant; it becomes definitively overdue only after the applicable completion window expires. The completion-window duration must be sourced from the approved PRD-024 rule/configuration and must not be invented by the implementation.
 - Explicit due-date reschedule cancels the superseded open opportunity and creates a replacement. Disable/delete cancels an open opportunity; cancellation is excluded from eligible denominators.
 - Completion, event linkage and task schedule advancement must be atomic. Repeated completion cannot award duplicate credit.
-- Preserve opportunity identity and exclude eligibility while the approved Quiet Period overlay suppresses the task. Apply the existing pause/resume schedule contract; explicit due-date overrides cancel/replace the affected opportunity.
-- Historical CareEvents remain unlinked. No historical opportunity backfill or retroactive adherence/streak credit.
+- Preserve opportunity identity and exclude eligibility while the approved Quiet Period overlay suppresses the task. On resume, update `effectiveDueAt` to the resumed `CareTask.dueDate` under the existing PRD-020 calendar contract; retain immutable `scheduledDueAt` for audit. An explicit Next care/due-date override cancels the affected open opportunity and creates a replacement.
+- On V5 migration, seed at most one open opportunity for each currently enabled, non-archived task with a valid current `CareTask.dueDate`, using that current due instant as both `scheduledDueAt` and `effectiveDueAt`. This is a forward-looking seed of the single current schedule pointer, not reconstruction of prior intervals or historical opportunities. Disabled tasks and tasks without a valid due date are not seeded. Historical CareEvents remain unlinked; no retroactive adherence/streak credit.
 - Skip, snooze and defer are excluded from the first scheduled-care analytics/streak release. No corresponding UI, state, reminder action or placeholder outcome is implied.
 - The ledger must be included in versioned JournalArchive export/recovery with backward-compatible import and strict ownership/reference validation.
 - This approval supersedes only the earlier current-scope decision against ordinary persisted opportunities. It does not reopen or alter the already-delivered Quiet Period schema, pause-clock, migration or archive behavior.
 
 Implementation: [issue #143](https://github.com/melusi-k/Feed-Good/issues/143).
+
+### Boundary clarifications approved for implementation
+
+- **Existing-install seed:** V5 migration seeds exactly one open opportunity for each currently enabled, non-archived CareTask that has a valid current due date. No prior intervals are reconstructed and no old CareEvents are linked. This establishes the analytics boundary at migration time while retaining the in-flight schedule.
+- **Due and overdue:** Passing `effectiveDueAt` makes an open opportunity unresolved/due, not definitively overdue. It becomes overdue only after the applicable PRD-024 completion window expires. The implementation must use the already-approved window definition and must not invent a duration.
+- **Reschedule versus defer:** Skip/snooze/defer are out of scope. An explicit user edit to Next care is a schedule replacement: cancel the superseded open opportunity and create a new one. No same-opportunity deferral behavior is shipped.
+- **Quiet Period resume:** Keep immutable `scheduledDueAt` as the original audit instant. Update mutable `effectiveDueAt` to the resumed task due instant calculated by the existing PRD-020 calendar-day/DST rules. Preserve the same opportunity identity across the pause. Paused time is excluded from eligibility.
