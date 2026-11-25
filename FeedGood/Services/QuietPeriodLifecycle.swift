@@ -243,11 +243,9 @@ enum QuietPeriodLifecycle {
             }
 
             for (task, previousDueDate) in previousDueDates {
-                let hasExplicitOverride = snapshots.first(where: { $0.taskID == task.id })?.nextCareOverrideAt != nil
                 try CareOpportunityLifecycle.resumeAfterQuietPeriod(
                     for: task,
                     previousDueDate: previousDueDate,
-                    explicitReschedule: hasExplicitOverride,
                     at: date,
                     in: context
                 )
