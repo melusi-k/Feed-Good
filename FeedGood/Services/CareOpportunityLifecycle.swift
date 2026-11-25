@@ -105,7 +105,6 @@ enum CareOpportunityLifecycle {
     static func resumeAfterQuietPeriod(
         for task: CareTask,
         previousDueDate: Date,
-        explicitReschedule: Bool = false,
         at date: Date,
         in context: ModelContext
     ) throws {
@@ -119,12 +118,6 @@ enum CareOpportunityLifecycle {
             try cancelOpen(for: task.id, at: date, in: context)
             return
         }
-        if explicitReschedule {
-            try cancelOpen(for: task.id, at: date, in: context)
-            _ = try ensureCurrent(for: task, at: date, in: context)
-            return
-        }
-
         let records = try opportunities(for: task.id, in: context)
         try validate(records)
         let matching = records.filter {
