@@ -54,7 +54,7 @@ struct CareOpportunityPersistenceTests {
         #expect(fetched.careEventID == event.id)
     }
 
-    @Test func v4StoreMigratesToV5WithoutReconstructingHistoricalOpportunities() throws {
+    @Test func v4StoreMigratesToV5SeedsOnlyCurrentDueOpportunityWithoutLinkingHistoricalCareEvents() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -115,7 +115,13 @@ struct CareOpportunityPersistenceTests {
             #expect(events.count == 1)
             #expect(events.first?.id == eventID)
             #expect(events.first?.completedAt == completed)
-            #expect(opportunities.isEmpty)
+            #expect(opportunities.count == 1)
+            #expect(opportunities.first?.id != nil)
+            #expect(opportunities.first?.taskID == taskID)
+            #expect(opportunities.first?.plantID == plantID)
+            #expect(opportunities.first?.scheduledDueAt == due)
+            #expect(opportunities.first?.status == .open)
+            #expect(opportunities.first?.careEventID == nil)
         }
     }
 
@@ -219,34 +225,6 @@ struct CareOpportunityPersistenceTests {
         #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).count == 1)
     }
 
-
-    @Test func foregroundBootstrapCreatesOnlyTheCurrentScheduleInstance() throws {
-        let container = try memory()
-        let context = ModelContext(container)
-        let plant = Plant(name: "Fern")
-        context.insert(plant)
-        let due = date("2026-11-01T09:00:00Z")
-        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
-        context.insert(task)
-        let historical = CareEvent(
-            taskID: task.id,
-            taskTitle: "Watering",
-            completedAt: date("2026-10-20T09:00:00Z"),
-            note: "Old event",
-            plant: plant
-        )
-        context.insert(historical)
-        try context.save()
-
-        try CareOpportunityLifecycle.bootstrap(in: container, at: date("2026-11-25T12:00:00Z"))
-
-        let opportunities = try context.fetch(FetchDescriptor<CareOpportunity>())
-        #expect(opportunities.count == 1)
-        #expect(opportunities.first?.scheduledDueAt == due)
-        #expect(opportunities.first?.status == .open)
-        #expect(opportunities.first?.careEventID == nil)
-        #expect(historical.completedAt == date("2026-10-20T09:00:00Z"))
-    }
 
     @Test func quietPeriodResumeCancelsSupersededOpportunityAndCreatesResumedOne() throws {
         let context = ModelContext(try memory())
