@@ -34,12 +34,43 @@ jobs:
       - name: Test change classifier
         run: bash scripts/ci/test-classify-changes.sh
 
+  # Keep the required check name stable while moving the gate itself to
+  # Ubuntu. Documentation-only PRs finish here without starting macOS.
   build-and-test:
-    needs: classify-changes
-    # always(): a failed classification must run the full suite, and a
-    # documentation-only change still gets a genuine (fast, green) run of
-    # this required check instead of a vacuous skip.
+    name: build-and-test
+    needs: [classify-changes, ios-validation]
     if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce the required validation result
+        env:
+          DOCS_ONLY: ${{ needs.classify-changes.outputs.docs_only }}
+          CLASSIFY_RESULT: ${{ needs.classify-changes.result }}
+          IOS_RESULT: ${{ needs.ios-validation.result }}
+        run: |
+          if [ "$CLASSIFY_RESULT" != "success" ]; then
+            echo "Change classification did not succeed; failing the required check."
+            exit 1
+          fi
+
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$DOCS_ONLY" = "true" ]; then
+            echo "Verified documentation-only pull request; macOS validation was correctly skipped."
+            exit 0
+          fi
+
+          if [ "$IOS_RESULT" != "success" ]; then
+            echo "iOS validation did not succeed (result: $IOS_RESULT)."
+            exit 1
+          fi
+
+          echo "iOS validation succeeded."
+
+  ios-validation:
+    needs: classify-changes
+    # Classification failures fail closed; verified docs-only PRs never
+    # allocate a macOS runner.
+    if: always() && (github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true')
     runs-on: macos-26
     timeout-minutes: 45
     env:
@@ -48,9 +79,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Documentation-only pull request
-        if: github.event_name == 'pull_request' && env.DOCS_ONLY == 'true'
-        run: echo "Only documentation changed; the device build and test suite is intentionally skipped for this run."
       - name: Identify pull request
         if: github.event_name == 'pull_request' && env.DOCS_ONLY != 'true'
         run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
