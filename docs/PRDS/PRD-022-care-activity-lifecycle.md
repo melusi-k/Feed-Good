@@ -1,6 +1,6 @@
 # PRD-022 — Care Activity Lifecycle and Occurrence Management
 
-**Status:** Design review — ordinary care scheduling remains task/date plus CareEvent; Quiet Period product rules and calendar contract approved; minimal persistence/snapshot contract specified for review; migration/archive and remaining occurrence interactions not yet approved; no implementation issue created  
+**Status:** Foundation delivered — ordinary care scheduling remains task/date plus CareEvent; Quiet Period persistence, V3→V4 migration, pause/resume lifecycle, care-workflow integration and JournalArchive v3 recovery are implemented and merged. Optional skip/snooze and notification-action policies remain deferred; they are not prerequisites for the delivered Quiet Period capability or the recorded-care analytics foundation.  
 **Stage:** 1 — Care lifecycle foundation  
 **Priority:** Proposed P1 foundation  
 **Release:** Post-MVP, sequenced after review of the existing care and reminder contracts  
@@ -85,12 +85,12 @@ Included in the local-first app. Lifecycle behavior must work without an account
 
 1. Audit current CareTask, CareEvent, CareSchedule, CareRecorder, Today projection and CareReminderScheduler behavior against this PRD.
 2. Produce and approve a lifecycle transition table covering task definition, scheduled occurrence, user action, persistence, due-date effect, history effect, Today visibility and notification effect.
-3. **Approved direction:** keep the current task due date plus immutable `CareEvent` history as the source of truth for ordinary care scheduling; do not add a general persisted occurrence model merely to mirror a conceptual diagram. Quiet Periods may require their own persisted parent record and per-task pause snapshot because pause state/history cannot be safely derived from `CareTask.dueDate` alone. Validate the smallest migration-safe shape before implementation.
-4. Decide exact skip and snooze semantics, including recurrence advancement, repeated deferrals, expiration and cancellation.
-5. Implement domain transitions outside SwiftUI views, with transactional save/rollback and deterministic clock/calendar injection. Inject the same calendar/time-zone context used by `CareSchedule`; do not create a competing plant time-zone source.
-6. Verify plant/task isolation, duplicate completion, late/backdated completion, task edit/delete/disable, archive/restore compatibility and notification reconciliation. For completion edge cases, explicitly cover completion before/at/after due date, backdated completion during a pause, repeated completion attempts, interval edits during a pause and save failure.
-7. Add unit and UI tests for every approved transition and failure path; record manual device/accessibility evidence separately from CI.
-8. Produce a transition matrix that records task/occurrence state, action, due-date baseline, history mutation, Today visibility and reminder effect for normal completion, paused completion, task edits, deletion, disable/enable, scheduled activation, end and archive.
+3. **Implemented direction:** keep the current task due date plus immutable `CareEvent` history as the source of truth for ordinary care scheduling; no general persisted occurrence model was introduced. Quiet Periods use their own persisted parent record and per-task pause snapshot because pause state/history cannot be safely derived from `CareTask.dueDate` alone.
+4. Skip and snooze/defer are not part of the delivered lifecycle foundation. Their semantics (if product work is prioritized later) require a separate proposal and approval; do not infer them from overdue state or add placeholder occurrence persistence.
+5. Quiet Period domain transitions are implemented outside SwiftUI views with transactional persistence and deterministic calendar/time-zone handling. The implementation uses the same calendar/time-zone context as `CareSchedule`; no competing plant time-zone source was added.
+6. The delivered Quiet Period work verifies plant/task isolation, duplicate and late/backdated completion, task edit/delete/disable, archive/restore compatibility, pause completion, interval edits during a pause and persistence failure. Notification actions beyond existing reminder routing remain outside this delivery.
+7. Unit and UI coverage for the delivered transitions and failure paths is part of the merged implementation. Any future skip/snooze or expanded notification-action feature requires its own acceptance matrix and evidence.
+8. The Quiet Period transition matrix below is the accepted baseline for implemented behavior. Ordinary care continues to use task due date plus CareEvent history; do not represent a conceptual occurrence as persisted state.
 
 ## 10. Replaces
 
@@ -98,16 +98,16 @@ Replaces ambiguous reminder-only behavior with a coherent, explicit care-activit
 
 ## 11. Decisions and open questions
 
-These are mandatory design gates, not implementation assumptions:
+These decisions are separated into implemented contracts and deferred product questions; deferred items are not implicit implementation permission:
 
-1. **Occurrence persistence:** Is the current CareTask due date plus immutable CareEvent history sufficient, or is a first-class occurrence record required to support skip/defer and reliable notification routing?
-2. **Skip policy:** Does skipping leave the due date unchanged, advance to the next interval, or record a skipped occurrence and calculate the next one? What is the user-facing explanation?
-3. **Snooze policy:** Which durations are supported? Does snoozing alter only a notification, the scheduled occurrence, or both? Can it be repeated, cancelled or expire?
+1. **Occurrence persistence — resolved for current scope:** `CareTask.dueDate` plus immutable `CareEvent` history remains authoritative for ordinary care. Quiet Period snapshots provide only the pause state that cannot be derived from the due date. No general `CareOccurrence` model is justified by current requirements. Revisit only with concrete evidence.
+2. **Skip policy — deferred:** no skip action or skipped-occurrence ledger is introduced by this delivery. Define and approve a separate product policy before implementing skip.
+3. **Snooze/defer policy — deferred:** no snooze action or alternate due-date source is introduced by this delivery. Define and approve a separate product policy before implementing snooze/defer.
 4. **Late and backdated completion:** Ordinary unpaused completion continues to schedule from actual completion time. Quiet-period completion follows PRD-020's frozen-interval reset rule. Test completion before due, on due day, after due, backdated completion, repeated taps and persistence failure; no second occurrence model is implied.
 5. **Task edits:** During a quiet period, edits to an included task persist but do not remove it from the selected snapshot or automatically enable it. Explicit enabled-state changes are preserved, while the quiet-period overlay continues to suppress the included task until resume. New tasks remain outside the snapshot. **Approved:** an explicit user edit to Next care overrides the frozen due-date snapshot and is preserved as an exact date-time through resume; if it is past at resume, the task is overdue. **Approved:** changing an included task's interval during a pause updates that task's frozen remaining interval to the newly selected value. The countdown does not advance during the pause; it starts/resumes from the latest interval only when the Quiet Period ends. The Quiet Period's own dates and other tasks are unaffected. If Next care is also explicitly edited, that exact selected date-time remains authoritative and takes precedence over the interval-derived date. **Approved:** disabled tasks are excluded from the affected-task set because they have no active schedule/countdown to freeze. If an included task is disabled during the period, remove it from the active affected set while retaining an auditable membership snapshot; do not freeze or reconstruct a due time, and do not re-add it if enabled again during that same period. 
-6. **Removed tasks:** How are any unresolved occurrences represented after a task is removed while historical CareEvents remain?
+6. **Removed tasks — implemented for Quiet Period snapshots:** deleting an included task retains its snapshot identity/title as removed membership for audit/history; historical CareEvents remain governed by the task-deletion contract. No unresolved occurrence record is fabricated.
 7. **Time semantics — approved 2026-11-23:** use the same calendar/time-zone context as `CareSchedule`; preserve an unedited task's signed calendar-day offset and original local hour, minute and second; reconstruct using the same injected calendar. Resolve a reconstructed DST gap to the next valid local time and an ambiguous DST fold to the first occurrence. Persist scheduled Quiet Period start and finite end as absolute instants. At activation and resume, calculate offsets and reconstruct local due times using the device's current calendar/time zone; do not persist a plant-specific time zone. An explicit Next care edit remains an exact absolute-instant override. Keep calendar-day semantics and do not use elapsed seconds. This approval does not approve a SwiftData schema, migration, archive format or general CareOccurrence model.
-8. **Notification actions:** Which actions can be performed directly from a notification, and which require opening the app for confirmation?
+8. **Notification actions — deferred beyond existing routing:** this delivery preserves existing reminder scheduling/reconciliation and routing. It does not add completion, skip or snooze actions directly from notifications. Any future action surface must define confirmation, save-failure and permission behavior first.
 
 Existing decisions remain authoritative until explicitly changed: interval-based recurrence, ordinary unpaused completion advances from the completion timestamp, and care-history corrections are history-only. The approved Quiet Period exception is documented in PRD-020. This PRD does not supersede PRD-002, PRD-003, PRD-011 or PRD-017.
 
@@ -146,13 +146,13 @@ Persist scheduled Quiet Period start and finite end as absolute instants. A devi
 - If both Next care and interval are edited, the exact Next care instant remains authoritative for the next scheduled date; the interval continues to govern subsequent recurrence.
 - Outside a Quiet Period, ordinary completion remains completion-timestamp-plus-interval.
 
-### Relationships, deletion and migration — still requiring explicit approval
+### Relationships, deletion and migration — implemented
 
 The repository's current `Plant` model already uses cascading relationships for care tasks, care events and journal entries, and the hard-delete UI deletes the Plant then saves its ModelContext. Follow that established ownership boundary: add a cascading Plant → QuietPeriod relationship and a cascading QuietPeriod → QuietPeriodTaskSnapshot relationship. Keep each snapshot's task UUID as a scalar identifier, not a cascading CareTask relationship. This means hard-deleting a plant removes its entire Quiet Period history with the rest of the plant-owned record, while deleting one task leaves its snapshot auditable. Add persistence tests proving both cascade boundaries and save-failure behavior.
 
-Current persistence is `FeedGoodSchemaV3`: V2 added `Plant.archivedAt`, and V3 added `PlantTag` plus the optional `Plant.tags` relationship. Keep V1, V2 and V3 schema definitions immutable. If the proposed records are accepted, add them in a new schema version (expected V4): the repository already uses V3 for PlantTag and its optional Plant.tags relationship. Keep V1, V2 and V3 historical schema definitions immutable, add a V3→V4 migration stage, and cover the full V1→V4 migration chain with explicit migration tests. No schema change is approved by this PRD alone.
+Current persistence is `FeedGoodSchemaV3`: V2 added `Plant.archivedAt`, and V3 added `PlantTag` plus the optional `Plant.tags` relationship. Keep V1, V2 and V3 schema definitions immutable. If the proposed records are accepted, add them in a new schema version (expected V4): the repository already uses V3 for PlantTag and its optional Plant.tags relationship. Keep V1, V2 and V3 historical schema definitions immutable, add a V3→V4 migration stage, and cover the full V1→V4 migration chain with explicit migration tests. Schema V4 and the V3→V4 migration have been implemented and merged; the PRD records the contract, while the merged migration tests are the implementation evidence.
 
-The current JournalArchive format is v2. The archive recommendation is an additive archive-format v3 containing optional QuietPeriod and snapshot arrays, while continuing to import supported v1 and v2 archives. Validate UUID uniqueness, plant ownership, snapshot-to-period references, membership/status values, start/end ordering, and active-period/task consistency before any writes. Reject an unreconcilable active period atomically rather than silently dropping or partially importing it. Confirm the exact archive versioning and recovery behavior in the archive contract before implementation.
+The current JournalArchive format is v2. The archive recommendation is an additive archive-format v3 containing optional QuietPeriod and snapshot arrays, while continuing to import supported v1 and v2 archives. Validate UUID uniqueness, plant ownership, snapshot-to-period references, membership/status values, start/end ordering, and active-period/task consistency before any writes. Reject an unreconcilable active period atomically rather than silently dropping or partially importing it. JournalArchive v3 export/recovery and v1/v2 import compatibility have been implemented and merged.
 
 ### Approved implementation constraints (2026-11-23)
 
@@ -165,7 +165,7 @@ The following decisions are approved for implementation:
 5. Keep the general persisted `CareOccurrence` model out of scope unless evidence shows that `CareTask.dueDate`, `CareEvent` and QuietPeriod snapshots cannot satisfy a concrete requirement.
 6. Freeze V3 before any live-model mutation, then implement V4 and a V3→V4 migration. Historical V1/V2/V3 schema definitions remain immutable; prove migration from real on-disk V1, build-52-era V2 and V3-with-tags fixtures. Fresh-install tests alone are insufficient.
 
-All #74 product and persistence design gates are now approved. Implementation may proceed in independently reviewable PRs: (1) frozen V3/V4 schema and migration proof; (2) Quiet Period persistence, scheduling and pause/resume domain logic; (3) care editor/completion/reminder integration and Plant Story; (4) archive v3 export/recovery and compatibility tests. Each PR must pass CI and migration-specific tests on its exact head SHA before merge.
+All #74 product and persistence design gates were approved and the four implementation slices have been delivered in merged PRs: #121–122 (V4 schema and migration proof), #123 (Quiet Period persistence and pause/resume lifecycle), #124 (care workflow integration), and #125 (JournalArchive v3 recovery and compatibility).
 
 ## 13. Lifecycle transition matrix (design baseline)
 
@@ -190,8 +190,8 @@ This matrix records the approved Quiet Period product transitions. Remaining gat
 ## 14. Delivery tracking
 
 
-- **Implementation issue:** Not created. Create only after this PRD and its design gates are reviewed and approved.
+- **Implementation delivery:** Complete for the Quiet Period/lifecycle foundation in PRs #121–125. There is no remaining implementation issue for that approved scope.
 - **Existing foundations:** [PRD-002 — Care Routine](PRD-002-care-routine.md), [PRD-003 — Care Reminders](PRD-003-care-reminders.md), [PRD-011 — Care History Corrections](PRD-011-care-history-corrections.md), [PRD-017 — Care Routine Review](PRD-017-care-routine-review.md).
 - **Related proposals:** [#63 — Care History Corrections](https://github.com/melusi-k/Feed-Good/issues/63), [#71 — Care Routine Review](https://github.com/melusi-k/Feed-Good/issues/71), [#74 — Seasonal and Quiet Periods](https://github.com/melusi-k/Feed-Good/issues/74).
-- **Dependency direction:** PRD-022 is the proposed foundation for PRD-023 and PRD-025. It must coordinate with #71 and must coordinate with #74's remaining persistence/migration/archive gates; #70's approved lifecycle decision and #71's implemented routine/reconciliation contract are complete (with #103 still to merge as the stacked documentation prerequisite).
-- **Implementation status:** Not started. This document records product intent only.
+- **Dependency direction:** #70, #71 and the #74 Quiet Period persistence/migration/archive gates are complete. PR #103 is merged. PRD-022 provides the task identity, due-date and pause/resume boundaries consumed by downstream care work. Optional skip/snooze and expanded notification actions remain separate future product decisions, not blockers for recorded-care summaries.
+- **Implementation status:** Quiet Period/lifecycle foundation delivered and merged (#121–125). Ordinary care remains task/date plus CareEvent. Skip/snooze and additional notification actions are explicitly deferred. This document records the delivered contract and those bounded future decisions.
