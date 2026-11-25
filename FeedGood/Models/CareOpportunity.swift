@@ -23,8 +23,8 @@ final class CareOpportunity {
     var createdAt: Date
     var updatedAt: Date
 
-    var status: CareOpportunityStatus {
-        CareOpportunityStatus(rawValue: statusRaw) ?? .open
+    var status: CareOpportunityStatus? {
+        CareOpportunityStatus(rawValue: statusRaw)
     }
 
     init(
