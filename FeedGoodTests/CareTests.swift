@@ -53,7 +53,7 @@ struct CarePersistenceTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appendingPathComponent("care.store")
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         let configuration = ModelConfiguration(schema: schema, url: url)
         let firstID: UUID
         let secondID: UUID
@@ -105,7 +105,7 @@ struct CarePersistenceTests {
 struct CareEventCorrectionTests {
     private func memory() throws -> ModelContainer {
         try ModelContainer(
-            for: Schema(versionedSchema: FeedGoodSchemaV5.self),
+            for: Schema(versionedSchema: FeedGoodSchemaV6.self),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
@@ -228,7 +228,7 @@ struct CareEventCorrectionTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appendingPathComponent("care-correction.store")
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         let configuration = ModelConfiguration(schema: schema, url: url)
         let corrected = ISO8601DateFormatter().date(from: "2026-03-07T09:30:00-05:00")!
         let eventID: UUID
