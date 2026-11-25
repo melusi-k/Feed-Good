@@ -201,7 +201,6 @@ struct CareRemindersLifecycle: ViewModifier {
             .task(id: revision) {
                 do {
                     try QuietPeriodLifecycle.advanceAll(in: context)
-                    try CareOpportunityLifecycle.bootstrap(in: context.container)
                 } catch {
                     // Keep care reminders available; the next foreground pass retries lifecycle catch-up.
                 }
@@ -226,7 +225,6 @@ struct CareRemindersLifecycle: ViewModifier {
                     Task {
                         do {
                             try QuietPeriodLifecycle.advanceAll(in: context)
-                            try CareOpportunityLifecycle.bootstrap(in: context.container)
                         } catch {
                             // The next foreground pass retries lifecycle catch-up.
                         }
