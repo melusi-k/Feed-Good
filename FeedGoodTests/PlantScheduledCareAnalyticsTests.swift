@@ -145,30 +145,30 @@ struct PlantScheduledCareAnalyticsTests {
         #expect(summary.completionRate == 1)
     }
 
-    @Test func activeQuietPeriodExcludesOnlyItsTaskOpportunityWithinThePauseInterval() throws {
+    @Test func activeQuietPeriodMakesAllSelectedTaskOpportunitiesNeutralUntilResume() throws {
         let due = date(1_800_000_000)
         let quiet = ScheduledCareQuietPeriodSnapshot(
             taskID: taskID,
             plantID: plantID,
-            startAt: due,
-            endAt: due.addingTimeInterval(3_600)
+            startAt: due.addingTimeInterval(1_000),
+            endAt: due.addingTimeInterval(5_000)
         )
         let otherTaskID = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
         let opportunities = [
-            opportunity(1, due: due.addingTimeInterval(1_800)),
-            opportunity(2, taskID: otherTaskID, due: due.addingTimeInterval(1_800)),
-            opportunity(3, due: due.addingTimeInterval(3_600))
+            opportunity(1, due: due), // Due before pause activation; pause is still neutral while active.
+            opportunity(2, due: due.addingTimeInterval(1_500)),
+            opportunity(3, taskID: otherTaskID, due: due.addingTimeInterval(1_500))
         ]
         let summary = try PlantScheduledCareAnalyticsSummary.calculate(
             plantID: plantID,
             period: DateInterval(start: due, end: due.addingTimeInterval(10_000)),
-            now: due.addingTimeInterval(3_600),
+            now: due.addingTimeInterval(2_000),
             calendar: calendar,
             opportunities: opportunities,
             events: [],
             quietPeriods: [quiet]
         )
-        #expect(summary.records.map(\.id) == [opportunities[2].id, opportunities[1].id])
+        #expect(summary.records.map(\.id) == [opportunities[2].id])
     }
 
     @Test func halfOpenPeriodIncludesStartAndExcludesEndWithStableOrdering() throws {
