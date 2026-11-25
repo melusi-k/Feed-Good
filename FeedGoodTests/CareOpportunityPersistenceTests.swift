@@ -94,7 +94,7 @@ struct CareOpportunityPersistenceTests {
         }
 
         do {
-            let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+            let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
             let configuration = ModelConfiguration(schema: schema, url: storeURL)
             let container = try ModelContainer(
                 for: schema,
