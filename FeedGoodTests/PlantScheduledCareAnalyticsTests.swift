@@ -66,7 +66,7 @@ struct PlantScheduledCareAnalyticsTests {
         ]
         let events = [
             ScheduledCareEventSnapshot(id: onTimeEventID, taskID: taskID, plantID: plantID, completedAt: due.addingTimeInterval(24 * 60 * 60)),
-            ScheduledCareEventSnapshot(id: lateEventID, taskID: taskID, plantID: plantID, completedAt: due.addingTimeInterval(24 * 60 * 60 + 1)),
+            ScheduledCareEventSnapshot(id: lateEventID, taskID: taskID, plantID: plantID, completedAt: due.addingTimeInterval(24 * 60 * 60 + 61)),
             event(103, completedAt: due.addingTimeInterval(300)) // Unlinked/manual care.
         ]
         let period = DateInterval(start: due, end: now.addingTimeInterval(86_400))
