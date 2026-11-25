@@ -29,7 +29,7 @@ private final class CareTaskEditorNotificationSpy: CareNotificationBoundary {
 struct CareTaskEditorPersistenceTests {
     private func memory() throws -> ModelContainer {
         try ModelContainer(
-            for: Schema(versionedSchema: FeedGoodSchemaV5.self),
+            for: Schema(versionedSchema: FeedGoodSchemaV6.self),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
