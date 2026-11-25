@@ -118,4 +118,105 @@ struct CareOpportunityPersistenceTests {
             #expect(opportunities.isEmpty)
         }
     }
+
+    @Test func currentOpportunityIsIdempotentAndExplicitRescheduleReplacesIt() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let originalDue = date("2026-12-01T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
+        context.insert(task)
+
+        let first = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-25T12:00:00Z"), in: context))
+        let repeated = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-25T12:01:00Z"), in: context))
+        #expect(first.id == repeated.id)
+
+        let replacementDue = date("2026-12-05T09:00:00Z")
+        task.dueDate = replacementDue
+        try CareOpportunityLifecycle.applyScheduleChange(
+            to: task,
+            previousDueDate: originalDue,
+            at: date("2026-11-26T12:00:00Z"),
+            in: context
+        )
+
+        let opportunities = try context.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(opportunities.count == 2)
+        #expect(opportunities.first { $0.id == first.id }?.status == .cancelled)
+        let replacement = try #require(opportunities.first { $0.status == .open })
+        #expect(replacement.scheduledDueAt == replacementDue)
+        #expect(replacement.id != first.id)
+    }
+
+    @Test func acceptedCompletionLinksExactlyOneEventAndDeletingItReopensWithoutRewindingTask() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Aloe")
+        context.insert(plant)
+        let due = date("2026-11-25T09:00:00Z")
+        let completedAt = date("2026-11-25T09:05:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+
+        try CareRecorder.complete(task, note: "Watered", at: completedAt, in: context)
+        let event = try #require(try context.fetch(FetchDescriptor<CareEvent>()).first)
+        #expect(opportunity.status == .completed)
+        #expect(opportunity.careEventID == event.id)
+        let nextDue = task.dueDate
+        #expect(nextDue == CareSchedule.nextDate(after: completedAt, intervalDays: 7))
+        #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).filter { $0.status == .open }.count == 1)
+
+        try CareRecorder.delete(event, in: context, at: date("2026-11-26T12:00:00Z"))
+        #expect(opportunity.status == .open)
+        #expect(opportunity.careEventID == nil)
+        #expect(task.dueDate == nextDue)
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+    }
+
+    @Test func earlyRecordedCareDoesNotCompleteTheFutureScheduledOpportunity() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Pothos")
+        context.insert(plant)
+        let due = date("2026-12-01T09:00:00Z")
+        let completedAt = date("2026-11-25T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        let original = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: completedAt, in: context))
+
+        try CareRecorder.complete(task, note: "Early check", at: completedAt, in: context)
+
+        let event = try #require(try context.fetch(FetchDescriptor<CareEvent>()).first)
+        let opportunities = try context.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(event.taskID == task.id)
+        #expect(original.status == .cancelled)
+        #expect(original.careEventID == nil)
+        #expect(opportunities.filter { $0.status == .open }.count == 1)
+        #expect(opportunities.first { $0.status == .open }?.scheduledDueAt == task.dueDate)
+        #expect(opportunities.first { $0.status == .open }?.careEventID == nil)
+    }
+
+    @Test func failedCompletionRollsBackEventTaskDateAndOpportunityLifecycleTogether() throws {
+        enum InjectedFailure: Error { case save }
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let due = date("2026-11-25T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: due, plant: plant)
+        context.insert(task)
+        let opportunity = try #require(CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        try context.save()
+
+        #expect(throws: InjectedFailure.self) {
+            try CareRecorder.complete(task, note: "Will fail", at: due, in: context) { _ in
+                throw InjectedFailure.save
+            }
+        }
+
+        #expect(task.dueDate == due)
+        #expect(opportunity.status == .open)
+        #expect(opportunity.careEventID == nil)
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).count == 1)
+    }
+
 }
