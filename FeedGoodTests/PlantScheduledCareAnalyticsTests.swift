@@ -232,6 +232,20 @@ struct PlantScheduledCareAnalyticsTests {
         #expect(summary.completionRate == nil)
     }
 
+    @Test func selectedRangesUseCalendarDaysAndTwelveCalendarMonths() throws {
+        let now = ISO8601DateFormatter().date(from: "2026-11-25T16:00:00Z")!
+        let thirty = try #require(ScheduledCareAnalyticsRange.last30Days.period(now: now, calendar: calendar))
+        let ninety = try #require(ScheduledCareAnalyticsRange.last90Days.period(now: now, calendar: calendar))
+        let twelveMonths = try #require(ScheduledCareAnalyticsRange.last12Months.period(now: now, calendar: calendar))
+
+        #expect(calendar.dateComponents([.day], from: thirty.start, to: thirty.end).day == 30)
+        #expect(calendar.dateComponents([.day], from: ninety.start, to: ninety.end).day == 90)
+        let yearComponents = calendar.dateComponents([.year, .month, .day], from: twelveMonths.start, to: twelveMonths.end)
+        #expect(yearComponents.month == 0 || yearComponents.month == 12)
+        #expect(calendar.component(.month, from: twelveMonths.start) == 11)
+        #expect(calendar.component(.day, from: twelveMonths.start) == 25)
+    }
+
     @Test func recentThirtyDaysUsesInjectedLocalCalendarBoundaries() throws {
         var localCalendar = Calendar(identifier: .gregorian)
         localCalendar.firstWeekday = 2
