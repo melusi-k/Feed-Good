@@ -1,6 +1,6 @@
 # PRD-024 — Care Analytics, Streaks & Plant Health Insights
 
-**Status:** Expanded draft for product and technical decision review; cross-PRD approval pending  
+**Status:** Expanded draft for product and technical decision review; PRD-027 alignment recorded; implementation gates remain open  
 **Stage:** 3 — Care understanding, consistency and plant-health evidence  
 **Priority:** Proposed P2 capability  
 **Release:** Incremental delivery after the source-record contracts in PRD-022, PRD-023 and relevant plant-history foundations are stable  
@@ -341,7 +341,7 @@ These are dependency gates, not reasons to block the PRD document. Phase 0 must 
 - **Plant observations/history:** [PRD-014 — Plant Check-ins](PRD-014-plant-check-ins.md), [PRD-018 — Plant Changes Timeline](PRD-018-plant-changes-timeline.md), JournalEntry and photo source contracts.
 - **Visual history:** [PRD-012 — Growth Review](PRD-012-growth-review.md).
 - **Reflection:** [PRD-013 — Weekly Garden Reflection](PRD-013-weekly-garden-reflection.md), which continues to exclude streaks and scores; do not add task streaks to the reflection.
-- **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), whose current streak exclusion requires explicit change-control approval before implementation.
+- **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to record the approved narrow exception for private, descriptive per-task streak histories. PRD-013 Weekly Garden Reflection remains streak-free.
 - **Related proposals:** [#64 — Growth Review](https://github.com/melusi-k/Feed-Good/issues/64), [#65 — Weekly Garden Reflection](https://github.com/melusi-k/Feed-Good/issues/65), [#66 — Plant Check-ins](https://github.com/melusi-k/Feed-Good/issues/66), [#72 — Plant Changes Timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- **Implementation issue:** Not created. Create the parent implementation issue and phase sub-issues only after §13 decisions, the PRD-022 scheduled-opportunity contract and PRD-027 change-control alignment are resolved and this PRD is approved.
+- **Implementation issue:** Not created. Create the parent implementation issue and phase sub-issues after this PRD is approved. Keep each dependent implementation phase gated on its upstream source contracts, especially PRD-022's scheduled-opportunity identity/lifecycle contract and archive compatibility.
 - **Implementation status:** Not started. This document records the expanded product and technical contract for review.
