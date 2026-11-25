@@ -13,28 +13,91 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: classify
+        run: |
+          # Run the base branch's classifier, never the pull request's copy,
+          # so a pull request cannot weaken its own classification.
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE_SHA" ]; then BASE_SHA="HEAD"; fi
+          git show "$BASE_SHA:scripts/ci/classify-changes.sh" > "$RUNNER_TEMP/classify-changes.sh"
+          bash "$RUNNER_TEMP/classify-changes.sh" "${{ github.event_name }}" "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+      - name: Test change classifier
+        run: bash scripts/ci/test-classify-changes.sh
+
+  # Keep the required check name stable while moving the gate itself to
+  # Ubuntu. Documentation-only PRs finish here without starting macOS.
   build-and-test:
+    name: build-and-test
+    needs: [classify-changes, ios-validation]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce the required validation result
+        env:
+          DOCS_ONLY: ${{ needs.classify-changes.outputs.docs_only }}
+          CLASSIFY_RESULT: ${{ needs.classify-changes.result }}
+          IOS_RESULT: ${{ needs.ios-validation.result }}
+        run: |
+          if [ "$CLASSIFY_RESULT" != "success" ]; then
+            echo "Change classification did not succeed; failing the required check."
+            exit 1
+          fi
+
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$DOCS_ONLY" = "true" ]; then
+            echo "Verified documentation-only pull request; macOS validation was correctly skipped."
+            exit 0
+          fi
+
+          if [ "$IOS_RESULT" != "success" ]; then
+            echo "iOS validation did not succeed (result: $IOS_RESULT)."
+            exit 1
+          fi
+
+          echo "iOS validation succeeded."
+
+  ios-validation:
+    needs: classify-changes
+    # Classification failures fail closed; verified docs-only PRs never
+    # allocate a macOS runner.
+    if: always() && (github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true')
     runs-on: macos-26
     timeout-minutes: 45
+    env:
+      DOCS_ONLY: ${{ needs.classify-changes.outputs.docs_only }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Identify pull request
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && env.DOCS_ONLY != 'true'
         run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
       - name: Select Xcode
+        if: env.DOCS_ONLY != 'true'
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
       - name: Install XcodeGen
+        if: env.DOCS_ONLY != 'true'
         run: brew install xcodegen
       - name: Generate iOS app icon
+        if: env.DOCS_ONLY != 'true'
         run: bash scripts/generate-app-icon.sh
       - name: Generate project
+        if: env.DOCS_ONLY != 'true'
         run: xcodegen generate
       - name: Generate fixture using the shipped V3 model graph
-        if: github.event_name == 'pull_request' && (github.event.pull_request.number == 121 || github.event.pull_request.number == 122)
+        if: github.event_name == 'pull_request' && (github.event.pull_request.number == 121 || github.event.pull_request.number == 122) && env.DOCS_ONLY != 'true'
         run: |
           LEGACY_DIR="$RUNNER_TEMP/feedgood-v3-source"
           git worktree add "$LEGACY_DIR" b6f65c9cbe8464d0d053ecf643fdd4408297e274
@@ -59,6 +122,7 @@ jobs:
           test -s /tmp/feedgood-v3-fixture/garden.store
           cd "$GITHUB_WORKSPACE"
       - name: Build app
+        if: env.DOCS_ONLY != 'true'
         run: |
           xcodebuild build \
             -project FeedGood.xcodeproj \
@@ -67,6 +131,7 @@ jobs:
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
       - name: Verify App Intents metadata
+        if: env.DOCS_ONLY != 'true'
         run: |
           APP_PRODUCT="$(find DerivedData/Build/Products -maxdepth 3 -type d -name 'FeedGood.app' -print -quit)"
           if [ -z "$APP_PRODUCT" ]; then
@@ -91,9 +156,9 @@ jobs:
           echo "App Intents metadata extraction verified:"
           find "$METADATA_DIR" -maxdepth 2 -type f -print
       - name: Run PR-specific test (or full main-branch suite)
+        if: env.DOCS_ONLY != 'true'
         run: |
           TEST_ARGS=()
-          SKIP_TESTS=0
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             case "${PR_NUMBER}" in
               127)
@@ -132,10 +197,7 @@ jobs:
               120)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
-              104)
-                SKIP_TESTS=1
-                echo "Documentation-only PR: app tests are not required."
-                ;;
+
               118)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
@@ -155,19 +217,21 @@ jobs:
               126)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantModelTests/plantKeepsProvidedDetails")
                 ;;
+              130)
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/JournalUITests")
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantCollectionUITests")
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/PlantTagUITests")
+                ;;
+              133)
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/NavigationHeaderUITests")
+                TEST_ARGS+=("-only-testing:FeedGoodUITests/NavigationMotionProofUITests")
+                ;;
               *)
-                echo "No focused test is mapped for PR #${PR_NUMBER}."
-                echo "Add that PR's test identifier to this workflow rather than silently running the full suite."
-                exit 1
+                echo "No focused test is mapped for PR #${PR_NUMBER}; running the complete FeedGood test suite."
                 ;;
             esac
           else
             echo "Main branch run: executing the complete FeedGood test suite."
-          fi
-
-          if [ "$SKIP_TESTS" = "1" ]; then
-            echo "Skipping simulator tests for this explicitly classified documentation-only PR."
-            exit 0
           fi
 
           SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ && /[0-9A-F-]{36}/ { print $2; exit }')"

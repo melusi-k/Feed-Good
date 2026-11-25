@@ -68,8 +68,13 @@ final class PlantCollectionUITests: XCTestCase {
         let activeRow = app.buttons["plants.row.Archive fern"]
         XCTAssertTrue(activeRow.waitForExistence(timeout: 5))
         activeRow.tap()
-        app.buttons["plantDetail.archive"].tap()
-        let archiveConfirmation = app.buttons["plantDetail.archive.confirm"]
+        // Wait for the pushed detail screen before interacting with its actions.
+        let archiveButton = app.buttons["plantDetail.archive"]
+        XCTAssertTrue(archiveButton.waitForExistence(timeout: 10), "Selecting the plant should open its detail screen.")
+        archiveButton.tap()
+        // iOS 26 mirrors confirmation-dialog buttons in the accessibility
+        // tree, so the one Archive button matches twice; tap the first.
+        let archiveConfirmation = app.buttons.matching(identifier: "plantDetail.archive.confirm").firstMatch
         XCTAssertTrue(archiveConfirmation.waitForExistence(timeout: 5))
         archiveConfirmation.tap()
 
@@ -91,7 +96,8 @@ final class PlantCollectionUITests: XCTestCase {
         archivedRow.tap()
         XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
         app.buttons["plantDetail.restore"].tap()
-        let restoreConfirmation = app.buttons["plantDetail.restore.confirm"]
+        // Same iOS 26 dialog mirroring as the archive confirmation above.
+        let restoreConfirmation = app.buttons.matching(identifier: "plantDetail.restore.confirm").firstMatch
         XCTAssertTrue(restoreConfirmation.waitForExistence(timeout: 5))
         restoreConfirmation.tap()
 
