@@ -41,7 +41,6 @@ struct ScheduledCareQuietPeriodSnapshot: Equatable {
     let taskID: UUID
     let plantID: UUID
     let startAt: Date
-    let endAt: Date
 
     @MainActor
     init?(membership: QuietPeriodTaskSnapshot, now: Date) {
@@ -54,11 +53,11 @@ struct ScheduledCareQuietPeriodSnapshot: Equatable {
         taskID = membership.taskID
         self.plantID = plantID
         startAt = period.activatedAt ?? period.startAt
-        endAt = period.endAt ?? .distantFuture
     }
 
+    /// The persisted active status is authoritative until lifecycle catch-up ends it.
     func isActive(at now: Date) -> Bool {
-        now >= startAt && now < endAt
+        now >= startAt
     }
 }
 
@@ -76,6 +75,13 @@ enum ScheduledCareOutcome: Equatable {
     case completedOutsideWindow
     case unresolved
     case overdue
+
+    var isCompleted: Bool {
+        switch self {
+        case .completedOnTime, .completedLate, .completedOutsideWindow: return true
+        case .unresolved, .overdue: return false
+        }
+    }
 }
 
 struct ScheduledCareAnalyticsRecord: Identifiable, Equatable {
@@ -94,12 +100,7 @@ struct PlantScheduledCareAnalyticsSummary: Equatable {
     let records: [ScheduledCareAnalyticsRecord]
 
     var completedCount: Int {
-        records.filter {
-            switch $0.outcome {
-            case .completedOnTime, .completedLate, .completedOutsideWindow: true
-            case .unresolved, .overdue: false
-            }
-        }.count
+        records.filter { $0.outcome.isCompleted }.count
     }
 
     var completedOnTimeCount: Int {
