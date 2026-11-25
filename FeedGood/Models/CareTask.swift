@@ -147,7 +147,7 @@ enum CareRecorder {
                nextDueDate != previousDate {
                 try CareOpportunityLifecycle.cancelOpen(
                     for: task.id,
-                    scheduledDueAt: opportunity.scheduledDueAt,
+                    effectiveDueAt: opportunity.effectiveDueAt,
                     at: date,
                     in: context
                 )
