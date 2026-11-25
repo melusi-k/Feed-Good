@@ -150,19 +150,18 @@ struct PlantScheduledCareAnalyticsTests {
         let quiet = ScheduledCareQuietPeriodSnapshot(
             taskID: taskID,
             plantID: plantID,
-            startAt: due.addingTimeInterval(1_000),
-            endAt: due.addingTimeInterval(5_000)
+            startAt: due.addingTimeInterval(2 * 86_400)
         )
         let otherTaskID = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
         let opportunities = [
-            opportunity(1, due: due), // Due before pause activation; pause is still neutral while active.
-            opportunity(2, due: due.addingTimeInterval(1_500)),
-            opportunity(3, taskID: otherTaskID, due: due.addingTimeInterval(1_500))
+            opportunity(1, due: due), // Already past its grace deadline when the pause starts.
+            opportunity(2, due: due.addingTimeInterval(2 * 86_400 + 1_500)),
+            opportunity(3, taskID: otherTaskID, due: due.addingTimeInterval(2 * 86_400 + 1_500))
         ]
         let summary = try PlantScheduledCareAnalyticsSummary.calculate(
             plantID: plantID,
-            period: DateInterval(start: due, end: due.addingTimeInterval(10_000)),
-            now: due.addingTimeInterval(2_000),
+            period: DateInterval(start: due, end: due.addingTimeInterval(10 * 86_400)),
+            now: due.addingTimeInterval(3 * 86_400),
             calendar: calendar,
             opportunities: opportunities,
             events: [],
