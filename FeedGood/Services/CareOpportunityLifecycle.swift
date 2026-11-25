@@ -196,31 +196,6 @@ enum CareOpportunityLifecycle {
         }
     }
 
-    /// One-time/foreground bootstrap for existing routines. It creates only
-    /// the current CareTask.dueDate opportunity, never a reconstructed history.
-    static func bootstrap(
-        in container: ModelContainer,
-        at date: Date = .now
-    ) throws {
-        let context = ModelContext(container)
-        let tasks = try context.fetch(FetchDescriptor<CareTask>())
-        let taskIDs = Set(tasks.map(\.id))
-        let snapshot = try self.snapshot(for: taskIDs, in: context)
-        do {
-            for task in tasks {
-                if task.plant?.archivedAt == nil && task.isEnabled {
-                    _ = try ensureCurrent(for: task, at: date, in: context)
-                } else {
-                    try cancelOpen(for: task.id, at: date, in: context)
-                }
-            }
-            if context.hasChanges { try context.save() }
-        } catch {
-            restore(snapshot, in: context)
-            throw error
-        }
-    }
-
     /// Hard-deleting a plant removes its plant-owned opportunity ledger.
     static func deleteAll(
         for plantID: UUID,
