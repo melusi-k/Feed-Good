@@ -176,7 +176,7 @@ struct PlantPersistenceTests {
         // Open that same store with the exact schema and migration plan used
         // by the production app. Existing plants must become active by default.
         do {
-            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+            let currentSchema = Schema(versionedSchema: FeedGoodSchemaV5.self)
             let currentConfiguration = ModelConfiguration(schema: currentSchema, url: storeURL)
             let migratedContainer = try ModelContainer(
                 for: currentSchema,
@@ -301,7 +301,7 @@ struct PlantPersistenceTests {
     }
 
 
-    @Test func version3StoreWithTagsMigratesToVersion4WithoutLosingRecords() throws {
+    @Test func version3StoreWithTagsMigratesToVersion5WithoutLosingRecords() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -427,7 +427,7 @@ struct PlantPersistenceTests {
     }
 
 
-    @Test func shippedTopLevelV3StoreMigratesToVersion4WithoutLosingRecords() throws {
+    @Test func shippedTopLevelV3StoreMigratesToVersion5WithoutLosingRecords() throws {
         // CI creates this store by compiling the exact pre-PR #121 source and
         // writing it with its original top-level V3 SwiftData model types.
         let storeURL = URL(fileURLWithPath: "/tmp/feedgood-v3-fixture/garden.store")
@@ -478,6 +478,88 @@ struct PlantPersistenceTests {
 
         #expect(try context.fetch(FetchDescriptor<QuietPeriod>()).isEmpty)
         #expect(try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
+    }
+
+    @Test func v4MigrationSeedsOnlyCurrentEnabledNonArchivedTaskSchedules() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let storeURL = folder.appendingPathComponent("v4-garden.store")
+
+        let activePlantID = UUID()
+        let archivedPlantID = UUID()
+        let activeTaskID = UUID()
+        let disabledTaskID = UUID()
+        let archivedTaskID = UUID()
+        let dueDate = Date(timeIntervalSince1970: 1_760_000_000)
+
+        // Write a real V4 store with active, disabled and archived schedules.
+        do {
+            let schema = Schema(versionedSchema: FeedGoodSchemaV4.self)
+            let configuration = ModelConfiguration(schema: schema, url: storeURL)
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            let context = ModelContext(container)
+            let activePlant = Plant(id: activePlantID, name: "Active plant")
+            let archivedPlant = Plant(
+                id: archivedPlantID,
+                name: "Archived plant",
+                archivedAt: Date(timeIntervalSince1970: 1_750_000_000)
+            )
+            let activeTask = CareTask(
+                kind: .watering,
+                intervalDays: 7,
+                dueDate: dueDate,
+                isEnabled: true,
+                plant: activePlant
+            )
+            activeTask.id = activeTaskID
+            let disabledTask = CareTask(
+                kind: .feeding,
+                intervalDays: 14,
+                dueDate: dueDate.addingTimeInterval(86_400),
+                isEnabled: false,
+                plant: activePlant
+            )
+            disabledTask.id = disabledTaskID
+            let archivedTask = CareTask(
+                kind: .pruning,
+                intervalDays: 30,
+                dueDate: dueDate.addingTimeInterval(172_800),
+                isEnabled: true,
+                plant: archivedPlant
+            )
+            archivedTask.id = archivedTaskID
+
+            context.insert(activePlant)
+            context.insert(archivedPlant)
+            context.insert(activeTask)
+            context.insert(disabledTask)
+            context.insert(archivedTask)
+            try context.save()
+        }
+
+        // The production V5 migration seeds only the current active schedule.
+        do {
+            let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+            let configuration = ModelConfiguration(schema: schema, url: storeURL)
+            let container = try ModelContainer(
+                for: schema,
+                migrationPlan: FeedGoodMigrationPlan.self,
+                configurations: [configuration]
+            )
+            let context = ModelContext(container)
+            let opportunities = try context.fetch(FetchDescriptor<ScheduledCareOpportunity>())
+
+            #expect(opportunities.count == 1)
+            let opportunity = try #require(opportunities.first)
+            #expect(opportunity.taskID == activeTaskID)
+            #expect(opportunity.plantID == activePlantID)
+            #expect(opportunity.scheduledDueAt == dueDate)
+            #expect(opportunity.effectiveDueAt == dueDate)
+            #expect(opportunity.statusRaw == "open")
+            #expect(opportunity.careEventID == nil)
+            #expect(opportunity.createdAt == opportunity.updatedAt)
+        }
     }
 
 }
