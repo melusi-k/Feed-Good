@@ -4,7 +4,7 @@
 **Stage:** 3 — Care understanding, consistency and plant-health evidence  
 **Priority:** Proposed P2 capability  
 **Release:** Incremental delivery after the source-record contracts in PRD-022, PRD-023 and relevant plant-history foundations are stable  
-**Primary surfaces:** Plant Profile, User Profile (per-task streaks highlight), Plant Story, Growth Review and Today  
+**Primary surfaces:** Plant Profile, Garden Profile (per-task streaks highlight), Plant Story, Growth Review and Today  
 **Data posture:** Local-first, derived from authoritative user records; no duplicate care ledger
 
 ## 1. One-line goal
@@ -257,7 +257,7 @@ Deliver in independently reviewable phases, with one coherent PRD and explicit d
 1. **Phase 0 — Contract and inventory:** Confirm source schemas and lifecycle semantics in PRD-022/023 and PRD-014/018/012; map fields and missing data; approve metric catalogue, time rules and insight evidence classes.
 2. **Phase 1 — Plant Story foundation:** Build deterministic source aggregation, ordering, navigation and sparse-data states. No analytics scores or streak UI.
 3. **Phase 2 — Care analytics:** Add plant-level activity summaries and eligible-opportunity metrics; add collection aggregation only after plant-level correctness and source coverage are proven.
-4. **Phase 3 — Per-task care streaks:** Add a separate calculator and history for each stable care-task identity. Do not calculate plant-wide or collection-wide streaks. This phase remains blocked until the PRD-022 lifecycle contract and PRD-027 cross-PRD approval gate are closed.
+4. **Phase 3 — Per-task care streaks:** Add a separate calculator and history for each stable care-task identity. Do not calculate plant-wide or collection-wide streaks. This phase remains blocked until PRD-022 approves the scheduled-opportunity identity and lifecycle contract.
 5. **Phase 4 — Evidence-led plant insights:** Add approved deterministic templates over check-ins, journal/plant-change records and comparable Growth Review evidence. No AI interpretation.
 6. **Phase 5 — Hardening and release:** Validate edits/deletes, time-zone changes, quiet periods, pause/disable, archive/restore, import/export, offline, accessibility and performance.
 
@@ -329,10 +329,10 @@ These cannot be honestly marked resolved by PRD-024 alone:
 - **PRD-012:** exact photo comparison contract and what provenance/metadata it exposes.
 - **PRD-011:** correction/deletion audit semantics and whether prior source values remain available for audit.
 - **Archive:** version bump/compatibility plan once the scheduled-opportunity identity and any required quiet-period source data are approved.
-- **PRD-027:** explicit change-control approval is required before per-task streaks can be implemented. PRD-027 currently excludes streaks as engagement/retention mechanics and states that streaks remain out of scope unless an approved feature PRD supersedes that boundary. PRD-024's per-task informational streak proposal does not silently supersede PRD-027 while this document remains a draft.
+- **PRD-027:** aligned by its approved change-control update: private, descriptive streak histories are permitted per stable care-task identity and may appear as separately labelled summaries in the user's own Garden Profile and task context. They are not retention mechanics and do not authorise gamification, nudges, rewards or social comparison.
 - **PRD-013:** its Weekly Garden Reflection continues to exclude streaks and scores. PRD-024 must not add task streaks to that reflection.
 
-These are dependency gates, not reasons to block the PRD document. Phase 0 must close them before implementation of the dependent capability begins. In particular, the PRD-027 conflict must be resolved by explicitly approving a narrow, private, per-task descriptive-history exception while retaining the prohibition on gamification, retention mechanics and engagement nudges—or by keeping streaks out of scope.
+These are dependency gates, not reasons to block the PRD document. Phase 0 must close them before implementation of the dependent capability begins. The PRD-027 cross-document conflict is resolved by the explicit per-task descriptive-history exception. The remaining implementation gates—especially PRD-022's scheduled-opportunity identity/lifecycle contract and archive compatibility—must still close before streak implementation.
  
 ## 14. Dependencies and delivery tracking
 
@@ -343,5 +343,5 @@ These are dependency gates, not reasons to block the PRD document. Phase 0 must 
 - **Reflection:** [PRD-013 — Weekly Garden Reflection](PRD-013-weekly-garden-reflection.md), which continues to exclude streaks and scores; do not add task streaks to the reflection.
 - **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), whose current streak exclusion requires explicit change-control approval before implementation.
 - **Related proposals:** [#64 — Growth Review](https://github.com/melusi-k/Feed-Good/issues/64), [#65 — Weekly Garden Reflection](https://github.com/melusi-k/Feed-Good/issues/65), [#66 — Plant Check-ins](https://github.com/melusi-k/Feed-Good/issues/66), [#72 — Plant Changes Timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- **Implementation issue:** Not created. Create the parent implementation issue and phase sub-issues only after §13 decisions, the PRD-022 scheduled-opportunity contract and PRD-027 cross-PRD approval are resolved and this PRD is approved.
+- **Implementation issue:** Not created. Create the parent implementation issue and phase sub-issues only after §13 decisions, the PRD-022 scheduled-opportunity contract and PRD-027 change-control alignment are resolved and this PRD is approved.
 - **Implementation status:** Not started. This document records the expanded product and technical contract for review.
