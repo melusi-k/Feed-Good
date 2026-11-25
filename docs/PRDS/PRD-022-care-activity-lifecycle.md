@@ -1,6 +1,6 @@
 # PRD-022 — Care Activity Lifecycle and Occurrence Management
 
-**Status:** Foundation delivered — ordinary care scheduling remains task/date plus CareEvent; Quiet Period persistence, V3→V4 migration, pause/resume lifecycle, care-workflow integration and JournalArchive v3 recovery are implemented and merged. Optional skip/snooze and notification-action policies remain deferred; they are not prerequisites for the delivered Quiet Period capability or the recorded-care analytics foundation.  
+**Status:** Quiet Period foundation delivered; scheduled-opportunity identity contract approved for implementation. Ordinary care currently remains task/date plus CareEvent until the narrow opportunity ledger in PRD-024 issue #143 is implemented. Quiet Period persistence, V3→V4 migration, pause/resume lifecycle, care-workflow integration and JournalArchive v3 recovery are implemented and merged. Skip/snooze and expanded notification-action policies remain deferred.  
 **Stage:** 1 — Care lifecycle foundation  
 **Priority:** Proposed P1 foundation  
 **Release:** Post-MVP, sequenced after review of the existing care and reminder contracts  
@@ -85,7 +85,7 @@ Included in the local-first app. Lifecycle behavior must work without an account
 
 1. Audit current CareTask, CareEvent, CareSchedule, CareRecorder, Today projection and CareReminderScheduler behavior against this PRD.
 2. Produce and approve a lifecycle transition table covering task definition, scheduled occurrence, user action, persistence, due-date effect, history effect, Today visibility and notification effect.
-3. **Implemented direction:** keep the current task due date plus immutable `CareEvent` history as the source of truth for ordinary care scheduling; no general persisted occurrence model was introduced. Quiet Periods use their own persisted parent record and per-task pause snapshot because pause state/history cannot be safely derived from `CareTask.dueDate` alone.
+3. **Delivered foundation and approved extension:** the shipped Quiet Period work retains `CareTask.dueDate` plus `CareEvent` history as the ordinary scheduling source and uses its own persisted parent/snapshot records for pause state. For PRD-024 scheduled-care analytics, the product has now approved a separate, minimal persisted scheduled-opportunity record; it is not a general-purpose occurrence engine and does not replace either CareTask or CareEvent.
 4. Skip and snooze/defer are not part of the delivered lifecycle foundation. Their semantics (if product work is prioritized later) require a separate proposal and approval; do not infer them from overdue state or add placeholder occurrence persistence.
 5. Quiet Period domain transitions are implemented outside SwiftUI views with transactional persistence and deterministic calendar/time-zone handling. The implementation uses the same calendar/time-zone context as `CareSchedule`; no competing plant time-zone source was added.
 6. The delivered Quiet Period work verifies plant/task isolation, duplicate and late/backdated completion, task edit/delete/disable, archive/restore compatibility, pause completion, interval edits during a pause and persistence failure. Notification actions beyond existing reminder routing remain outside this delivery.
@@ -100,7 +100,7 @@ Replaces ambiguous reminder-only behavior with a coherent, explicit care-activit
 
 These decisions are separated into implemented contracts and deferred product questions; deferred items are not implicit implementation permission:
 
-1. **Occurrence persistence — resolved for current scope:** `CareTask.dueDate` plus immutable `CareEvent` history remains authoritative for ordinary care. Quiet Period snapshots provide only the pause state that cannot be derived from the due date. No general `CareOccurrence` model is justified by current requirements. Revisit only with concrete evidence.
+1. **Occurrence persistence — revised by approved PRD-024 contract (2026-11-25):** the already-delivered Quiet Period foundation did not require ordinary occurrence persistence. PRD-024's scheduled analytics do. Implement a narrow persisted opportunity record with immutable UUID, task/plant identity, scheduled-due instant, `open`/`completed`/`cancelled` state and optional linked CareEvent. CareTask remains the routine/current schedule source; CareEvent remains actual recorded history. This is not a general workflow engine.
 2. **Skip policy — deferred:** no skip action or skipped-occurrence ledger is introduced by this delivery. Define and approve a separate product policy before implementing skip.
 3. **Snooze/defer policy — deferred:** no snooze action or alternate due-date source is introduced by this delivery. Define and approve a separate product policy before implementing snooze/defer.
 4. **Late and backdated completion:** Ordinary unpaused completion continues to schedule from actual completion time. Quiet-period completion follows PRD-020's frozen-interval reset rule. Test completion before due, on due day, after due, backdated completion, repeated taps and persistence failure; no second occurrence model is implied.
@@ -162,7 +162,7 @@ The following decisions are approved for implementation:
 2. Snapshot task UUIDs remain scalar identifiers, not CareTask relationships. Test task deletion retention, plant hard-delete cascade and save-failure behaviour.
 3. JournalArchive advances from v2 to additive v3, preserving v1 and v2 import compatibility. Validate period/snapshot UUID uniqueness, ownership, references, enum/status values, start/end ordering and active-period/task consistency before any writes. Recovery remains additive/idempotent and rejects invalid or conflicting data atomically.
 4. Pause completion tests cover before/on/after due, late/backdated completion, repeated completion and save failure. These cases must prove one normal CareEvent per accepted completion and correct frozen interval state without ending the pause.
-5. Keep the general persisted `CareOccurrence` model out of scope unless evidence shows that `CareTask.dueDate`, `CareEvent` and QuietPeriod snapshots cannot satisfy a concrete requirement.
+5. Keep a general-purpose occurrence/workflow engine out of scope. The separately approved minimal scheduled-opportunity ledger for PRD-024 is required and is tracked by issue #143.
 6. Freeze V3 before any live-model mutation, then implement V4 and a V3→V4 migration. Historical V1/V2/V3 schema definitions remain immutable; prove migration from real on-disk V1, build-52-era V2 and V3-with-tags fixtures. Fresh-install tests alone are insufficient.
 
 All #74 product and persistence design gates were approved and the four implementation slices have been delivered in merged PRs: #121–122 (V4 schema and migration proof), #123 (Quiet Period persistence and pause/resume lifecycle), #124 (care workflow integration), and #125 (JournalArchive v3 recovery and compatibility).
@@ -193,5 +193,23 @@ This matrix records the approved and implemented Quiet Period product transition
 - **Implementation delivery:** Complete for the Quiet Period/lifecycle foundation in PRs #121–125. There is no remaining implementation issue for that approved scope.
 - **Existing foundations:** [PRD-002 — Care Routine](PRD-002-care-routine.md), [PRD-003 — Care Reminders](PRD-003-care-reminders.md), [PRD-011 — Care History Corrections](PRD-011-care-history-corrections.md), [PRD-017 — Care Routine Review](PRD-017-care-routine-review.md).
 - **Related proposals:** [#63 — Care History Corrections](https://github.com/melusi-k/Feed-Good/issues/63), [#71 — Care Routine Review](https://github.com/melusi-k/Feed-Good/issues/71), [#74 — Seasonal and Quiet Periods](https://github.com/melusi-k/Feed-Good/issues/74).
-- **Dependency direction:** #70, #71 and the #74 Quiet Period persistence/migration/archive gates are complete. PR #103 is merged. PRD-022 provides the task identity, due-date and pause/resume boundaries consumed by downstream care work. Optional skip/snooze and expanded notification actions remain separate future product decisions, not blockers for recorded-care summaries.
+- **Dependency direction:** #70, #71 and the #74 Quiet Period persistence/migration/archive gates are complete. PR #103 and PRs #121–125 are merged. The scheduled-opportunity identity/lifecycle contract was approved on 2026-11-25 and its implementation is tracked in PRD-024 issue #143. Optional skip/snooze and expanded notification actions remain deferred.
 - **Implementation status:** Quiet Period/lifecycle foundation delivered and merged (#121–125). Ordinary care remains task/date plus CareEvent. Skip/snooze and additional notification actions are explicitly deferred. This document records the delivered contract and those bounded future decisions.
+
+
+## 15. Approved scheduled-opportunity contract for PRD-024 (2026-11-25)
+
+The following narrow extension is approved for implementation in issue #143:
+
+- Persist one opportunity per active task schedule instance, with immutable UUID, stable CareTask UUID, plant ownership, immutable scheduled-due instant, lifecycle state (`open`, `completed`, `cancelled`) and optional linked CareEvent UUID.
+- `CareTask` remains the reusable routine/current schedule source. `CareEvent` remains the actual recorded-care history. An opportunity is not a duplicate event or task.
+- A completed opportunity links to exactly one accepted CareEvent. Unresolved/overdue is derived from an open opportunity after its scheduled-due instant.
+- Explicit due-date reschedule cancels the superseded open opportunity and creates a replacement. Disable/delete cancels an open opportunity; cancellation is excluded from eligible denominators.
+- Completion, event linkage and task schedule advancement must be atomic. Repeated completion cannot award duplicate credit.
+- Preserve opportunity identity and exclude eligibility while the approved Quiet Period overlay suppresses the task. Apply the existing pause/resume schedule contract; explicit due-date overrides cancel/replace the affected opportunity.
+- Historical CareEvents remain unlinked. No historical opportunity backfill or retroactive adherence/streak credit.
+- Skip, snooze and defer are excluded from the first scheduled-care analytics/streak release. No corresponding UI, state, reminder action or placeholder outcome is implied.
+- The ledger must be included in versioned JournalArchive export/recovery with backward-compatible import and strict ownership/reference validation.
+- This approval supersedes only the earlier current-scope decision against ordinary persisted opportunities. It does not reopen or alter the already-delivered Quiet Period schema, pause-clock, migration or archive behavior.
+
+Implementation: [issue #143](https://github.com/melusi-k/Feed-Good/issues/143).
