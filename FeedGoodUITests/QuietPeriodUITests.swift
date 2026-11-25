@@ -64,9 +64,16 @@ final class QuietPeriodUITests: XCTestCase {
             predicate: NSPredicate(format: "isHittable == true"),
             object: manageQuietPeriod
         )
-        XCTAssertEqual(XCTWaiter.wait(for: [manageLinkHittable], timeout: 5), .completed)
+        guard XCTWaiter.wait(for: [manageLinkHittable], timeout: 5) == .completed else {
+            XCTFail("Quiet Period management link never became hittable after returning to the plant profile.")
+            return
+        }
         manageQuietPeriod.tap()
-        XCTAssertTrue(app.buttons["quietPeriod.end"].waitForExistence(timeout: 5))
+        let endButton = app.buttons["quietPeriod.end"]
+        guard endButton.waitForExistence(timeout: 5) else {
+            XCTFail("Tapping the Quiet Period management link did not open the active-period controls.")
+            return
+        }
         app.buttons["quietPeriod.edit"].tap()
         let reason = app.textFields["quietPeriod.editReason"]
         XCTAssertTrue(reason.waitForExistence(timeout: 5))
