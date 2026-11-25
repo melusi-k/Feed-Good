@@ -56,7 +56,7 @@ struct GardenProfileSummaryTests {
         )
 
         #expect(summary.eventCount == 1)
-        #expect(summary.records.map(\\.id) == [firstID])
+        #expect(summary.records.map(\.id) == [firstID])
         #expect(summary.earliestRecordedAt == start)
         #expect(summary.latestRecordedAt == start)
         #expect(summary.period.start == start)
@@ -79,7 +79,7 @@ struct GardenProfileSummaryTests {
             events: [first, second, newest]
         )
 
-        #expect(summary.records.map(\\.id) == [newest.id, lowID, highID])
+        #expect(summary.records.map(\.id) == [newest.id, lowID, highID])
         #expect(summary.earliestRecordedAt == instant)
         #expect(summary.latestRecordedAt == later)
     }
