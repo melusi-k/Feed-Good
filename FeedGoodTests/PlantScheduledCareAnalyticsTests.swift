@@ -240,8 +240,7 @@ struct PlantScheduledCareAnalyticsTests {
 
         #expect(calendar.dateComponents([.day], from: thirty.start, to: thirty.end).day == 30)
         #expect(calendar.dateComponents([.day], from: ninety.start, to: ninety.end).day == 90)
-        let yearComponents = calendar.dateComponents([.year, .month, .day], from: twelveMonths.start, to: twelveMonths.end)
-        #expect(yearComponents.month == 0 || yearComponents.month == 12)
+        #expect(calendar.date(byAdding: .month, value: 12, to: twelveMonths.start) == calendar.startOfDay(for: now))
         #expect(calendar.component(.month, from: twelveMonths.start) == 11)
         #expect(calendar.component(.day, from: twelveMonths.start) == 25)
     }
