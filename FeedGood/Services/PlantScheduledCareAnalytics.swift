@@ -63,6 +63,7 @@ struct ScheduledCareQuietPeriodSnapshot: Equatable {
 }
 
 enum ScheduledCareAnalyticsError: Error, Equatable {
+    case invalidPeriod
     case duplicateOpportunity(UUID)
     case duplicateCareEvent(UUID)
     case invalidOpportunityStatus(UUID)
