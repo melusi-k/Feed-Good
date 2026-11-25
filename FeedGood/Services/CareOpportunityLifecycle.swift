@@ -78,7 +78,6 @@ enum CareOpportunityLifecycle {
     static func applyScheduleChange(
         to task: CareTask,
         previousDueDate: Date,
-        explicitReschedule: Bool = false,
         at date: Date,
         in context: ModelContext
     ) throws {
@@ -106,6 +105,7 @@ enum CareOpportunityLifecycle {
     static func resumeAfterQuietPeriod(
         for task: CareTask,
         previousDueDate: Date,
+        explicitReschedule: Bool = false,
         at date: Date,
         in context: ModelContext
     ) throws {
@@ -128,8 +128,7 @@ enum CareOpportunityLifecycle {
         let records = try opportunities(for: task.id, in: context)
         try validate(records)
         let matching = records.filter {
-            $0.statusRaw == CareOpportunityStatus.open.rawValue &&
-            $0.scheduledDueAt == previousDueDate
+            $0.statusRaw == CareOpportunityStatus.open.rawValue
         }
         guard matching.count <= 1 else {
             throw CareOpportunityLifecycleError.duplicateCurrentOpportunity
