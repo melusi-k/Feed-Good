@@ -416,8 +416,8 @@ enum FeedGoodSchemaV3: VersionedSchema {
     }
 }
 
-/// Current schema. V4 adds the QuietPeriod history and its captured task
-/// snapshots. V1/V2/V3 above are immutable historical model graphs.
+/// V4 adds the QuietPeriod history and its captured task snapshots.
+/// V1/V2/V3 remain immutable historical model graphs.
 enum FeedGoodSchemaV4: VersionedSchema {
     static var versionIdentifier = Schema.Version(4, 0, 0)
     static var models: [any PersistentModel.Type] {
@@ -425,16 +425,27 @@ enum FeedGoodSchemaV4: VersionedSchema {
     }
 }
 
+/// V5 adds the narrow scheduled-care opportunity ledger. Existing records are
+/// seeded after migration from each task's one current dueDate; no old cycles
+/// or CareEvents are reconstructed.
+enum FeedGoodSchemaV5: VersionedSchema {
+    static var versionIdentifier = Schema.Version(5, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self, ScheduledCareOpportunity.self]
+    }
+}
+
 enum FeedGoodMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self]
+        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self, FeedGoodSchemaV5.self]
     }
 
     static var stages: [MigrationStage] {
         [
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV1.self, toVersion: FeedGoodSchemaV2.self),
             MigrationStage.lightweight(fromVersion: FeedGoodSchemaV2.self, toVersion: FeedGoodSchemaV3.self),
-            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV3.self, toVersion: FeedGoodSchemaV4.self)
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV3.self, toVersion: FeedGoodSchemaV4.self),
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV4.self, toVersion: FeedGoodSchemaV5.self)
         ]
     }
 }
