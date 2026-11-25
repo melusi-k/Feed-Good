@@ -6,11 +6,11 @@ import Testing
 @MainActor
 struct QuietPeriodArchiveTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
-    @Test func versionFourRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
+    @Test func versionFiveRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
         let source = try memory()
         let context = ModelContext(source)
         let plant = Plant(name: "Fern")
@@ -53,7 +53,7 @@ struct QuietPeriodArchiveTests {
             quietPeriodTaskSnapshots: [snapshot]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 4)
+        #expect(archive.version == 5)
         #expect(archive.quietPeriods?.count == 1)
         #expect(archive.quietPeriodTaskSnapshots?.count == 1)
 
@@ -175,7 +175,7 @@ struct QuietPeriodArchiveTests {
         #expect(try verify.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
     }
 
-    @Test func versionFourRoundTripsOpportunityIdentityAndCompletionLink() throws {
+    @Test func versionFiveRoundTripsOpportunityIdentityAndCompletionLink() throws {
         let source = try memory()
         let context = ModelContext(source)
         let plant = Plant(name: "Fern")
@@ -219,6 +219,7 @@ struct QuietPeriodArchiveTests {
         #expect(restored.taskID == task.id)
         #expect(restored.plantID == plant.id)
         #expect(restored.scheduledDueAt == due)
+        #expect(restored.effectiveDueAt == due)
         #expect(restored.status == .completed)
         #expect(restored.careEventID == event.id)
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
