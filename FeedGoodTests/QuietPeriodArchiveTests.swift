@@ -285,4 +285,35 @@ struct QuietPeriodArchiveTests {
         #expect(throws: JournalArchiveError.invalidRecord) { try duplicateLink.validate() }
     }
 
+
+    @Test func legacyVersionThreeRestoreDoesNotInventMissingOpportunities() throws {
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let plant = Plant(name: "Fern")
+        sourceContext.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        sourceContext.insert(task)
+        let event = CareEvent(task: task, completedAt: Date(timeIntervalSince1970: 1_700_000_000), note: "Historical")
+        sourceContext.insert(event)
+        try sourceContext.save()
+
+        let exported = try JournalArchive.export(
+            plants: [plant],
+            entries: [],
+            careTasks: [task],
+            careEvents: [event]
+        )
+        var legacy = try JSONDecoder().decode(JournalArchive.self, from: exported)
+        legacy.version = 3
+        legacy.careOpportunities = nil
+        let data = try JSONEncoder().encode(legacy)
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+        #expect(try recovery.fetch(FetchDescriptor<CareTask>()).count == 1)
+        #expect(try recovery.fetch(FetchDescriptor<CareEvent>()).count == 1)
+        #expect(try recovery.fetch(FetchDescriptor<CareOpportunity>()).isEmpty)
+    }
+
 }
