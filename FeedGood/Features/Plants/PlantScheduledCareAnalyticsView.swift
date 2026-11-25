@@ -17,7 +17,7 @@ struct PlantScheduledCareAnalyticsView: View {
             now: now,
             calendar: calendar
         ) else {
-            return .failure(.invalidOpportunityStatus(UUID()))
+            return .failure(.invalidPeriod)
         }
 
         let quietPeriods = quietMemberships.compactMap {
@@ -38,7 +38,7 @@ struct PlantScheduledCareAnalyticsView: View {
         } catch let error as ScheduledCareAnalyticsError {
             return .failure(error)
         } catch {
-            return .failure(.invalidOpportunityStatus(UUID()))
+            return .failure(.invalidPeriod)
         }
     }
 
