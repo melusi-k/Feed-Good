@@ -120,8 +120,12 @@ enum CareOpportunityLifecycle {
         }
         let records = try opportunities(for: task.id, in: context)
         try validate(records)
+        // Only the opportunity representing the task's pre-resume due
+        // boundary is current. A reopened completion from an older cycle is
+        // independent history and must not block or be retimed by this resume.
         let matching = records.filter {
-            $0.statusRaw == CareOpportunityStatus.open.rawValue
+            $0.statusRaw == CareOpportunityStatus.open.rawValue &&
+            $0.effectiveDueAt == previousDueDate
         }
         guard matching.count <= 1 else {
             throw CareOpportunityLifecycleError.duplicateCurrentOpportunity
