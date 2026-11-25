@@ -106,6 +106,7 @@ struct PlantScheduledCareAnalyticsView: View {
                             systemImage: "calendar",
                             description: Text("Eligible scheduled opportunities for this period will appear here. Manually recorded care remains in care history.")
                         )
+                        .accessibilityIdentifier("scheduledCareAnalytics.emptyHistory")
                     } else {
                         ForEach(summary.records) { record in
                             if plant.archivedAt == nil {
@@ -114,10 +115,10 @@ struct PlantScheduledCareAnalyticsView: View {
                                 } label: {
                                     recordRow(record)
                                 }
-                                .accessibilityIdentifier("scheduledCareAnalytics.record.\(record.id.uuidString)")
+                                .accessibilityIdentifier("scheduledCareAnalytics.record.\\(record.id.uuidString)")
                             } else {
                                 recordRow(record)
-                                    .accessibilityIdentifier("scheduledCareAnalytics.record.\(record.id.uuidString)")
+                                    .accessibilityIdentifier("scheduledCareAnalytics.record.\\(record.id.uuidString)")
                             }
                         }
                     }
@@ -148,19 +149,19 @@ struct PlantScheduledCareAnalyticsView: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
             }
-            Text("Due \(record.effectiveDueAt.formatted(date: .abbreviated, time: .shortened))")
+            Text("Due \\(record.effectiveDueAt.formatted(date: .abbreviated, time: .shortened))")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             if let completedAt = record.completedAt {
-                Text("Recorded \(completedAt.formatted(date: .abbreviated, time: .shortened))")
+                Text("Recorded \\(completedAt.formatted(date: .abbreviated, time: .shortened))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("Opportunity \(record.id.uuidString)")
+            Text("Opportunity \\(record.id.uuidString)")
                 .font(.caption2.monospaced())
                 .foregroundStyle(.tertiary)
             if let eventID = record.careEventID {
-                Text("Care record \(eventID.uuidString)")
+                Text("Care record \\(eventID.uuidString)")
                     .font(.caption2.monospaced())
                     .foregroundStyle(.tertiary)
             }
@@ -170,7 +171,7 @@ struct PlantScheduledCareAnalyticsView: View {
 
     private func periodDescription(_ summary: PlantScheduledCareAnalyticsSummary) -> String {
         let inclusiveEnd = summary.period.end.addingTimeInterval(-1)
-        return "\(summary.period.start.formatted(date: .abbreviated, time: .omitted)) – \(inclusiveEnd.formatted(date: .abbreviated, time: .omitted)) · \(summary.timeZoneIdentifier)"
+        return "\\(summary.period.start.formatted(date: .abbreviated, time: .omitted)) – \\(inclusiveEnd.formatted(date: .abbreviated, time: .omitted)) · \\(summary.timeZoneIdentifier)"
     }
 
     private func outcomeTitle(_ outcome: ScheduledCareOutcome) -> String {
