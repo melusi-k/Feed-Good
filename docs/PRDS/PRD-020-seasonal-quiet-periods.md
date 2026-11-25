@@ -81,15 +81,15 @@ Included in the local-first app. No account, network or location permission is r
 - Lifecycle state, archive state and quiet period are separate concepts.
 
 ## 12. Launch plan
-1. **Approved:** use a user-selected subset, with all currently enabled tasks preselected by default; capture the selected set for that period. Routine changes during an active period follow the approved edit rules below.
-2. Apply the approved routine-edit behavior while paused: new tasks remain outside the captured set; editing an included task does not remove it or automatically enable it; explicit task-setting changes persist while the quiet-period overlay remains in force. Verify that interval edits update the frozen interval without advancing it until resume, that an explicit Next care edit remains authoritative, and that enabled/disabled combinations are handled correctly.
-3. Apply the approved pause-completion rule: persist normal care history, reset that task's frozen remaining interval to its full current recurrence interval, and resume its countdown only when the quiet period ends. Keep ordinary completion-time-plus-interval semantics outside a pause.
-4. Use the same calendar/time-zone context as `CareSchedule` for start/end interpretation and due-day calculations. Validate DST gaps/folds, device time-zone changes, scheduled activation boundaries and end-time precision against PRD-022; do not introduce a second plant time-zone source.
-5. Implement and test the approved archive transition: end the quiet period, preserve its history, set `archivedAt`, and do not reactivate the period on restore.
-6. Choose persistence only after the task/occurrence behavior is settled; coordinate with PRD-022 without pre-empting its occurrence-lifecycle decisions.
-7. Implement preview, explicit confirmation, edit/end/cancel and reminder reconciliation only after the design gates are approved.
-8. Test date boundaries, DST/time zones, pause/resume, cancellation, routine edits, archive compatibility, export/restore and permission-denied behavior.
-9. Complete accessibility and physical-device review.
+1. **Delivered:** use a user-selected subset, with all currently enabled tasks preselected by default; capture the selected set for that period. Routine changes during an active period follow the approved edit rules below.
+2. **Delivered:** apply the approved routine-edit behavior while paused: new tasks remain outside the captured set; editing an included task does not remove it or automatically enable it; explicit task-setting changes persist while the quiet-period overlay remains in force. Verify that interval edits update the frozen interval without advancing it until resume, that an explicit Next care edit remains authoritative, and that enabled/disabled combinations are handled correctly.
+3. **Delivered:** apply the approved pause-completion rule: persist normal care history, reset that task's frozen remaining interval to its full current recurrence interval, and resume its countdown only when the quiet period ends. Keep ordinary completion-time-plus-interval semantics outside a pause.
+4. **Delivered:** use the same calendar/time-zone context as `CareSchedule` for start/end interpretation and due-day calculations, including DST gaps/folds and device time-zone changes; no second plant time-zone source is introduced.
+5. **Delivered:** implement and test the approved archive transition: end the quiet period, preserve its history, set `archivedAt`, and do not reactivate the period on restore.
+6. **Delivered:** use the approved QuietPeriod and QuietPeriodTaskSnapshot persistence in schema V4, with V3→V4 migration; ordinary care continues to use CareTask dueDate plus CareEvent.
+7. **Delivered:** implement preview, explicit confirmation, edit/end/cancel and reminder reconciliation.
+8. **Delivered:** test date boundaries, DST/time zones, pause/resume, cancellation, routine edits, archive compatibility, export/restore and permission-denied behavior.
+9. Complete the accessibility and physical-device review evidence tracked by the implementation/release process.
 
 ## 13. Replaces
 Replaces informal or ambiguous handling of a temporary care pause. It does not replace archive, lifecycle state or routine editing.
