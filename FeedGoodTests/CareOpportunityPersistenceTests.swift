@@ -318,6 +318,52 @@ struct CareOpportunityPersistenceTests {
         #expect(opportunities.first?.effectiveDueAt == task.dueDate)
     }
 
+    @Test func explicitNextCareOverrideDuringQuietPeriodReplacesRatherThanRetimesOpportunity() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Calathea")
+        context.insert(plant)
+        let originalDue = date("2026-12-01T09:00:00Z")
+        let overrideDue = date("2026-12-08T09:00:00Z")
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(
+            startAt: date("2026-11-25T00:00:00Z"),
+            statusRaw: QuietPeriodStatus.active.rawValue,
+            activatedAt: date("2026-11-25T00:00:00Z"),
+            plant: plant
+        )
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 6,
+            originalDueHour: 9,
+            originalDueMinute: 0,
+            originalDueSecond: 0,
+            frozenIntervalDays: 7,
+            nextCareOverrideAt: overrideDue,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        task.dueDate = overrideDue
+
+        try QuietPeriodLifecycle.end(
+            period,
+            at: date("2026-11-26T12:00:00Z"),
+            in: context,
+            calendar: Calendar(identifier: .gregorian)
+        )
+
+        let opportunities = try context.fetch(FetchDescriptor<CareOpportunity>())
+        #expect(original.status == .cancelled)
+        #expect(opportunities.count == 2)
+        let replacement = try #require(opportunities.first { $0.status == .open })
+        #expect(replacement.id != original.id)
+        #expect(replacement.scheduledDueAt == overrideDue)
+        #expect(replacement.effectiveDueAt == overrideDue)
+    }
+
     @Test func failedQuietPeriodResumeRestoresOriginalOpportunityIdentityAndDueDate() throws {
         enum InjectedFailure: Error { case save }
         let context = ModelContext(try memory())
