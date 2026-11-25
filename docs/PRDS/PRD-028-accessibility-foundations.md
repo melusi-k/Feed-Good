@@ -115,7 +115,7 @@ Replaces informal, scattered accessibility expectations with a documented and re
 
 ## 12. Delivery tracking
 
-- **Parent issue:** To be created for PRD-028 and used to coordinate the foundation work.
+- **Parent issue:** [#131 — PRD-028 Accessibility Foundations](https://github.com/melusi-k/Feed-Good/issues/131); use this existing issue to coordinate the foundation work.
 - **Documentation delivery:** Root `ACCESSIBILITY.md`, `docs/ACCESSIBILITY_TESTING.md`, PRD register and contributor guidance.
 - **Engineering delivery:** Targeted app audit, prioritized remediations and stable automated checks where supported.
 - **Prerequisites:** Existing accessibility review gates in `AGENTS.md`; current CI contract requiring `build-and-test` on the exact PR head.
