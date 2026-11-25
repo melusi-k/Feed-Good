@@ -72,30 +72,32 @@ enum ScheduledCareAnalyticsError: Error, Equatable {
 enum ScheduledCareAnalyticsRange: String, CaseIterable, Identifiable {
     case last30Days
     case last90Days
-    case last365Days
+    case last12Months
 
     var id: String { rawValue }
     var title: String {
         switch self {
         case .last30Days: "30 days"
         case .last90Days: "90 days"
-        case .last365Days: "12 months"
-        }
-    }
-    var dayCount: Int {
-        switch self {
-        case .last30Days: 30
-        case .last90Days: 90
-        case .last365Days: 365
+        case .last12Months: "12 months"
         }
     }
 
     func period(now: Date, calendar: Calendar) -> DateInterval? {
-        PlantScheduledCareAnalyticsSummary.period(
-            days: dayCount,
-            now: now,
-            calendar: calendar
-        )
+        guard let today = calendar.dateInterval(of: .day, for: now) else {
+            return nil
+        }
+        let start: Date?
+        switch self {
+        case .last30Days:
+            start = calendar.date(byAdding: .day, value: -29, to: today.start)
+        case .last90Days:
+            start = calendar.date(byAdding: .day, value: -89, to: today.start)
+        case .last12Months:
+            start = calendar.date(byAdding: .month, value: -11, to: today.start)
+        }
+        guard let start else { return nil }
+        return DateInterval(start: start, end: today.end)
     }
 }
 
