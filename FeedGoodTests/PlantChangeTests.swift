@@ -7,7 +7,7 @@ import UIKit
 @MainActor
 struct PlantChangeTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self])
+        let schema = Schema(versionedSchema: FeedGoodSchemaV5.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
