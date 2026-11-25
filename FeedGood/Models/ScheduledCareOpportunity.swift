@@ -32,7 +32,7 @@ final class ScheduledCareOpportunity {
         statusRaw: String = "open",
         careEventID: UUID? = nil,
         createdAt: Date = .now,
-        updatedAt: Date = .now
+        updatedAt: Date? = nil
     ) {
         self.id = id
         self.taskID = taskID
@@ -42,6 +42,6 @@ final class ScheduledCareOpportunity {
         self.statusRaw = statusRaw
         self.careEventID = careEventID
         self.createdAt = createdAt
-        self.updatedAt = updatedAt
+        self.updatedAt = updatedAt ?? createdAt
     }
 }
