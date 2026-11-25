@@ -6,6 +6,7 @@ struct PlantScheduledCareAnalyticsView: View {
     let plant: Plant
 
     @Environment(\.calendar) private var calendar
+    @State private var selectedRange: ScheduledCareAnalyticsRange = .last30Days
     @Query private var opportunities: [CareOpportunity]
     @Query private var events: [CareEvent]
     @Query private var quietMemberships: [QuietPeriodTaskSnapshot]
@@ -13,7 +14,7 @@ struct PlantScheduledCareAnalyticsView: View {
 
     private var calculation: Result<PlantScheduledCareAnalyticsSummary, ScheduledCareAnalyticsError> {
         let now = Date.now
-        guard let period = PlantScheduledCareAnalyticsSummary.recent30Days(
+        guard let period = selectedRange.period(
             now: now,
             calendar: calendar
         ) else {
@@ -21,7 +22,7 @@ struct PlantScheduledCareAnalyticsView: View {
         }
 
         let quietPeriods = quietMemberships.compactMap {
-            ScheduledCareQuietPeriodSnapshot(membership: $0, now: now)
+            ScheduledCareQuietPeriodSnapshot(membership: $0)
         }
 
         do {
@@ -58,6 +59,14 @@ struct PlantScheduledCareAnalyticsView: View {
             switch calculation {
             case .success(let summary):
                 Section {
+                    Picker("Date range", selection: $selectedRange) {
+                        ForEach(ScheduledCareAnalyticsRange.allCases) { range in
+                            Text(range.title).tag(range)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("scheduledCareAnalytics.range")
+
                     LabeledContent("Completed", value: "\(summary.completedCount)")
                     LabeledContent("Completed within 24 hours", value: "\(summary.completedOnTimeCount)")
                     LabeledContent("Completed late", value: "\(summary.completedLateCount)")
@@ -67,7 +76,7 @@ struct PlantScheduledCareAnalyticsView: View {
                     LabeledContent("Due · within 24-hour window", value: "\(summary.unresolvedCount)")
                     LabeledContent("Overdue · window expired", value: "\(summary.overdueCount)")
                 } header: {
-                    Text("Scheduled outcomes · last 30 days")
+                    Text("Scheduled outcomes · \\(selectedRange.title)")
                 } footer: {
                     Text(periodDescription(summary))
                 }
