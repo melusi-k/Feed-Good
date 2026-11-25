@@ -16,6 +16,7 @@ struct CareOpportunityLifecycleSnapshot {
         let record: CareOpportunity
         let statusRaw: String
         let careEventID: UUID?
+        let effectiveDueAt: Date
         let updatedAt: Date
     }
 
@@ -48,7 +49,7 @@ enum CareOpportunityLifecycle {
         try validate(records)
         let matching = records.filter {
             $0.statusRaw == CareOpportunityStatus.open.rawValue &&
-            $0.scheduledDueAt == task.dueDate
+            $0.effectiveDueAt == task.dueDate
         }
         guard matching.count <= 1 else {
             throw CareOpportunityLifecycleError.duplicateCurrentOpportunity
@@ -64,6 +65,7 @@ enum CareOpportunityLifecycle {
             taskID: task.id,
             plantID: plant.id,
             scheduledDueAt: task.dueDate,
+            effectiveDueAt: task.dueDate,
             createdAt: date,
             updatedAt: date
         )
@@ -95,6 +97,54 @@ enum CareOpportunityLifecycle {
             try cancelOpen(for: task.id, scheduledDueAt: previousDueDate, at: date, in: context)
         }
         _ = try ensureCurrent(for: task, at: date, in: context)
+    }
+
+    /// Resumes a Quiet Period occurrence without replacing its stable identity.
+    /// The original scheduled instant remains immutable; only the effective
+    /// eligibility boundary moves to the resumed task due date.
+    static func resumeAfterQuietPeriod(
+        for task: CareTask,
+        previousDueDate: Date,
+        at date: Date,
+        in context: ModelContext
+    ) throws {
+        guard let plant = task.plant else {
+            throw CareOpportunityLifecycleError.taskHasNoPlant
+        }
+        guard plant.archivedAt == nil else {
+            throw CareOpportunityLifecycleError.archivedPlant
+        }
+        guard task.isEnabled else {
+            try cancelOpen(for: task.id, at: date, in: context)
+            return
+        }
+
+        let records = try opportunities(for: task.id, in: context)
+        try validate(records)
+        let matching = records.filter {
+            $0.statusRaw == CareOpportunityStatus.open.rawValue &&
+            $0.scheduledDueAt == previousDueDate
+        }
+        guard matching.count <= 1 else {
+            throw CareOpportunityLifecycleError.duplicateCurrentOpportunity
+        }
+        if let existing = matching.first {
+            guard existing.plantID == plant.id else {
+                throw CareOpportunityLifecycleError.invalidLifecycleState
+            }
+            existing.effectiveDueAt = task.dueDate
+            existing.updatedAt = date
+            return
+        }
+
+        context.insert(CareOpportunity(
+            taskID: task.id,
+            plantID: plant.id,
+            scheduledDueAt: previousDueDate,
+            effectiveDueAt: task.dueDate,
+            createdAt: date,
+            updatedAt: date
+        ))
     }
 
     static func cancelOpen(
@@ -172,6 +222,7 @@ enum CareOpportunityLifecycle {
                     record: $0,
                     statusRaw: $0.statusRaw,
                     careEventID: $0.careEventID,
+                    effectiveDueAt: $0.effectiveDueAt,
                     updatedAt: $0.updatedAt
                 )
             }
@@ -192,6 +243,7 @@ enum CareOpportunityLifecycle {
         for state in snapshot.states {
             state.record.statusRaw = state.statusRaw
             state.record.careEventID = state.careEventID
+            state.record.effectiveDueAt = state.effectiveDueAt
             state.record.updatedAt = state.updatedAt
         }
     }
