@@ -37,7 +37,7 @@ struct JournalArchiveSection: View {
                     .accessibilityIdentifier("journal.export")
                 Button("Recover garden data") { importing = true }
                     .accessibilityIdentifier("journal.recover")
-                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Version 1 and 2 archives remain supported.")
+                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Versions 1–3 remain supported.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("journal.recoveryPolicy")
