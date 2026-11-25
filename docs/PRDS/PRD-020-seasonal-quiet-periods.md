@@ -1,6 +1,6 @@
 # PRD-020 — Seasonal and Quiet Periods
 
-**Status:** Phase 2, Stage 2 — core pause-clock, task-scope, deletion, completion, scheduling, routine-edit, archive-transition and calendar/time-zone policies approved; persistence model/migration/archive contract remains in design review  
+**Status:** Delivered — pause-clock, task-scope, deletion, completion, scheduling, routine-edit, archive-transition, calendar/time-zone, V4 persistence/migration and JournalArchive v3 recovery are implemented and merged in PRs #121–125.  
 **Priority:** P2  
 **Release:** Post-MVP, after lifecycle and routine-review decisions  
 **Primary surfaces:** Plant Profile, Care Routine, Today, local reminders, Plant Story
@@ -94,15 +94,15 @@ Included in the local-first app. No account, network or location permission is r
 ## 13. Replaces
 Replaces informal or ambiguous handling of a temporary care pause. It does not replace archive, lifecycle state or routine editing.
 
-## 14. Remaining design decisions and dependencies
+## 14. Delivery verification and boundaries
 - Hard prerequisites complete: PRD-016 / issue #70 lifecycle vocabulary and transition behavior is approved and PR #103 is merged to main. PRD-017 / issue #71 routine editing and reminder reconciliation is implemented and closed; persistence isolation and deletion hardening are merged in PRs #106 and #110.
-- Scoped PRD-022 coordination gate: agree the Quiet Period persistence/snapshot contract, plant/task deletion and archive compatibility, plus paused-completion edge cases before implementation. The approved date/time and pause-clock policies are already recorded. This does not require all PRD-022 scope (including unrelated skip/snooze work) to be implemented first; it prevents competing sources of truth.
+- PRD-022 coordination gate is complete: the persistence/snapshot contract, plant/task deletion, archive compatibility and paused-completion edge cases were implemented in PRs #121–125.
 - Builds on Care Routine #4 and Care Reminders #5.
 - Related to PRD-015 archive; archived plants cannot have active quiet periods.
 - Approved policy: pause the remaining time on included tasks and resume with that same remaining time; do not accumulate overdue time during the quiet period.
-- Remaining design decisions: persistence shape and migration/export details; detailed transition-matrix validation. Calendar/time-zone and DST behavior was approved on 2026-11-23. The explicit Next care override during a pause and pause-completion product policies are approved above.
-- No implementation should begin by silently choosing any remaining policy or persistence behavior.
+- Delivered: V4 schema and V3→V4 migration (#121–122), Quiet Period lifecycle (#123), care workflow integration (#124), JournalArchive v3 and compatibility (#125). The approved calendar/time-zone and DST behavior is covered by the implementation.
+- Future changes to the approved pause-clock contract require explicit product review; do not reopen or duplicate the delivered implementation.
 
 ## 15. Delivery tracking
 - GitHub issue: [#74 — Add explicit seasonal and quiet-period support](https://github.com/melusi-k/Feed-Good/issues/74).
-- Status: pause-clock, task-scope, deletion, completion, immediate/scheduled start, selected end date/time and archive-transition policies approved 2026-11-23; pause-completion, explicit Next care override, disabled-task behavior and calendar/time-zone contract approved; persistence/migration/archive design and implementation outstanding.
+- Status: Delivered and merged. PRs #121–122: V4 schema/migration; #123: lifecycle and scheduling; #124: care workflow integration; #125: archive v3 recovery and compatibility. No outstanding #74 implementation gate remains.
