@@ -157,7 +157,7 @@ enum CareOpportunityLifecycle {
         try validate(records)
         for record in records where
             record.statusRaw == CareOpportunityStatus.open.rawValue &&
-            (scheduledDueAt == nil || record.scheduledDueAt == scheduledDueAt) {
+            (effectiveDueAt == nil || record.effectiveDueAt == effectiveDueAt) {
             record.statusRaw = CareOpportunityStatus.cancelled.rawValue
             record.updatedAt = date
         }
