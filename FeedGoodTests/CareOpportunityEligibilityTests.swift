@@ -15,16 +15,16 @@ struct CareOpportunityEligibilityTests {
             completedAt: deadline,
             effectiveDueAt: due
         ))
-        #expect(!CareOpportunityEligibility.qualifiesForStreak(
+        #expect(CareOpportunityEligibility.qualifiesForStreak(
             completedAt: deadline.addingTimeInterval(0.001),
             effectiveDueAt: due
-        ))
-        #expect(!CareOpportunityEligibility.qualifiesForStreak(
+        ) == false)
+        #expect(CareOpportunityEligibility.qualifiesForStreak(
             completedAt: due.addingTimeInterval(-0.001),
             effectiveDueAt: due
-        ))
+        ) == false)
         #expect(CareOpportunityEligibility.streakDeadline(for: due) == deadline)
-        #expect(!CareOpportunityEligibility.gracePeriodHasExpired(now: deadline, effectiveDueAt: due))
+        #expect(CareOpportunityEligibility.gracePeriodHasExpired(now: deadline, effectiveDueAt: due) == false)
         #expect(CareOpportunityEligibility.gracePeriodHasExpired(now: deadline.addingTimeInterval(0.001), effectiveDueAt: due))
     }
 }
