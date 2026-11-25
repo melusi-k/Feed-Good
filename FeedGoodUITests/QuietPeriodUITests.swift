@@ -55,8 +55,17 @@ final class QuietPeriodUITests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
 
-        // Reopen management to verify editing and the end control.
-        app.buttons["plantDetail.quietPeriod"].tap()
+        // Reopen management only after the profile link is actually hittable.
+        // A visible accessibility element can still be in a navigation transition;
+        // tapping it too early can be swallowed and leave the test on the profile.
+        let manageQuietPeriod = app.buttons["plantDetail.quietPeriod"]
+        XCTAssertTrue(manageQuietPeriod.waitForExistence(timeout: 5))
+        let manageLinkHittable = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isHittable == true"),
+            object: manageQuietPeriod
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [manageLinkHittable], timeout: 5), .completed)
+        manageQuietPeriod.tap()
         XCTAssertTrue(app.buttons["quietPeriod.end"].waitForExistence(timeout: 5))
         app.buttons["quietPeriod.edit"].tap()
         let reason = app.textFields["quietPeriod.editReason"]
