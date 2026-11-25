@@ -602,7 +602,17 @@ struct JournalArchive: Codable {
                     careEventID: existing.careEventID,
                     createdAt: existing.createdAt,
                     updatedAt: existing.updatedAt
-                ) == record else {
+                ) == CareOpportunityRecord(
+                    id: record.id,
+                    taskID: record.taskID,
+                    plantID: record.plantID,
+                    scheduledDueAt: record.scheduledDueAt,
+                    effectiveDueAt: record.effectiveDueAt ?? record.scheduledDueAt,
+                    statusRaw: record.statusRaw,
+                    careEventID: record.careEventID,
+                    createdAt: record.createdAt,
+                    updatedAt: record.updatedAt
+                ) else {
                     throw JournalArchiveError.conflictingRecord
                 }
             } else if let eventID = record.careEventID,
