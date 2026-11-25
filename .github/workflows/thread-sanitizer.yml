@@ -39,7 +39,7 @@ jobs:
 
   thread-sanitizer:
     needs: classify-changes
-    if: github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true'
+    if: always() && (github.event_name != 'pull_request' || needs.classify-changes.outputs.docs_only != 'true')
     runs-on: macos-26
     timeout-minutes: 45
     steps:
