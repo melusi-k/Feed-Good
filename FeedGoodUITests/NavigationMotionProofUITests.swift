@@ -9,8 +9,12 @@ final class NavigationMotionProofUITests: XCTestCase {
 
     private func header(_ app: XCUIApplication, _ title: String) {
         // Same iOS 26 nav-title type instability as NavigationHeaderUITests:
-        // match the label regardless of element type, scoped to the bars.
-        let value = app.navigationBars.descendants(matching: .any)[title].firstMatch
+        // match the label regardless of element type, scoped to the bars,
+        // excluding the leading logo (its label is also "Feed Good").
+        let value = app.navigationBars
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@ AND identifier != %@", title, "app.header.logo"))
+            .firstMatch
         XCTAssertTrue(value.waitForExistence(timeout: 5))
         XCTAssertTrue(value.isHittable)
     }
