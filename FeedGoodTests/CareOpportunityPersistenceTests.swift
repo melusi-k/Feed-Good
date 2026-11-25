@@ -213,6 +213,7 @@ struct CareOpportunityPersistenceTests {
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
         context.insert(task)
         let original = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: date("2026-11-24T12:00:00Z"), in: context))
+        let originalID = original.id
 
         task.dueDate = resumedDue
         try CareOpportunityLifecycle.resumeAfterQuietPeriod(
@@ -221,7 +222,7 @@ struct CareOpportunityPersistenceTests {
             at: date("2026-11-26T12:00:00Z"),
             in: context
         )
-        #expect(original.id == original.id)
+        #expect(original.id == originalID)
         #expect(original.scheduledDueAt == originalDue)
         #expect(original.effectiveDueAt == resumedDue)
 
