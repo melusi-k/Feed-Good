@@ -33,7 +33,8 @@ struct PlantScheduledCareAnalyticsView: View {
                 calendar: calendar,
                 opportunities: opportunities.map(ScheduledCareOpportunitySnapshot.init),
                 events: events.map(ScheduledCareEventSnapshot.init),
-                quietPeriods: quietPeriods
+                quietPeriods: quietPeriods,
+                isArchived: plant.archivedAt != nil
             )
             return .success(summary)
         } catch let error as ScheduledCareAnalyticsError {
