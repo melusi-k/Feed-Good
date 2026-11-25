@@ -93,6 +93,7 @@ PRD-022 explicitly avoids a general persisted CareOccurrence model unless a conc
 - A **care-activity run** is the number of consecutive recorded-care weeks ending in the most recent recorded-care week.
 - The UI must say “recorded-care weeks” or “care activity,” not “perfect weeks,” “care compliance” or “plant health streak.”
 - The current week may be in progress. It counts once a qualifying event exists; it is not declared broken while the week is still underway.
+- A run stops being current after one completed week with no recorded care: the run ends at its most recent recorded-care week and becomes historical. It then appears only in the longest-run reference until a new recorded-care week begins a new current run.
 - A week with no CareEvent is simply a week with no recorded care. Do not show failure language, red states, loss animations or negative notifications.
 - Show the current recorded-care run and the longest historical recorded-care run side by side. Give the current run visual priority; present the longest run as a quiet historical reference, never as a target or competitive achievement.
 - On Plant Profile, show the per-plant current and longest runs. On User Profile, show a compact collection-wide streaks highlight, with a route to the fuller history. Label it clearly as recorded care activity across the selected plant collection; it must not imply that every plant received care.
