@@ -149,7 +149,7 @@ enum CareOpportunityLifecycle {
 
     static func cancelOpen(
         for taskID: UUID,
-        scheduledDueAt: Date? = nil,
+        effectiveDueAt: Date? = nil,
         at date: Date = .now,
         in context: ModelContext
     ) throws {
