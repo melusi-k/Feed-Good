@@ -78,6 +78,7 @@ enum CareOpportunityLifecycle {
     static func applyScheduleChange(
         to task: CareTask,
         previousDueDate: Date,
+        explicitReschedule: Bool = false,
         at date: Date,
         in context: ModelContext
     ) throws {
@@ -116,6 +117,11 @@ enum CareOpportunityLifecycle {
         }
         guard task.isEnabled else {
             try cancelOpen(for: task.id, at: date, in: context)
+            return
+        }
+        if explicitReschedule {
+            try cancelOpen(for: task.id, at: date, in: context)
+            _ = try ensureCurrent(for: task, at: date, in: context)
             return
         }
 
