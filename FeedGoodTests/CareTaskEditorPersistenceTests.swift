@@ -358,11 +358,6 @@ struct CareTaskEditorPersistenceTests {
         #expect(try verificationContext.fetch(descriptor).count == 1)
     }
 
-}
-
-private enum TestSaveError: Error {
-    case failed
-
     @Test func taskCreationRescheduleDisableAndDeleteMaintainOpportunityLedger() throws {
         let container = try memory()
         let context = container.mainContext
@@ -447,4 +442,8 @@ private enum TestSaveError: Error {
         #expect(try verify.fetch(FetchDescriptor<CareTask>()).isEmpty)
     }
 
+}
+
+private enum TestSaveError: Error {
+    case failed
 }
