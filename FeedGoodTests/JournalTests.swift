@@ -5,7 +5,7 @@ import UIKit
 
 @MainActor
 struct JournalTests {
-    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV5.self) }
+    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV6.self) }
     private func memory() throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
