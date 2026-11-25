@@ -148,9 +148,9 @@ Persist scheduled Quiet Period start and finite end as absolute instants. A devi
 
 ### Relationships, deletion and migration — implemented
 
-The repository's current `Plant` model already uses cascading relationships for care tasks, care events and journal entries, and the hard-delete UI deletes the Plant then saves its ModelContext. Follow that established ownership boundary: add a cascading Plant → QuietPeriod relationship and a cascading QuietPeriod → QuietPeriodTaskSnapshot relationship. Keep each snapshot's task UUID as a scalar identifier, not a cascading CareTask relationship. This means hard-deleting a plant removes its entire Quiet Period history with the rest of the plant-owned record, while deleting one task leaves its snapshot auditable. Add persistence tests proving both cascade boundaries and save-failure behavior.
+The repository's current `Plant` model already uses cascading relationships for care tasks, care events and journal entries, and the hard-delete UI deletes the Plant then saves its ModelContext. Implemented ownership boundary: Plant owns QuietPeriod through a cascading relationship, and QuietPeriod owns QuietPeriodTaskSnapshot through a cascading relationship. Each snapshot's task UUID is a scalar identifier, not a cascading CareTask relationship. Hard-deleting a plant removes its Quiet Period history with the rest of the plant-owned record, while deleting one task leaves its snapshot auditable. Persistence tests cover both cascade boundaries and save-failure behavior.
 
-Current persistence is `FeedGoodSchemaV3`: V2 added `Plant.archivedAt`, and V3 added `PlantTag` plus the optional `Plant.tags` relationship. Keep V1, V2 and V3 schema definitions immutable. If the proposed records are accepted, add them in a new schema version (expected V4): the repository already uses V3 for PlantTag and its optional Plant.tags relationship. Keep V1, V2 and V3 historical schema definitions immutable, add a V3→V4 migration stage, and cover the full V1→V4 migration chain with explicit migration tests. Schema V4 and the V3→V4 migration have been implemented and merged; the PRD records the contract, while the merged migration tests are the implementation evidence.
+Persistence now uses `FeedGoodSchemaV4`. V2 added `Plant.archivedAt`; V3 added `PlantTag` plus the optional `Plant.tags` relationship; V4 added `QuietPeriod` and `QuietPeriodTaskSnapshot`. Historical V1, V2 and V3 schema definitions remain immutable. The V3→V4 migration and full V1→V4 migration chain are covered by explicit migration tests, including real on-disk V1, build-52-era V2 and V3-with-tags fixtures.
 
 JournalArchive v3 contains additive QuietPeriod and snapshot data while continuing to import supported v1 and v2 archives. Validate UUID uniqueness, plant ownership, snapshot-to-period references, membership/status values, start/end ordering, and active-period/task consistency before any writes. Reject an unreconcilable active period atomically rather than silently dropping or partially importing it. JournalArchive v3 export/recovery and v1/v2 import compatibility have been implemented and merged.
 
@@ -185,7 +185,7 @@ All #74 product and persistence design gates were approved and the four implemen
 | Archive plant | End active period or cancel scheduled period | Retain period history; archive plant | No active care/reminders |
 | Restore plant | Do not reactivate old period | Preserve prior period unchanged | User must explicitly create another period |
 
-This matrix records the approved Quiet Period product transitions. Remaining gates concern persistence, deletion/archive compatibility and validation evidence; they do not reopen the approved timing, task-edit or pause-clock rules.
+This matrix records the approved and implemented Quiet Period product transitions. Skip/snooze and expanded notification actions remain separate deferred product decisions; they do not reopen the approved timing, task-edit or pause-clock rules.
 
 ## 14. Delivery tracking
 
