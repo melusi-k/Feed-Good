@@ -79,6 +79,20 @@ Replaces the need to use only free-form notes when a plant looks different and p
 
 The safety dependency is a release gate, not a post-launch cleanup item. Product review must name the editorial owner, source hierarchy and correction process before implementation begins. The first content set should remain small enough to review thoroughly.
 
+### Approved editorial and source policy
+
+The following policy is approved as a mandatory content and release gate for all bundled troubleshooting guidance:
+
+- **Permitted sources:** official government or university cooperative/extension services and recognised horticultural societies. Do not use commercial vendor, nursery, influencer, forum or unsourced general-web material as an authority for troubleshooting claims.
+- **Language:** cautious, educational and non-judgmental. Use qualified phrasing such as “consider checking” or “one possible factor”; never state or imply a diagnosis, certainty, guaranteed identification or guaranteed treatment outcome.
+- **Prohibited instructions:** no pesticide, chemical or other treatment dosage; no prescriptive chemical application; and no unsupported treatment instructions.
+- **Per-item provenance:** record the source organisation, exact source title, relevant section, URL, publication/update date when available, review status, named reviewer and reviewer role/qualification, and the review date. Missing required provenance blocks publication.
+- **Reviewer suitability:** the reviewer must have relevant horticultural knowledge or demonstrable professional experience appropriate to the content. The content author cannot self-approve their own item as the sole reviewer.
+- **Uncertainty and escalation:** unknown, conflicting or unsupported observations must lead to a neutral observation/checklist path and, where appropriate, a suggestion to seek qualified local horticultural advice. The app must not imply that its guidance replaces that advice.
+- **Maintenance:** retain a correction path. Re-review content when its source changes, a safety concern is raised, or the guidance is materially revised; withdraw or disable an item if its source or safety cannot be verified.
+
+This policy approves the editorial standard only. It does not approve any specific troubleshooting content or remove the existing release gate: each item must still be reviewed and have complete provenance before it ships.
+
 The schema choice remains open. Extending JournalEntry may minimise relationships and preserve the existing story; a separate PlantCheckIn may keep typed observation state clearer. Either option must define archive versioning, conflict behavior and deletion semantics before code is written.
 
 ## 12. Delivery tracking
