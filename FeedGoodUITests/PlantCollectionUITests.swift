@@ -94,18 +94,18 @@ final class PlantCollectionUITests: XCTestCase {
         let archivedRow = app.buttons["plants.archived.row.Archive fern"]
         XCTAssertTrue(archivedRow.waitForExistence(timeout: 5))
         archivedRow.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].waitForExistence(timeout: 5))
         app.buttons["plantDetail.restore"].tap()
         // Same iOS 26 dialog mirroring as the archive confirmation above.
         let restoreConfirmation = app.buttons.matching(identifier: "plantDetail.restore.confirm").firstMatch
         XCTAssertTrue(restoreConfirmation.waitForExistence(timeout: 5))
         restoreConfirmation.tap()
 
-        XCTAssertFalse(app.descendants(matching: .any)["plantDetail.archivedStatus"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["plantDetail.archivedStatus"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["plantDetail.care"].exists)
         XCTAssertTrue(app.buttons["plantDetail.routineReview"].exists)
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertFalse(app.buttons["plants.archived.row.Archive fern"].exists)
+        XCTAssertTrue(app.buttons["plants.archived.row.Archive fern"].waitForNonExistence(timeout: 5))
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.buttons["plants.row.Archive fern"].waitForExistence(timeout: 5))
     }
