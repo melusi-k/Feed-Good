@@ -29,7 +29,7 @@ private struct PlantScheduledCareAnalyticsContent: View {
     @Environment(\.calendar) private var calendar
     @Query private var opportunities: [CareOpportunity]
     @Query private var events: [CareEvent]
-    @Query private var quietMemberships: [QuietPeriodTaskSnapshot]
+    @Query private var quietPeriodRecords: [QuietPeriod]
     @Query private var tasks: [CareTask]
 
     init(
@@ -52,9 +52,9 @@ private struct PlantScheduledCareAnalyticsContent: View {
             filter: ScheduledCareAnalyticsFetch.eventsPredicate(plantID: plantID),
             sort: \CareEvent.completedAt
         )
-        _quietMemberships = Query(
-            filter: ScheduledCareAnalyticsFetch.activeQuietMembershipsPredicate(plantID: plantID),
-            sort: \QuietPeriodTaskSnapshot.capturedAt
+        _quietPeriodRecords = Query(
+            filter: ScheduledCareAnalyticsFetch.quietPeriodsPredicate(plantID: plantID),
+            sort: \QuietPeriod.startAt
         )
         _tasks = Query(
             filter: ScheduledCareAnalyticsFetch.tasksPredicate(plantID: plantID),
@@ -70,7 +70,9 @@ private struct PlantScheduledCareAnalyticsContent: View {
             return .failure(.invalidPeriod)
         }
 
-        let quietPeriods = quietMemberships.compactMap {
+        let quietPeriods = ScheduledCareAnalyticsFetch.activeMemberships(
+            in: quietPeriodRecords
+        ).compactMap {
             ScheduledCareQuietPeriodSnapshot(membership: $0)
         }
 
@@ -168,7 +170,9 @@ private struct PlantScheduledCareAnalyticsContent: View {
                 PlantCareConsistencySection(
                     plant: plant,
                     events: events.map(ScheduledCareEventSnapshot.init),
-                    quietPeriods: quietMemberships.compactMap {
+                    quietPeriods: ScheduledCareAnalyticsFetch.activeMemberships(
+                        in: quietPeriodRecords
+                    ).compactMap {
                         ScheduledCareQuietPeriodSnapshot(membership: $0)
                     },
                     tasks: tasks
