@@ -324,13 +324,13 @@ The following findings were checked against the current `main` source and existi
 | --- | --- | --- |
 | Care task | `CareTask` stores task ID, interval, current `dueDate`, enabled/reminder flags and plant relationship | Treat it as the recurring task definition and current schedule pointer; do not duplicate it |
 | Care history | `CareEvent` stores stable event ID, task ID/title snapshot, completion instant, note and plant relationship | Treat it as immutable-in-meaning historical evidence, subject to the approved history-correction policy |
-| Occurrence identity | No persisted scheduled-occurrence identity or skip/defer outcome is present in the current `CareTask`/`CareEvent` model | **Required upstream change in PRD-022:** introduce a stable occurrence identity and explicit lifecycle outcome before completion-rate or streak calculations ship |
+| Occurrence identity | V6 persists `CareOpportunity` with stable opportunity/task/plant identity, immutable `scheduledDueAt`, mutable `effectiveDueAt`, lifecycle status and optional linked CareEvent | Use this authoritative source for scheduled analytics and streaks; do not backfill prior opportunities or unlinked historical CareEvents |
 | Recurrence | `CareRecorder.complete` advances `dueDate` from the actual completion timestamp plus interval; `CareSchedule` uses an injected/default `Calendar` | Preserve this existing recurrence contract; PRD-024 must not change schedule advancement |
-| Pause | Current task pause is represented by `CareTask.isEnabled`; quiet periods are a separate PRD-020 capability and are not yet represented in the current model | Exclude disabled tasks. Quiet-period exclusion becomes active only when PRD-020 supplies persisted, auditable boundaries and affected-task scope |
+| Pause | Persisted Quiet Period and task-membership records are integrated with the V6 opportunity lifecycle | Treat active Quiet Period intervals as neutral; resume preserves opportunity identity and updates `effectiveDueAt` under PRD-020 calendar/DST rules |
 | Observations | Current `JournalEntry` supports dated notes, photos, milestones and typed plant-change records | Use these as first-release evidence sources; do not pretend a separate `PlantCheckIn` model already exists |
 | Check-ins | PRD-014 leaves the `JournalEntry` extension vs separate `PlantCheckIn` schema unresolved | Consume typed check-ins only after PRD-014 settles its schema and archive contract |
 | Structured care outcomes | PRD-023 is the intended source for typed care observations; current `CareEvent` source does not yet expose those approved fields | Integrate only after PRD-023 schema and migration are approved; notes are not mined or reclassified as structured measurements |
-| Archive | `JournalArchive` version 2 exports plants, journal entries, care tasks and care events, with stable IDs and optional extension keys | Do not export derived analytics/streak caches as authoritative data. Rebuild projections from source records after restore. Any new occurrence/outcome/quiet-period records require a versioned, backward-compatible archive extension |
+| Archive | JournalArchive v5 includes the scheduled-opportunity and Quiet Period compatibility delivered with PR #150 | Do not export derived analytics/streak caches. Rebuild projections from source records after restore; preserve the versioned source-record compatibility contract |
 | Persistence | App uses SwiftData locally, with isolated in-memory/temp stores in tests | Keep calculations local and offline; no remote service or third-party analytics |
 
 ### 13.3 Technical contracts approved for implementation planning
@@ -357,17 +357,17 @@ The following findings were checked against the current `main` source and existi
 
 These cannot be honestly marked resolved by PRD-024 alone:
 
-- **PRD-022:** the minimum scheduled-opportunity identity/lifecycle contract is approved on 2026-11-25 and implementation is tracked in issue #143. Skip/snooze/defer are explicitly excluded from the first release. The remaining gate is implementation plus migration/archive compatibility, not another product identity decision.
+- **PRD-022:** the scheduled-opportunity identity/lifecycle contract and implementation are complete in merged PRs #145 and #150; issue #143 is closed. Skip/snooze/defer remain excluded from the first release. This is no longer a blocker for analytics or streak calculation.
 - **PRD-020:** exact quiet-period pause/resume policy, affected-task scope and persisted interval representation.
 - **PRD-023:** final typed care-outcome fields, validation and archive representation.
 - **PRD-014:** `JournalEntry` extension versus a dedicated `PlantCheckIn` model, plus its export/restore and evidence semantics.
 - **PRD-012:** exact photo comparison contract and what provenance/metadata it exposes.
 - **PRD-011:** correction/deletion audit semantics and whether prior source values remain available for audit.
-- **Archive:** version bump/compatibility plan once the scheduled-opportunity identity and any required quiet-period source data are approved.
+- **Archive:** the required opportunity/Quiet Period source-record compatibility is delivered in JournalArchive v5. Future source-schema changes still require versioned, backward-compatible archive work.
 - **PRD-027:** permits private, descriptive Plant Care Streaks (per task) and the separately defined Garden Care Streak (garden-wide qualifying days). Neither is a retention mechanic; neither authorises gamification, nudges, rewards or social comparison.
 - **PRD-013:** its Weekly Garden Reflection continues to exclude streaks and scores. PRD-024 must not add task streaks to that reflection.
 
-These are dependency gates, not reasons to block the PRD document. Phase 0 must close them before implementation of the dependent capability begins. The PRD-027 cross-document conflict is resolved by the explicit per-task descriptive-history exception. The remaining implementation gates—especially PRD-022's scheduled-opportunity identity/lifecycle contract and archive compatibility—must still close before streak implementation.
+These are dependency gates for the capabilities they affect, not reasons to block the approved streak contract. PRD-022 identity/lifecycle and archive compatibility are delivered. PRD-023, PRD-014, PRD-012 and PRD-011 remain relevant gates for structured plant insights and historical evidence behavior, but they do not block the already-approved Garden Care Streak source calculation.
  
 ## 14. Dependencies and delivery tracking
 
@@ -376,17 +376,20 @@ These are dependency gates, not reasons to block the PRD document. Phase 0 must 
 - **Plant observations/history:** [PRD-014 — Plant Check-ins](PRD-014-plant-check-ins.md), [PRD-018 — Plant Changes Timeline](PRD-018-plant-changes-timeline.md), JournalEntry and photo source contracts.
 - **Visual history:** [PRD-012 — Growth Review](PRD-012-growth-review.md).
 - **Reflection:** [PRD-013 — Weekly Garden Reflection](PRD-013-weekly-garden-reflection.md), which continues to exclude streaks and scores; do not add task streaks to the reflection.
-- **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to record the approved narrow exception for private, descriptive per-task streak histories. PRD-013 Weekly Garden Reflection remains streak-free.
+- **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to permit private, descriptive Plant Care Streaks and the separate Garden Care Streak. PRD-013 Weekly Garden Reflection remains streak-free.
 - **Related proposals:** [#64 — Growth Review](https://github.com/melusi-k/Feed-Good/issues/64), [#65 — Weekly Garden Reflection](https://github.com/melusi-k/Feed-Good/issues/65), [#66 — Plant Check-ins](https://github.com/melusi-k/Feed-Good/issues/66), [#72 — Plant Changes Timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- **Implementation issue:** Scheduled-opportunity identity/lifecycle implementation is tracked in [issue #143](https://github.com/melusi-k/Feed-Good/issues/143). Plant Care Streaks and Garden Care Streak remain separate read-model/UI slices; Garden Care Streak requires its own implementation issue and test plan.
-- **Implementation status:** Not started. This document records the expanded product and technical contract for review.
+- **Scheduled-care analytics:** [#148](https://github.com/melusi-k/Feed-Good/issues/148), delivered by merged PRs #153 and #154; post-merge hardening remains in [#170](https://github.com/melusi-k/Feed-Good/issues/170).
+- **Plant Care Streaks:** [#149](https://github.com/melusi-k/Feed-Good/issues/149), delivered by merged PR #155; issue #149 is closed.
+- **Garden Care Streak:** approved by merged PR #169; implementation is tracked separately in [#171](https://github.com/melusi-k/Feed-Good/issues/171), gated on #170.
+- **Scheduled-opportunity foundation:** delivered by PRs #145 and #150; issue #143 is closed.
+- **Implementation status:** Recorded-care activity, scheduled-care analytics and Plant Care Streaks are implemented. Garden Care Streak implementation and analytics hardening remain open; evidence-led plant insights remain a separate gated slice.
 
 
 ## 15. Scheduled-opportunity contract status — 2026-11-25
 
 The PRD-022 identity/lifecycle contract is approved. The minimum persisted record has immutable opportunity UUID, CareTask UUID, plant ownership, immutable original `scheduledDueAt`, mutable `effectiveDueAt`, `open`/`completed`/`cancelled` state and optional CareEvent UUID. Passing `effectiveDueAt` makes an open opportunity due/unresolved; it becomes definitively overdue only after the approved PRD-024 completion window expires. V5 migration seeds at most one current open opportunity for each enabled, non-archived task with a valid due date; it does not reconstruct prior intervals or link historical CareEvents. Explicit Next care edits cancel/replace; disable/delete cancels; Quiet Period resume preserves opportunity identity and updates `effectiveDueAt` under PRD-020 while retaining original `scheduledDueAt`. Skip/snooze/defer are excluded. Existing CareEvents remain unlinked.
 
-Implementation and source/archive compatibility are tracked in issue #143. PRD-024 scheduled-care analytics and private per-task streak UI remain blocked until that implementation is merged and verified. The recorded-care activity foundation in PR #140 remains complete and unchanged.
+Implementation and source/archive compatibility were delivered in merged PRs #145 and #150; issue #143 is closed. Scheduled-care analytics was delivered in PRs #153/#154, Plant Care Streaks in PR #155, and the separate Garden Care Streak contract in PR #169. The remaining scheduled-analytics correctness hardening is tracked in #170; Garden Care Streak implementation is tracked in #171. The recorded-care activity foundation in PR #140 remains complete and unchanged.
 
 ### Scheduled-opportunity boundary clarifications (approved 2026-11-25)
 
