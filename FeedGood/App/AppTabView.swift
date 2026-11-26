@@ -34,21 +34,40 @@ enum AppTab: Int, Hashable, CaseIterable {
     }
 }
 
+private enum AppSheet: Identifiable {
+    case onboarding
+    case addPlant
+    case whatsNew(ReleaseNotesEntry)
+    case profile
+
+    var id: String {
+        switch self {
+        case .onboarding: "onboarding"
+        case .addPlant: "addPlant"
+        case .whatsNew(let entry): "whatsNew-\\(entry.version)"
+        case .profile: "profile"
+        }
+    }
+}
+
 struct AppTabView: View {
     let launchStateStore: AppLaunchStateStore
 
     @AppStorage("feedGood.appearance") private var appearanceRawValue = FeedGoodAppearance.system.rawValue
     @State private var selectedTab: AppTab = .today
-    @State private var showingProfile = false
+    @State private var activeSheet: AppSheet?
+    @State private var nextSheet: AppSheet?
+    @State private var lastPresentedSheet: AppSheet?
     @State private var launchFlow: AppLaunchFlow?
     @State private var launchChecked = false
-    @State private var showingOnboarding = false
-    @State private var showingAddPlantFromOnboarding = false
-    @State private var addPlantAfterOnboarding = false
-    @State private var whatsNewEntry: ReleaseNotesEntry?
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
+    }
+
+    private func present(_ sheet: AppSheet) {
+        lastPresentedSheet = sheet
+        activeSheet = sheet
     }
 
     private func startLaunchFlow() {
@@ -59,14 +78,14 @@ struct AppTabView: View {
         let flow = AppLaunchFlow(
             stateStore: launchStateStore,
             shortVersion: shortVersion,
-            versionIdentity: "\(shortVersion) (\(buildNumber))"
+            versionIdentity: "\\(shortVersion) (\\(buildNumber))"
         )
         launchFlow = flow
         switch flow.step() {
         case .onboarding:
-            showingOnboarding = true
+            present(.onboarding)
         case .whatsNew(let entry):
-            whatsNewEntry = entry
+            present(.whatsNew(entry))
         case .none:
             break
         }
@@ -74,59 +93,67 @@ struct AppTabView: View {
 
     private func finishOnboarding(addPlant: Bool) {
         launchFlow?.completeOnboarding()
-        addPlantAfterOnboarding = addPlant
-        showingOnboarding = false
+        nextSheet = addPlant
+            ? .addPlant
+            : launchFlow?.whatsNewEntry().map(AppSheet.whatsNew)
+        activeSheet = nil
     }
 
-    private func onboardingDidDismiss() {
-        if addPlantAfterOnboarding {
-            addPlantAfterOnboarding = false
-            showingAddPlantFromOnboarding = true
-        } else {
+    private func handleSheetDismissal() {
+        let dismissedSheet = lastPresentedSheet
+        lastPresentedSheet = nil
+
+        switch dismissedSheet {
+        case .onboarding:
+            if let nextSheet {
+                self.nextSheet = nil
+                present(nextSheet)
+            }
+        case .addPlant:
             presentWhatsNewIfNeeded()
+        case .whatsNew:
+            launchFlow?.markWhatsNewSeen()
+        case .profile, .none:
+            break
         }
     }
 
     private func presentWhatsNewIfNeeded() {
-        whatsNewEntry = launchFlow?.whatsNewEntry()
-    }
-
-    private func markWhatsNewSeen() {
-        launchFlow?.markWhatsNewSeen()
+        guard let entry = launchFlow?.whatsNewEntry() else { return }
+        present(.whatsNew(entry))
     }
 
     var body: some View {
         FeedGoodTabs(selection: $selectedTab, appearanceRawValue: $appearanceRawValue)
-        .buttonStyle(FeedGoodPressStyle())
-        .modifier(FeedGoodMotionAccessibility())
-        .tint(FeedGoodTheme.leaf)
-        .preferredColorScheme(appearance.preferredColorScheme)
-        .environment(\.showFeedGoodProfile, { showingProfile = true })
-        .onAppear(perform: startLaunchFlow)
-        .sheet(isPresented: $showingOnboarding, onDismiss: onboardingDidDismiss) {
-            OnboardingFlowView(
-                onSkip: { finishOnboarding(addPlant: false) },
-                onAddFirstPlant: { finishOnboarding(addPlant: true) },
-                onExploreFirst: { finishOnboarding(addPlant: false) }
-            )
-            .interactiveDismissDisabled()
-        }
-        .sheet(isPresented: $showingAddPlantFromOnboarding, onDismiss: presentWhatsNewIfNeeded) {
-            AddPlantView()
-        }
-        .sheet(item: $whatsNewEntry, onDismiss: markWhatsNewSeen) { entry in
-            WhatsNewView(entry: entry) {
-                markWhatsNewSeen()
-                whatsNewEntry = nil
+            .buttonStyle(FeedGoodPressStyle())
+            .modifier(FeedGoodMotionAccessibility())
+            .tint(FeedGoodTheme.leaf)
+            .preferredColorScheme(appearance.preferredColorScheme)
+            .environment(\\.showFeedGoodProfile, { present(.profile) })
+            .onAppear(perform: startLaunchFlow)
+            .sheet(item: $activeSheet, onDismiss: handleSheetDismissal) { sheet in
+                switch sheet {
+                case .onboarding:
+                    OnboardingFlowView(
+                        onSkip: { finishOnboarding(addPlant: false) },
+                        onAddFirstPlant: { finishOnboarding(addPlant: true) },
+                        onExploreFirst: { finishOnboarding(addPlant: false) }
+                    )
+                    .interactiveDismissDisabled()
+                case .addPlant:
+                    AddPlantView()
+                case .whatsNew(let entry):
+                    WhatsNewView(entry: entry) {
+                        activeSheet = nil
+                    }
+                    .presentationDetents([.medium, .large])
+                case .profile:
+                    ProfileView {
+                        activeSheet = nil
+                        selectedTab = .settings
+                    }
+                }
             }
-            .presentationDetents([.medium, .large])
-        }
-        .sheet(isPresented: $showingProfile) {
-            ProfileView {
-                showingProfile = false
-                selectedTab = .settings
-            }
-        }
     }
 }
 
