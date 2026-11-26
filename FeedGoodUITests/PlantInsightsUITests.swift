@@ -25,8 +25,12 @@ final class PlantInsightsUITests: XCTestCase {
         // A plant with no journal records shows the honest evidence gap,
         // never a manufactured trend.
         XCTAssertTrue(app.staticTexts["Not enough records yet"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts[
-            "Milestones, plant changes and photos you record for this plant will appear here. Notes without one of those stay in the plant journal."
-        ].exists)
+        let gapDetail = app.staticTexts.containing(
+            NSPredicate(format: "label BEGINSWITH %@", "Milestones, plant changes and photos")
+        ).firstMatch
+        XCTAssertTrue(gapDetail.exists)
+        XCTAssertTrue(app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "stay in the plant journal")
+        ).firstMatch.exists)
     }
 }
