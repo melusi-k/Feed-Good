@@ -12,6 +12,13 @@ This is an outcome-led sequence, not a promise of calendar dates. Every implemen
 
 ## MVP — trusted garden foundation
 
+### Milestone 0 — First-use and release experience
+- Three-page, skippable first-run onboarding: Welcome, How it works and Get started (PRD-026).
+- Offer Add your first plant through the existing Add Plant flow, or let users Explore first; no account, setup questionnaire or notification prompt.
+- Show bundled What's New notes once after an eligible app update, independently of onboarding state.
+- Deliver through parent issue [#89](https://github.com/melusi-k/Feed-Good/issues/89) and staged child issues [#94](https://github.com/melusi-k/Feed-Good/issues/94)–[#97](https://github.com/melusi-k/Feed-Good/issues/97): launch foundation, onboarding UI, What's New, then integration/acceptance verification.
+- The draft implementation stack is [PR #98](https://github.com/melusi-k/Feed-Good/pull/98) → [PR #99](https://github.com/melusi-k/Feed-Good/pull/99) → [PR #100](https://github.com/melusi-k/Feed-Good/pull/100) → [PR #102](https://github.com/melusi-k/Feed-Good/pull/102), linked to issues #94–#97 respectively. PRs #90 and #92 are superseded implementation history.
+
 ### Milestone 1 — My Plants and growing context
 - [x] Plant create, view, edit and delete; complete plant profiles and photos (#3).
 - [x] Basic collection search and useful sorting.
