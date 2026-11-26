@@ -35,7 +35,11 @@ struct PlantInsightsView: View {
                 Section {
                     ForEach(insights) { insight in
                         NavigationLink {
-                            JournalView(plant: plant)
+                            if insight.kind == .changeOverTime && insight.isPhoto {
+                                GrowthReviewView(plant: plant)
+                            } else {
+                                JournalView(plant: plant)
+                            }
                         } label: {
                             insightRow(insight)
                         }
@@ -77,8 +81,8 @@ struct PlantInsightsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            if !insight.sourceRecordIDs.isEmpty {
-                Text("Journal record \(insight.sourceRecordIDs[0].uuidString)")
+            ForEach(insight.sourceRecordIDs, id: \.self) { recordID in
+                Text(sourceRecordLabel(recordID))
                     .font(.caption2.monospaced())
                     .foregroundStyle(.tertiary)
             }
@@ -126,8 +130,16 @@ struct PlantInsightsView: View {
             guard let period = insight.period else { return nil }
             return "\(period.start.formatted(date: .abbreviated, time: .omitted)) – \(period.end.formatted(date: .abbreviated, time: .omitted))"
         case .evidenceGap:
-            return "Journal entries, milestones and photos you record for this plant will appear here."
+            return "Milestones, plant changes and photos you record for this plant will appear here. Notes without one of those stay in the plant journal."
         }
+    }
+
+    private func sourceRecordLabel(_ recordID: UUID) -> String {
+        let shortID = recordID.uuidString.prefix(8)
+        guard let entry = journalEntries.first(where: { $0.id == recordID }) else {
+            return "Journal record \(shortID)"
+        }
+        return "Journal record \(shortID) · \(entry.date.formatted(date: .abbreviated, time: .omitted))"
     }
 
     private func kindLabel(_ kind: PlantInsightKind) -> String {
