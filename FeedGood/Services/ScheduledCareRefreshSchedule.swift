@@ -7,8 +7,8 @@ enum ScheduledCareRefreshSchedule {
     /// The future transition instants, sorted ascending, for the given
     /// snapshots:
     /// - an open opportunity's due instant, when it becomes displayable;
-    /// - an open opportunity's inclusive 24-hour grace deadline, after which
-    ///   it flips from due to overdue;
+    /// - one second past an open opportunity's inclusive 24-hour grace
+    ///   deadline, when it flips from due to overdue;
     /// - a linked completion's recorded instant while that completion is
     ///   still future-dated, when it enters the completed outcomes.
     static func transitions(
@@ -34,9 +34,11 @@ enum ScheduledCareRefreshSchedule {
                     for: opportunity.effectiveDueAt
                 )
                 if deadline > now {
-                    // The window stays open through the exact deadline and
-                    // the outcome flips to overdue immediately after.
-                    dates.insert(deadline)
+                    // The window is inclusive through the exact deadline, so
+                    // the outcome flips one second after it. Tick then rather
+                    // than at the deadline itself, or an idle screen would
+                    // keep showing due with no later transition scheduled.
+                    dates.insert(deadline.addingTimeInterval(1))
                 }
             case CareOpportunityStatus.completed.rawValue:
                 guard let eventID = opportunity.careEventID,
