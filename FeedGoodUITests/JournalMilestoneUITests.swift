@@ -14,11 +14,15 @@ final class JournalMilestoneUITests: XCTestCase {
         app.buttons["journal.add"].tap()
         let entryType = app.buttons["journal.entryType"]
         XCTAssertTrue(entryType.waitForExistence(timeout: 5)); entryType.tap()
-        app.buttons["Milestone"].tap()
+        let milestoneOption = app.buttons["Milestone"]
+        XCTAssertTrue(milestoneOption.waitForExistence(timeout: 5)); milestoneOption.tap()
         XCTAssertTrue(app.buttons["journal.milestone"].waitForExistence(timeout: 5))
         app.buttons["journal.milestone"].tap()
-        app.buttons["New leaf"].tap()
-        XCTAssertTrue(app.buttons["journal.save"].isEnabled)
+        let newLeafOption = app.buttons["New leaf"]
+        XCTAssertTrue(newLeafOption.waitForExistence(timeout: 5)); newLeafOption.tap()
+        let saveButton = app.buttons["journal.save"]
+        let saveEnabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: saveButton)
+        XCTAssertEqual(XCTWaiter().wait(for: [saveEnabled], timeout: 5), .completed)
         app.buttons["journal.save"].tap()
         let milestone = app.staticTexts["journal.milestoneLabel"]
         XCTAssertTrue(milestone.waitForExistence(timeout: 5))
@@ -30,7 +34,8 @@ final class JournalMilestoneUITests: XCTestCase {
         let note = app.descendants(matching: .any)["journal.note"]
         XCTAssertTrue(note.waitForExistence(timeout: 5)); note.tap(); note.typeText("Kept observation")
         app.buttons["journal.milestone"].tap()
-        app.buttons["No milestone"].tap()
+        let noMilestoneOption = app.buttons["No milestone"]
+        XCTAssertTrue(noMilestoneOption.waitForExistence(timeout: 5)); noMilestoneOption.tap()
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["Kept observation"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["journal.milestoneLabel"].exists)
