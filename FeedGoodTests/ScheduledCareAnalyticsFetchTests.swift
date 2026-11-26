@@ -102,9 +102,13 @@ struct ScheduledCareAnalyticsFetchTests {
         context.insert(otherActive)
         try context.save()
 
-        let memberships = try context.fetch(ScheduledCareAnalyticsFetch.activeQuietMemberships(plantID: plant.id))
+        let periods = try context.fetch(ScheduledCareAnalyticsFetch.quietPeriods(plantID: plant.id))
+        // The fetch is plant-scoped on the owning period; the other plant's
+        // period is never loaded.
+        #expect(periods.map(\.id) == [quietPeriod.id])
+        let memberships = ScheduledCareAnalyticsFetch.activeMemberships(in: periods)
         // Only this plant's active membership: ended history and other
-        // plants' active memberships stay out of the plant-scoped fetch.
+        // plants' active memberships stay out of the read model.
         #expect(memberships.map(\.id) == [active.id])
     }
 }
