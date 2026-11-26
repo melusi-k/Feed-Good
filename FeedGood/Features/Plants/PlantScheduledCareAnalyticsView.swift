@@ -159,14 +159,20 @@ struct PlantScheduledCareAnalyticsView: View {
     private var streakSummaries: [CareTaskStreakSummary] {
         let opportunitySnapshots = opportunities.map(ScheduledCareOpportunitySnapshot.init)
         let eventSnapshots = events.map(ScheduledCareEventSnapshot.init)
-        return tasks
-            .filter { $0.plant?.id == plant.id }
-            .compactMap { task in
+        let quietPeriods = quietMemberships.compactMap {
+            ScheduledCareQuietPeriodSnapshot(membership: $0)
+        }
+        // Task identity comes from the retained opportunities, so a deleted
+        // task's consistency history stays visible alongside live tasks.
+        let taskIDs = Set(opportunitySnapshots.filter { $0.plantID == plant.id }.map(\.taskID))
+        return taskIDs
+            .compactMap { taskID in
                 guard let summary = try? CareTaskStreaks.calculate(
-                    taskID: task.id,
+                    taskID: taskID,
                     now: Date.now,
                     opportunities: opportunitySnapshots,
                     events: eventSnapshots,
+                    quietPeriods: quietPeriods,
                     isArchived: plant.archivedAt != nil
                 ), summary.longestStreak > 0 else { return nil }
                 return summary
@@ -180,11 +186,16 @@ struct PlantScheduledCareAnalyticsView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(taskTitle(for: streak.taskID))
                 .font(.headline)
-            Text("Completed in a row: \(streak.currentStreak) · Longest: \(streak.longestStreak)")
+            Text("Completed in a row: \(streak.currentStreak)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             if let start = streak.currentRunStart {
                 Text("Current run since \(start.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let longestStart = streak.longestRunStart, let longestEnd = streak.longestRunEnd {
+                Text("Longest run: \(streak.longestStreak) · \(longestStart.formatted(date: .abbreviated, time: .omitted)) – \(longestEnd.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
