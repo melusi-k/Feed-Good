@@ -18,17 +18,20 @@ final class PlantChangeUITests: XCTestCase {
         app.buttons["story.add"].tap()
         let typePicker = app.buttons["journal.entryType"]
         XCTAssertTrue(typePicker.waitForExistence(timeout: 5)); typePicker.tap()
-        app.buttons["Plant change"].tap()
+        let plantChangeOption = app.buttons["Plant change"]
+        XCTAssertTrue(plantChangeOption.waitForExistence(timeout: 5)); plantChangeOption.tap()
         let kindPicker = app.buttons["journal.changeKind"]
         XCTAssertTrue(kindPicker.waitForExistence(timeout: 5)); kindPicker.tap()
-        app.buttons["Repotted"].tap()
+        let repottedOption = app.buttons["Repotted"]
+        XCTAssertTrue(repottedOption.waitForExistence(timeout: 5)); repottedOption.tap()
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["Plant change: Repotted"].waitForExistence(timeout: 5))
         // Edit the same record into a different change kind; the note field stays untouched.
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "story.edit.")).firstMatch.tap()
         let editKind = app.buttons["journal.changeKind"]
         XCTAssertTrue(editKind.waitForExistence(timeout: 5)); editKind.tap()
-        app.buttons["Grow light started"].tap()
+        let growLightOption = app.buttons["Grow light started"]
+        XCTAssertTrue(growLightOption.waitForExistence(timeout: 5)); growLightOption.tap()
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["Plant change: Grow light started"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["Plant change: Repotted"].exists)
