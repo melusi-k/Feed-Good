@@ -32,7 +32,7 @@ final class PlantJournalPromptUITests: XCTestCase {
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["Two new fronds uncurling"].waitForExistence(timeout: 5))
         // Answering hides the card for the rest of the day: no obligation remains.
-        XCTAssertFalse(app.descendants(matching: .any)["journalPrompt.card"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["journalPrompt.card"].waitForNonExistence(timeout: 5))
         let image = XCTAttachment(screenshot: app.screenshot())
         image.name = "SIMULATOR - Answered journal prompt"
         image.lifetime = .keepAlways; add(image)
@@ -49,13 +49,13 @@ final class PlantJournalPromptUITests: XCTestCase {
         app.buttons["journalPrompt.notNow"].tap()
         let skip = app.buttons["journalPrompt.skip"]
         XCTAssertTrue(skip.waitForExistence(timeout: 5)); skip.tap()
-        XCTAssertFalse(app.descendants(matching: .any)["journalPrompt.card"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["journalPrompt.card"].waitForNonExistence(timeout: 5))
         // The story still works normally: adding an observation is unaffected.
         app.buttons["story.add"].tap()
         let note = app.descendants(matching: .any)["journal.note"]
         XCTAssertTrue(note.waitForExistence(timeout: 5)); note.tap(); note.typeText("Checked the soil today")
         app.buttons["journal.save"].tap()
         XCTAssertTrue(app.staticTexts["Checked the soil today"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.descendants(matching: .any)["journalPrompt.card"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["journalPrompt.card"].waitForNonExistence(timeout: 5))
     }
 }

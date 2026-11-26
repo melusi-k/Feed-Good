@@ -49,8 +49,8 @@ final class PlantTagUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["plants.tags.Tag fern"].exists)
         // Filtering shows only tagged plants; the untagged one disappears.
         chip.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["plants.row.Tag fern"].exists)
-        XCTAssertFalse(app.descendants(matching: .any)["plants.row.Tag aloe"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["plants.row.Tag fern"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["plants.row.Tag aloe"].waitForNonExistence(timeout: 5))
         // Clear returns the full collection.
         let clear = app.buttons["plants.tagFilter.clear"]
         XCTAssertTrue(clear.waitForExistence(timeout: 5)); clear.tap()
