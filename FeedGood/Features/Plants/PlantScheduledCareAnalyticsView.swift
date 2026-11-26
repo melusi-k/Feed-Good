@@ -53,7 +53,7 @@ private struct PlantScheduledCareAnalyticsContent: View {
             sort: \CareEvent.completedAt
         )
         _quietMemberships = Query(
-            filter: ScheduledCareAnalyticsFetch.activeQuietMembershipsPredicate(),
+            filter: ScheduledCareAnalyticsFetch.activeQuietMembershipsPredicate(plantID: plantID),
             sort: \QuietPeriodTaskSnapshot.capturedAt
         )
         _tasks = Query(
@@ -167,7 +167,6 @@ private struct PlantScheduledCareAnalyticsContent: View {
 
                 PlantCareConsistencySection(
                     plant: plant,
-                    now: now,
                     events: events.map(ScheduledCareEventSnapshot.init),
                     quietPeriods: quietMemberships.compactMap {
                         ScheduledCareQuietPeriodSnapshot(membership: $0)
@@ -266,7 +265,6 @@ private struct PlantScheduledCareAnalyticsContent: View {
 /// the parent's already-scoped events, quiet periods and tasks.
 private struct PlantCareConsistencySection: View {
     let plant: Plant
-    let now: Date
     let events: [ScheduledCareEventSnapshot]
     let quietPeriods: [ScheduledCareQuietPeriodSnapshot]
     let tasks: [CareTask]
@@ -275,13 +273,11 @@ private struct PlantCareConsistencySection: View {
 
     init(
         plant: Plant,
-        now: Date,
         events: [ScheduledCareEventSnapshot],
         quietPeriods: [ScheduledCareQuietPeriodSnapshot],
         tasks: [CareTask]
     ) {
         self.plant = plant
-        self.now = now
         self.events = events
         self.quietPeriods = quietPeriods
         self.tasks = tasks
@@ -291,7 +287,19 @@ private struct PlantCareConsistencySection: View {
         )
     }
 
-    private var streakSummaries: [CareTaskStreakSummary] {
+    /// Full-history transitions: a future-dated linked completion on an
+    /// opportunity outside the selected period still changes these runs at
+    /// its completion instant, so this section schedules its own refresh
+    /// from the same history it calculates over.
+    private var consistencyTransitions: [Date] {
+        ScheduledCareRefreshSchedule.transitions(
+            after: .now,
+            opportunities: opportunityHistory.map(ScheduledCareOpportunitySnapshot.init),
+            events: events
+        )
+    }
+
+    private func streakSummaries(now: Date) -> [CareTaskStreakSummary] {
         let opportunitySnapshots = opportunityHistory.map(ScheduledCareOpportunitySnapshot.init)
         // Task identity comes from the retained opportunities, so a deleted
         // task's consistency history stays visible alongside live tasks.
@@ -314,14 +322,21 @@ private struct PlantCareConsistencySection: View {
     }
 
     var body: some View {
-        Section {
-            if streakSummaries.isEmpty {
+        TimelineView(.explicit(consistencyTransitions)) { context in
+            section(now: context.date)
+        }
+    }
+
+    private func section(now: Date) -> some View {
+        let summaries = streakSummaries(now: now)
+        return Section {
+            if summaries.isEmpty {
                 Text("Consistency history appears here once scheduled opportunities are completed within their 24-hour window.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("scheduledCareAnalytics.consistency.empty")
             } else {
-                ForEach(streakSummaries, id: \.taskID) { streak in
+                ForEach(summaries, id: \.taskID) { streak in
                     streakRow(streak)
                 }
             }
