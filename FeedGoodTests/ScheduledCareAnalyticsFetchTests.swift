@@ -90,9 +90,21 @@ struct ScheduledCareAnalyticsFetchTests {
         )
         context.insert(active)
         context.insert(removed)
+        let otherPlant = Plant(name: "Other")
+        context.insert(otherPlant)
+        let otherPeriod = QuietPeriod(plant: otherPlant)
+        context.insert(otherPeriod)
+        let otherActive = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: "Watering",
+            quietPeriod: otherPeriod
+        )
+        context.insert(otherActive)
         try context.save()
 
-        let memberships = try context.fetch(ScheduledCareAnalyticsFetch.activeQuietMemberships())
+        let memberships = try context.fetch(ScheduledCareAnalyticsFetch.activeQuietMemberships(plantID: plant.id))
+        // Only this plant's active membership: ended history and other
+        // plants' active memberships stay out of the plant-scoped fetch.
         #expect(memberships.map(\.id) == [active.id])
     }
 }
