@@ -99,6 +99,23 @@ struct PlantScheduledCareAnalyticsView: View {
                     Text("Late linked care remains completed and is shown separately. Open opportunities enter the denominator only after the 24-hour window expires. Cancelled and not-yet-due opportunities are excluded.")
                 }
 
+                Section {
+                    if streakSummaries.isEmpty {
+                        Text("Consistency history appears here once scheduled opportunities are completed within their 24-hour window.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("scheduledCareAnalytics.consistency.empty")
+                    } else {
+                        ForEach(streakSummaries, id: \.taskID) { streak in
+                            streakRow(streak)
+                        }
+                    }
+                } header: {
+                    Text("Care consistency")
+                } footer: {
+                    Text("Consecutive scheduled opportunities completed within their 24-hour window, counted separately for each care task. Cancelled, paused and archived periods are neutral. Late completions remain completed care but do not extend a run.")
+                }
+
                 Section("Opportunity history") {
                     if summary.records.isEmpty {
                         ContentUnavailableView(
@@ -137,6 +154,48 @@ struct PlantScheduledCareAnalyticsView: View {
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
         .feedGoodHeader("Scheduled care")
+    }
+
+    private var streakSummaries: [CareTaskStreakSummary] {
+        let opportunitySnapshots = opportunities.map(ScheduledCareOpportunitySnapshot.init)
+        let eventSnapshots = events.map(ScheduledCareEventSnapshot.init)
+        return tasks
+            .filter { $0.plant?.id == plant.id }
+            .compactMap { task in
+                guard let summary = try? CareTaskStreaks.calculate(
+                    taskID: task.id,
+                    now: Date.now,
+                    opportunities: opportunitySnapshots,
+                    events: eventSnapshots,
+                    isArchived: plant.archivedAt != nil
+                ), summary.longestStreak > 0 else { return nil }
+                return summary
+            }
+            .sorted {
+                taskTitle(for: $0.taskID).localizedCaseInsensitiveCompare(taskTitle(for: $1.taskID)) == .orderedAscending
+            }
+    }
+
+    private func streakRow(_ streak: CareTaskStreakSummary) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(taskTitle(for: streak.taskID))
+                .font(.headline)
+            Text("Completed in a row: \(streak.currentStreak) · Longest: \(streak.longestStreak)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if let start = streak.currentRunStart {
+                Text("Current run since \(start.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 3)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("scheduledCareAnalytics.consistency.\(streak.taskID.uuidString)")
+    }
+
+    private func taskTitle(for taskID: UUID) -> String {
+        tasks.first { $0.id == taskID }?.title ?? "Removed care task"
     }
 
     private func recordRow(_ record: ScheduledCareAnalyticsRecord) -> some View {
