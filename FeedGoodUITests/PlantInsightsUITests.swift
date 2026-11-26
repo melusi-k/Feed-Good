@@ -26,7 +26,7 @@ final class PlantInsightsUITests: XCTestCase {
         // never a manufactured trend.
         XCTAssertTrue(app.staticTexts["Not enough records yet"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts[
-            "Journal entries, milestones and photos you record for this plant will appear here."
+            "Milestones, plant changes and photos you record for this plant will appear here. Notes without one of those stay in the plant journal."
         ].exists)
     }
 }
