@@ -51,16 +51,18 @@ enum ScheduledCareAnalyticsFetch {
     }
 
     /// Only active memberships can pause an opportunity; ended history never
-    /// enters the read model.
-    static func activeQuietMembershipsPredicate() -> Predicate<QuietPeriodTaskSnapshot> {
+    /// enters the read model. Scoped to the plant through the owning Quiet
+    /// Period so unrelated plants' memberships are neither loaded nor able
+    /// to invalidate this screen's query.
+    static func activeQuietMembershipsPredicate(plantID: UUID) -> Predicate<QuietPeriodTaskSnapshot> {
         let active = QuietPeriodMembershipStatus.active.rawValue
         return #Predicate<QuietPeriodTaskSnapshot> {
-            $0.membershipStatusRaw == active
+            $0.membershipStatusRaw == active && $0.quietPeriod?.plant?.id == plantID
         }
     }
 
-    static func activeQuietMemberships() -> FetchDescriptor<QuietPeriodTaskSnapshot> {
-        FetchDescriptor(predicate: activeQuietMembershipsPredicate())
+    static func activeQuietMemberships(plantID: UUID) -> FetchDescriptor<QuietPeriodTaskSnapshot> {
+        FetchDescriptor(predicate: activeQuietMembershipsPredicate(plantID: plantID))
     }
 
     /// Care tasks for display titles; a deleted task's history keeps the
