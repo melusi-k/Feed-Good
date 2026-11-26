@@ -60,6 +60,9 @@ final class QuietPeriodUITests: XCTestCase {
         // tapping it too early can be swallowed and leave the test on the profile.
         let manageQuietPeriod = app.buttons["plantDetail.quietPeriod"]
         XCTAssertTrue(manageQuietPeriod.waitForExistence(timeout: 5))
+        // Lazy Form rows can exist without a valid frame until scrolled into
+        // view; scroll to reveal the link before waiting for hittability.
+        for _ in 0..<3 where !manageQuietPeriod.isHittable { app.swipeUp() }
         let manageLinkHittable = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "isHittable == true"),
             object: manageQuietPeriod
