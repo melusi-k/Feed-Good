@@ -35,6 +35,11 @@ Every feature should help someone understand, notice, learn about or connect wit
 | PRD-019 | Plant Journal Prompts | [PRD-019-plant-journal-prompts.md](PRD-019-plant-journal-prompts.md) | [#73](https://github.com/melusi-k/Feed-Good/issues/73) | Encourage optional, thoughtful plant observations |
 | PRD-020 | Seasonal and Quiet Periods | [PRD-020-seasonal-quiet-periods.md](PRD-020-seasonal-quiet-periods.md) | [#74](https://github.com/melusi-k/Feed-Good/issues/74) | Let users explicitly adjust care during quiet periods |
 | PRD-021 | Optional Plant Tags | [PRD-021-optional-plant-tags.md](PRD-021-optional-plant-tags.md) | [#75](https://github.com/melusi-k/Feed-Good/issues/75) | Organise a growing collection with lightweight user tags |
+| PRD-022 | Care Activity Lifecycle and Occurrence Management | [PRD-022-care-activity-lifecycle.md](PRD-022-care-activity-lifecycle.md) | — | Separate recurring care definitions, scheduled occurrences and historical outcomes |
+| PRD-023 | Structured Care Outcomes | [PRD-023-structured-care-outcomes.md](PRD-023-structured-care-outcomes.md) | — | Capture optional, task-relevant care outcomes without slowing quick completion |
+| PRD-024 | Care Insights and Plant Health Story | [PRD-024-care-insights-and-plant-health-story.md](PRD-024-care-insights-and-plant-health-story.md) | — | Derive traceable, neutral summaries from existing plant records |
+| PRD-025 | Context-Aware Plant Care | [PRD-025-context-aware-plant-care.md](PRD-025-context-aware-plant-care.md) | — | Offer user-invoked, source-backed next checks without automatic routine changes |
+| PRD-026 | First-Run Onboarding and Release What's New | [PRD-026-first-run-onboarding-and-whats-new.md](PRD-026-first-run-onboarding-and-whats-new.md) | Parent [#89](https://github.com/melusi-k/Feed-Good/issues/89); stages [#94](https://github.com/melusi-k/Feed-Good/issues/94)–[#97](https://github.com/melusi-k/Feed-Good/issues/97) | Introduce Feed Good on first launch and explain meaningful changes after updates |
 | PRD-027 | User Lifecycle & Meaningful Engagement | [PRD-027-user-lifecycle-and-meaningful-engagement.md](PRD-027-user-lifecycle-and-meaningful-engagement.md) | [#114](https://github.com/melusi-k/Feed-Good/issues/114) | A meaningful, privacy-conscious journey from first plant to sustained plant-care relationship |
 | PRD-028 | Accessibility Foundations | [PRD-028-accessibility-foundations.md](PRD-028-accessibility-foundations.md) | [#131](https://github.com/melusi-k/Feed-Good/issues/131) | Make accessibility a documented, testable part of product delivery |
 
@@ -42,6 +47,7 @@ Every feature should help someone understand, notice, learn about or connect wit
 
 ### Initial release / MVP
 - Core plant collection and profiles, including basic search and useful sorting.
+- Three-page, skippable first-run onboarding and a separate, once-per-release What's New experience (PRD-026).
 - Optional, skippable growing context; it must not block adding a plant.
 - Plant-specific care routines and optional local reminders.
 - Plant journal, milestones and combined plant story.
