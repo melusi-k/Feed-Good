@@ -7,13 +7,62 @@ struct PlantScheduledCareAnalyticsView: View {
 
     @Environment(\.calendar) private var calendar
     @State private var selectedRange: ScheduledCareAnalyticsRange = .last30Days
+
+    var body: some View {
+        PlantScheduledCareAnalyticsContent(
+            plant: plant,
+            selectedRange: $selectedRange,
+            periodStart: selectedRange.period(now: .now, calendar: calendar)?.start ?? .distantPast
+        )
+    }
+}
+
+/// Fetches and renders one range's summary. A range change rebuilds this
+/// view with a newly scoped fetch. Outcomes refresh on the exact due/grace
+/// transition instants via `TimelineView(.explicit)` instead of polling, so
+/// a screen left open crosses from due to overdue deterministically.
+private struct PlantScheduledCareAnalyticsContent: View {
+    let plant: Plant
+    @Binding var selectedRange: ScheduledCareAnalyticsRange
+    let periodStart: Date
+
+    @Environment(\.calendar) private var calendar
     @Query private var opportunities: [CareOpportunity]
     @Query private var events: [CareEvent]
     @Query private var quietMemberships: [QuietPeriodTaskSnapshot]
     @Query private var tasks: [CareTask]
 
-    private var calculation: Result<PlantScheduledCareAnalyticsSummary, ScheduledCareAnalyticsError> {
-        let now = Date.now
+    init(
+        plant: Plant,
+        selectedRange: Binding<ScheduledCareAnalyticsRange>,
+        periodStart: Date
+    ) {
+        self.plant = plant
+        self._selectedRange = selectedRange
+        self.periodStart = periodStart
+        let plantID = plant.id
+        _opportunities = Query(
+            filter: ScheduledCareAnalyticsFetch.opportunitiesPredicate(
+                plantID: plantID,
+                periodStart: periodStart
+            ),
+            sort: \CareOpportunity.effectiveDueAt
+        )
+        _events = Query(
+            filter: ScheduledCareAnalyticsFetch.eventsPredicate(plantID: plantID),
+            sort: \CareEvent.completedAt
+        )
+        _quietMemberships = Query(
+            filter: ScheduledCareAnalyticsFetch.activeQuietMembershipsPredicate(),
+            sort: \QuietPeriodTaskSnapshot.capturedAt
+        )
+        _tasks = Query(
+            filter: ScheduledCareAnalyticsFetch.tasksPredicate(plantID: plantID),
+            sort: \CareTask.dueDate
+        )
+    }
+
+    private func calculation(now: Date) -> Result<PlantScheduledCareAnalyticsSummary, ScheduledCareAnalyticsError> {
         guard let period = selectedRange.period(
             now: now,
             calendar: calendar
@@ -44,7 +93,24 @@ struct PlantScheduledCareAnalyticsView: View {
         }
     }
 
+    /// The exact instants at which a displayed outcome can change while
+    /// source records stay static: due instants, grace deadlines and
+    /// future-dated completion instants among the fetched records.
+    private var refreshTransitions: [Date] {
+        ScheduledCareRefreshSchedule.transitions(
+            after: .now,
+            opportunities: opportunities.map(ScheduledCareOpportunitySnapshot.init),
+            events: events.map(ScheduledCareEventSnapshot.init)
+        )
+    }
+
     var body: some View {
+        TimelineView(.explicit(refreshTransitions)) { context in
+            list(now: context.date)
+        }
+    }
+
+    private func list(now: Date) -> some View {
         List {
             Section {
                 Text("A record of scheduled care for this plant. These figures describe your saved records; they are not a plant-health or habit score.")
@@ -57,7 +123,7 @@ struct PlantScheduledCareAnalyticsView: View {
                 }
             }
 
-            switch calculation {
+            switch calculation(now: now) {
             case .success(let summary):
                 Section {
                     Picker("Date range", selection: $selectedRange) {
@@ -99,22 +165,15 @@ struct PlantScheduledCareAnalyticsView: View {
                     Text("Late linked care remains completed and is shown separately. Open opportunities enter the denominator only after the 24-hour window expires. Cancelled and not-yet-due opportunities are excluded.")
                 }
 
-                Section {
-                    if streakSummaries.isEmpty {
-                        Text("Consistency history appears here once scheduled opportunities are completed within their 24-hour window.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("scheduledCareAnalytics.consistency.empty")
-                    } else {
-                        ForEach(streakSummaries, id: \.taskID) { streak in
-                            streakRow(streak)
-                        }
-                    }
-                } header: {
-                    Text("Care consistency")
-                } footer: {
-                    Text("Consecutive scheduled opportunities completed within their 24-hour window, counted separately for each care task. Cancelled, paused and archived periods are neutral. Late completions remain completed care but do not extend a run.")
-                }
+                PlantCareConsistencySection(
+                    plant: plant,
+                    now: now,
+                    events: events.map(ScheduledCareEventSnapshot.init),
+                    quietPeriods: quietMemberships.compactMap {
+                        ScheduledCareQuietPeriodSnapshot(membership: $0)
+                    },
+                    tasks: tasks
+                )
 
                 Section("Opportunity history") {
                     if summary.records.isEmpty {
@@ -154,59 +213,6 @@ struct PlantScheduledCareAnalyticsView: View {
         .scrollContentBackground(.hidden)
         .background(FeedGoodTheme.background)
         .feedGoodHeader("Scheduled care")
-    }
-
-    private var streakSummaries: [CareTaskStreakSummary] {
-        let opportunitySnapshots = opportunities.map(ScheduledCareOpportunitySnapshot.init)
-        let eventSnapshots = events.map(ScheduledCareEventSnapshot.init)
-        let quietPeriods = quietMemberships.compactMap {
-            ScheduledCareQuietPeriodSnapshot(membership: $0)
-        }
-        // Task identity comes from the retained opportunities, so a deleted
-        // task's consistency history stays visible alongside live tasks.
-        let taskIDs = Set(opportunitySnapshots.filter { $0.plantID == plant.id }.map(\.taskID))
-        return taskIDs
-            .compactMap { taskID in
-                guard let summary = try? CareTaskStreaks.calculate(
-                    taskID: taskID,
-                    now: Date.now,
-                    opportunities: opportunitySnapshots,
-                    events: eventSnapshots,
-                    quietPeriods: quietPeriods,
-                    isArchived: plant.archivedAt != nil
-                ), summary.longestStreak > 0 else { return nil }
-                return summary
-            }
-            .sorted {
-                taskTitle(for: $0.taskID).localizedCaseInsensitiveCompare(taskTitle(for: $1.taskID)) == .orderedAscending
-            }
-    }
-
-    private func streakRow(_ streak: CareTaskStreakSummary) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(taskTitle(for: streak.taskID))
-                .font(.headline)
-            Text("Completed in a row: \(streak.currentStreak)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            if let start = streak.currentRunStart {
-                Text("Current run since \(start.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if let longestStart = streak.longestRunStart, let longestEnd = streak.longestRunEnd {
-                Text("Longest run: \(streak.longestStreak) · \(longestStart.formatted(date: .abbreviated, time: .omitted)) – \(longestEnd.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 3)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("scheduledCareAnalytics.consistency.\(streak.taskID.uuidString)")
-    }
-
-    private func taskTitle(for taskID: UUID) -> String {
-        tasks.first { $0.id == taskID }?.title ?? "Removed care task"
     }
 
     private func recordRow(_ record: ScheduledCareAnalyticsRecord) -> some View {
@@ -252,5 +258,104 @@ struct PlantScheduledCareAnalyticsView: View {
         case .unresolved: "Due"
         case .overdue: "Overdue"
         }
+    }
+}
+
+/// Per-task consistency history. Runs span any window, so this section
+/// keeps its own plant-scoped full-history opportunity fetch while reusing
+/// the parent's already-scoped events, quiet periods and tasks.
+private struct PlantCareConsistencySection: View {
+    let plant: Plant
+    let now: Date
+    let events: [ScheduledCareEventSnapshot]
+    let quietPeriods: [ScheduledCareQuietPeriodSnapshot]
+    let tasks: [CareTask]
+
+    @Query private var opportunityHistory: [CareOpportunity]
+
+    init(
+        plant: Plant,
+        now: Date,
+        events: [ScheduledCareEventSnapshot],
+        quietPeriods: [ScheduledCareQuietPeriodSnapshot],
+        tasks: [CareTask]
+    ) {
+        self.plant = plant
+        self.now = now
+        self.events = events
+        self.quietPeriods = quietPeriods
+        self.tasks = tasks
+        _opportunityHistory = Query(
+            filter: ScheduledCareAnalyticsFetch.opportunityHistoryPredicate(plantID: plant.id),
+            sort: \CareOpportunity.effectiveDueAt
+        )
+    }
+
+    private var streakSummaries: [CareTaskStreakSummary] {
+        let opportunitySnapshots = opportunityHistory.map(ScheduledCareOpportunitySnapshot.init)
+        // Task identity comes from the retained opportunities, so a deleted
+        // task's consistency history stays visible alongside live tasks.
+        let taskIDs = Set(opportunitySnapshots.filter { $0.plantID == plant.id }.map(\.taskID))
+        return taskIDs
+            .compactMap { taskID in
+                guard let summary = try? CareTaskStreaks.calculate(
+                    taskID: taskID,
+                    now: now,
+                    opportunities: opportunitySnapshots,
+                    events: events,
+                    quietPeriods: quietPeriods,
+                    isArchived: plant.archivedAt != nil
+                ), summary.longestStreak > 0 else { return nil }
+                return summary
+            }
+            .sorted {
+                taskTitle(for: $0.taskID).localizedCaseInsensitiveCompare(taskTitle(for: $1.taskID)) == .orderedAscending
+            }
+    }
+
+    var body: some View {
+        Section {
+            if streakSummaries.isEmpty {
+                Text("Consistency history appears here once scheduled opportunities are completed within their 24-hour window.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("scheduledCareAnalytics.consistency.empty")
+            } else {
+                ForEach(streakSummaries, id: \.taskID) { streak in
+                    streakRow(streak)
+                }
+            }
+        } header: {
+            Text("Care consistency")
+        } footer: {
+            Text("Consecutive scheduled opportunities completed within their 24-hour window, counted separately for each care task. Cancelled, paused and archived periods are neutral. Late completions remain completed care but do not extend a run.")
+        }
+    }
+
+    private func streakRow(_ streak: CareTaskStreakSummary) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(taskTitle(for: streak.taskID))
+                .font(.headline)
+            Text("Completed in a row: \(streak.currentStreak)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if let start = streak.currentRunStart {
+                Text("Current run since \(start.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let longestStart = streak.longestRunStart, let longestEnd = streak.longestRunEnd {
+                Text("Longest run: \(streak.longestStreak) · \(longestStart.formatted(date: .abbreviated, time: .omitted)) – \(longestEnd.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 3)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("scheduledCareAnalytics.consistency.\(streak.taskID.uuidString)")
+    }
+
+    private func taskTitle(for taskID: UUID) -> String {
+        tasks.first { $0.id == taskID }?.title ?? "Removed care task"
     }
 }
