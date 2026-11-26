@@ -44,7 +44,7 @@ private enum AppSheet: Identifiable {
         switch self {
         case .onboarding: "onboarding"
         case .addPlant: "addPlant"
-        case .whatsNew(let entry): "whatsNew-\\(entry.version)"
+        case .whatsNew(let entry): "whatsNew-\(entry.version)"
         case .profile: "profile"
         }
     }
@@ -78,7 +78,7 @@ struct AppTabView: View {
         let flow = AppLaunchFlow(
             stateStore: launchStateStore,
             shortVersion: shortVersion,
-            versionIdentity: "\\(shortVersion) (\\(buildNumber))"
+            versionIdentity: "\(shortVersion) (\(buildNumber))"
         )
         launchFlow = flow
         switch flow.step() {
@@ -129,7 +129,7 @@ struct AppTabView: View {
             .modifier(FeedGoodMotionAccessibility())
             .tint(FeedGoodTheme.leaf)
             .preferredColorScheme(appearance.preferredColorScheme)
-            .environment(\\.showFeedGoodProfile, { present(.profile) })
+            .environment(\.showFeedGoodProfile, { present(.profile) })
             .onAppear(perform: startLaunchFlow)
             .sheet(item: $activeSheet, onDismiss: handleSheetDismissal) { sheet in
                 switch sheet {
