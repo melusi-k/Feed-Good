@@ -37,10 +37,12 @@ struct ScheduledCareRefreshScheduleTests {
             ],
             events: []
         )
+        // Grace deadlines tick one second past the inclusive boundary: the
+        // window is still open at the exact deadline and flips right after.
         #expect(transitions == [
             futureDue,
-            CareOpportunityEligibility.streakDeadline(for: alreadyDue),
-            CareOpportunityEligibility.streakDeadline(for: futureDue)
+            CareOpportunityEligibility.streakDeadline(for: alreadyDue).addingTimeInterval(1),
+            CareOpportunityEligibility.streakDeadline(for: futureDue).addingTimeInterval(1)
         ])
     }
 
