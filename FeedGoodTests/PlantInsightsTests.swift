@@ -97,7 +97,7 @@ struct PlantInsightsTests {
         #expect(insights.count == 2)
         #expect(insights.contains { $0.kind == .changeOverTime && $0.milestone == .newLeaf })
         #expect(insights.contains { $0.kind == .recordedObservation && $0.milestone == .flowering })
-        #expect(!insights.contains { $0.kind == .pattern })
+        #expect(insights.allSatisfy { $0.kind != .pattern })
     }
 
     @Test func plantChangesAreObservationsOnly() throws {
