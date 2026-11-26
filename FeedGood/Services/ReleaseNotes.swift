@@ -20,6 +20,26 @@ enum ReleaseNotes {
     /// marketing version that should present a What's New sheet.
     static let entries: [ReleaseNotesEntry] = [
         ReleaseNotesEntry(
+            version: "0.1.102",
+            highlights: [
+                ReleaseNoteHighlight(
+                    symbol: "calendar.badge.checkmark",
+                    title: "A shared garden care streak",
+                    subtitle: "See your garden's daily care rhythm in one combined streak."
+                ),
+                ReleaseNoteHighlight(
+                    symbol: "calendar",
+                    title: "A clearer activity history",
+                    subtitle: "Explore garden activity across the calendar."
+                ),
+                ReleaseNoteHighlight(
+                    symbol: "leaf",
+                    title: "A more complete garden view",
+                    subtitle: "Keep your garden's care and progress together."
+                )
+            ]
+        ),
+        ReleaseNotesEntry(
             version: "0.1.46",
             highlights: [
                 ReleaseNoteHighlight(
