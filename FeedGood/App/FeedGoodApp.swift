@@ -11,10 +11,21 @@ struct FeedGoodApp: App {
     init() {
         FeedGoodNavigationAppearance.apply()
         let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
+        let isUITesting = ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
         let configuration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: ProcessInfo.processInfo.arguments.contains("FEEDGOOD_UI_TESTING")
+            isStoredInMemoryOnly: isUITesting
         )
+        if isUITesting == false {
+            let hasExistingPersistentStore = FileManager.default.fileExists(atPath: configuration.url.path)
+            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+            let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
+            AppLaunchStateStore(
+                defaults: .standard,
+                hasExistingPersistentStore: hasExistingPersistentStore
+            )
+            .bootstrap(versionIdentity: "\(version) (\(build))")
+        }
         do {
             modelContainer = try ModelContainer(
                 for: schema,
