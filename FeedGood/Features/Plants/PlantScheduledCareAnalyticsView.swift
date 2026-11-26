@@ -106,6 +106,7 @@ struct PlantScheduledCareAnalyticsView: View {
                             systemImage: "calendar",
                             description: Text("Eligible scheduled opportunities for this period will appear here. Manually recorded care remains in care history.")
                         )
+                        .accessibilityIdentifier("scheduledCareAnalytics.emptyHistory")
                     } else {
                         ForEach(summary.records) { record in
                             if plant.archivedAt == nil {
