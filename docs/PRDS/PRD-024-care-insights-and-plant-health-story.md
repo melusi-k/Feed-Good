@@ -290,9 +290,10 @@ Deliver in independently reviewable phases, with one coherent PRD and explicit d
 1. **Phase 0 — Contract and inventory:** Confirm source schemas and lifecycle semantics in PRD-022/023 and PRD-014/018/012; map fields and missing data; approve metric catalogue, time rules and insight evidence classes.
 2. **Phase 1 — Plant Story foundation:** Build deterministic source aggregation, ordering, navigation and sparse-data states. No analytics scores or streak UI.
 3. **Phase 2 — Care analytics:** Add plant-level activity summaries and eligible-opportunity metrics; add collection aggregation only after plant-level correctness and source coverage are proven.
-4. **Phase 3 — Per-task care streaks:** Add a separate calculator and history for each stable care-task identity. Do not calculate plant-wide or collection-wide streaks. This phase remains blocked until PRD-022 approves the scheduled-opportunity identity and lifecycle contract.
-5. **Phase 4 — Evidence-led plant insights:** Add approved deterministic templates over check-ins, journal/plant-change records and comparable Growth Review evidence. No AI interpretation.
-6. **Phase 5 — Hardening and release:** Validate edits/deletes, time-zone changes, quiet periods, pause/disable, archive/restore, import/export, offline, accessibility and performance.
+4. **Phase 3 — Plant Care Streaks:** Add a separate calculator and history for each stable care-task identity. This remains separate from any garden-level calculation.
+5. **Phase 3b — Garden Care Streak:** Add a separate pure calculator over all eligible garden opportunities, using the all-opportunities/local-calendar-day contract in §5.2.1. This is not an aggregation of Plant Care Streak counts and requires explicit pending/failed/neutral day handling plus DST/time-zone coverage.
+6. **Phase 4 — Evidence-led plant insights:** Add approved deterministic templates over check-ins, journal/plant-change records and comparable Growth Review evidence. No AI interpretation.
+7. **Phase 5 — Hardening and release:** Validate edits/deletes, time-zone changes, quiet periods, pause/disable, archive/restore, import/export, offline, accessibility and performance.
 
 Each phase requires its own implementation issue or sub-issue with testable acceptance criteria. Do not start implementation until the product decisions in §13 are approved and the required source contracts are stable.
 
@@ -308,12 +309,12 @@ The product defaults below are approved for this PRD:
 4. **Deferred care:** A deferred occurrence moves to its authoritative rescheduled due boundary and is counted once, never at both the original and new due dates.
 5. **Plant Care Streak semantics:** Consecutive eligible opportunities for one individual care task, completed within the approved completion window. A late completion or definitively overdue unresolved opportunity interrupts that task's current run.
 6. **Garden Care Streak semantics (approved 2026-11-26):** All eligible opportunities due on a local calendar day must be completed within their individual inclusive 24-hour grace windows for that day to qualify. Days with no eligible opportunities are neutral and skipped. A day remains pending until all opportunities resolve or expire. The current/longest Garden Care Streak is a run of qualifying scheduled-care days across all active garden plants; it is separate from Plant Care Streaks.
-6. **Neutral intervals:** Disabled tasks, explicit pauses, valid quiet periods and periods when that task has no eligible care due neither advance nor break its streak.
-7. **Streak granularity:** Plant Care Streaks are per stable care-task identity. The separately approved Garden Care Streak is garden-wide and day-based; it is not a combined Plant Care Streak, score or sum of task counts.
-8. **Health language:** Use “plant insights” / “evidence-led observations”, not definitive health conclusions. No diagnoses, health scores or causal claims.
-9. **Evidence threshold:** A trend requires at least two comparable, dated observations of the same attribute. A single observation is a recorded observation, not a trend. Photo comparisons are user-directed and do not imply automated image interpretation.
-10. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The default preset is still a UX decision; evaluate a recent 30-local-calendar-day window as the leading option before locking it.
-11. **Archived plants:** Exclude archived plants from active collection metrics by default; retain read-only individual history.
+7. **Neutral intervals:** Disabled tasks, explicit pauses, valid quiet periods and periods when that task has no eligible care due neither advance nor break its Plant Care Streak. Garden Care Streak neutral days follow §5.2.1.
+8. **Streak granularity:** Plant Care Streaks are per stable care-task identity. The separately approved Garden Care Streak is garden-wide and day-based; it is not a combined Plant Care Streak, score or sum of task counts.
+9. **Health language:** Use “plant insights” / “evidence-led observations”, not definitive health conclusions. No diagnoses, health scores or causal claims.
+10. **Evidence threshold:** A trend requires at least two comparable, dated observations of the same attribute. A single observation is a recorded observation, not a trend. Photo comparisons are user-directed and do not imply automated image interpretation.
+11. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The default preset is still a UX decision; evaluate a recent 30-local-calendar-day window as the leading option before locking it.
+12. **Archived plants:** Exclude archived plants from active collection metrics by default; retain read-only individual history.
 
 ### 13.2 Technical decisions established from the current repository
 
