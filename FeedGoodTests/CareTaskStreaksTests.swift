@@ -243,6 +243,52 @@ struct CareTaskStreaksTests {
         #expect(broken.currentStreak == 0)
     }
 
+    @Test func activeQuietPeriodKeepsPastDeadlineOpportunityNeutral() throws {
+        let first = completedPair(1, due: 0, completedAt: 100)
+        let paused = opportunity(2, due: date(7 * day))
+        let quiet = ScheduledCareQuietPeriodSnapshot(
+            taskID: taskID,
+            plantID: plantID,
+            startAt: date(6 * day)
+        )
+        let summary = try CareTaskStreaks.calculate(
+            taskID: taskID,
+            now: date(30 * day),
+            opportunities: [first.0, paused],
+            events: [first.1],
+            quietPeriods: [quiet]
+        )
+        #expect(summary.currentStreak == 1)
+
+        // Once the period ends, neutrality ends with it.
+        let resumed = try CareTaskStreaks.calculate(
+            taskID: taskID,
+            now: date(30 * day),
+            opportunities: [first.0, paused],
+            events: [first.1]
+        )
+        #expect(resumed.currentStreak == 0)
+    }
+
+    @Test func quietPeriodOnAnotherTaskDoesNotNeutralize() throws {
+        let first = completedPair(1, due: 0, completedAt: 100)
+        let missed = opportunity(2, due: date(7 * day))
+        let foreignQuiet = ScheduledCareQuietPeriodSnapshot(
+            taskID: otherTaskID,
+            plantID: plantID,
+            startAt: date(6 * day)
+        )
+        let summary = try CareTaskStreaks.calculate(
+            taskID: taskID,
+            now: date(30 * day),
+            opportunities: [first.0, missed],
+            events: [first.1],
+            quietPeriods: [foreignQuiet]
+        )
+        #expect(summary.currentStreak == 0)
+        #expect(summary.longestStreak == 1)
+    }
+
     @Test func duplicateOpportunityFailsClosed() throws {
         let pair = completedPair(1, due: 0, completedAt: 100)
         #expect(throws: ScheduledCareAnalyticsError.self) {
