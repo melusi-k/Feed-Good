@@ -42,6 +42,7 @@ enum CareTaskStreaks {
         now: Date,
         opportunities: [ScheduledCareOpportunitySnapshot],
         events: [ScheduledCareEventSnapshot],
+        quietPeriods: [ScheduledCareQuietPeriodSnapshot] = [],
         isArchived: Bool = false
     ) throws -> CareTaskStreakSummary {
         var eventByID: [UUID: ScheduledCareEventSnapshot] = [:]
@@ -71,6 +72,7 @@ enum CareTaskStreaks {
                 of: opportunity,
                 now: now,
                 eventByID: eventByID,
+                quietPeriods: quietPeriods,
                 isArchived: isArchived
             ) {
             case .onTime:
@@ -101,6 +103,7 @@ enum CareTaskStreaks {
         of opportunity: ScheduledCareOpportunitySnapshot,
         now: Date,
         eventByID: [UUID: ScheduledCareEventSnapshot],
+        quietPeriods: [ScheduledCareQuietPeriodSnapshot],
         isArchived: Bool
     ) throws -> Disposition {
         switch opportunity.statusRaw {
@@ -126,6 +129,13 @@ enum CareTaskStreaks {
             if isArchived {
                 // Open outcomes are neutral while the plant is archived;
                 // completed history is retained and restoring recomputes.
+                return .neutral
+            }
+            if quietPeriods.contains(where: {
+                $0.taskID == opportunity.taskID && $0.isActive(at: now)
+            }) {
+                // An active Quiet Period pauses the task: open opportunities
+                // stay neutral until resume, matching scheduled-care analytics.
                 return .neutral
             }
             // An open opportunity breaks the current streak only once the
