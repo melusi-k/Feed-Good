@@ -5,7 +5,7 @@ struct ReleaseNotesTests {
     @Test func everyBundledEntryHasAUniqueVersionAndAtLeastOneHighlight() {
         let entries = ReleaseNotes.entries
         #expect(entries.isEmpty == false)
-        #expect(Set(entries.map(\\.version)).count == entries.count)
+        #expect(Set(entries.map(\.version)).count == entries.count)
         #expect(entries.allSatisfy { $0.highlights.isEmpty == false })
     }
 
