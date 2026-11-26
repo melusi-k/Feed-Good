@@ -47,7 +47,7 @@ final class CareRoutineReviewUITests: XCTestCase {
         app.buttons["care.taskSave"].tap()
         let editPreview = app.alerts["Review care changes"]
         XCTAssertTrue(editPreview.waitForExistence(timeout: 5))
-        XCTAssertTrue(editPreview.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Repeat every 8 days")).firstMatch.exists)
+        XCTAssertTrue(editPreview.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Repeat every 8 days")).firstMatch.waitForExistence(timeout: 5))
         editPreview.buttons["Cancel"].tap()
         app.buttons["Cancel"].tap()
 
