@@ -8,7 +8,13 @@ final class NavigationMotionProofUITests: XCTestCase {
     }
 
     private func header(_ app: XCUIApplication, _ title: String) {
-        let value = app.navigationBars[title].staticTexts[title].firstMatch
+        // Same iOS 26 nav-title type instability as NavigationHeaderUITests:
+        // match the label regardless of element type, scoped to the bars,
+        // excluding the leading logo (its label is also "Feed Good").
+        let value = app.navigationBars
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@ AND identifier != %@", title, "app.header.logo"))
+            .firstMatch
         XCTAssertTrue(value.waitForExistence(timeout: 5))
         XCTAssertTrue(value.isHittable)
     }
@@ -67,7 +73,11 @@ final class NavigationMotionProofUITests: XCTestCase {
         mark("EDGE_SWIPE_RETURN_TO_PLANT_DETAIL")
         let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.5))
         edge.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
+        print("DIAG-PRE navbars=" + app.navigationBars.allElementsBoundByIndex.map { "[" + $0.identifier + "|" + $0.label + "]" }.joined(separator: ","))
+        print("DIAG-PRE careNav=" + String(app.navigationBars["Care routine"].exists) + " fernNav=" + String(app.navigationBars["Motion fern"].exists) + " fernText=" + String(app.staticTexts["Motion fern"].firstMatch.exists))
         header(app, "Motion fern")
+        print("DIAG-POST navbars=" + app.navigationBars.allElementsBoundByIndex.map { "[" + $0.identifier + "|" + $0.label + "]" }.joined(separator: ","))
+        print("DIAG-POST careNav=" + String(app.navigationBars["Care routine"].exists) + " fernNav=" + String(app.navigationBars["Motion fern"].exists) + " fernText=" + String(app.staticTexts["Motion fern"].firstMatch.exists))
         mark("CLICK_BACK_FROM_PLANT_DETAIL")
         app.navigationBars.buttons["My Plants"].tap()
         header(app, "My Plants")

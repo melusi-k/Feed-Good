@@ -1,6 +1,6 @@
 # PRD-016 — Plant Lifecycle States
 
-**Status:** Proposal consistent; design and implementation not started  
+**Status:** Phase 2, Stage 1 — design decision approved; no additional lifecycle state required  
 **Priority:** P2  
 **Release:** Post-MVP, after archive/restore  
 **Primary surfaces:** My Plants, Plant Profile, Today, Care Routine, Plant Story
@@ -20,48 +20,64 @@ A user wants to distinguish plants they actively care for from plants in a genui
 | Care behavior | Today/reminder tests | Eligibility and reminders match state |
 | Compatibility | Migration/unknown-value tests | Future values fail safely |
 
-## 4. Behavior changes
-- Define a minimal lifecycle model that includes Active and Archived, reusing PRD-015's archive state rather than adding a second archive flag.
-- Evaluate whether one additional user-controlled state, such as Dormant or Away, solves a distinct need. Do not assume both are required.
-- Define allowed transitions, reversibility, labels and behavior across collection, profile, Today, care, journal and notifications.
-- Make transitions explicit and explain their impact before saving.
-- Preserve state through export/restore.
+## 4. Recommended product decision
 
-## 5. Out of scope
-Automatic dormancy detection, inactivity inference, weather/location inference, multiple gardens, shared ownership, social memorials and lifecycle analytics.
+**Approved decision (2026-11-23): retain only Active and Archived for the current release; do not add Dormant or Away as a lifecycle state.**
 
-## 6. Surfaces
-State label and action in Plant Profile/collection; transition impact summary and confirmation; consistent state presentation in Today, care, journal and archive.
+The archive foundation already provides a persisted, reversible distinction between Active and Archived through `Plant.archivedAt`. A second lifecycle enum or archive Boolean would create a competing source of truth. A user-controlled Dormant/Away label currently has no sufficiently distinct, consistently actionable meaning: if it pauses care, it duplicates the proposed Quiet Period (#74); if it does not affect care, Today or reminders, it adds status-management complexity without a clear user benefit.
 
-## 7. Pricing
-Included in the local-first app if approved. No account or network service is required.
+This decision is approved for the current release. A future additional state requires a validated user need, a plain-language definition and a distinct behavior contract, and must be proposed through a new product decision.
 
-## 8. Safety and product boundaries
+## 5. Approved transition table
+
+| Current state | User action | Result | Care eligibility | Today visibility | Reminder behavior | Journal/story |
+| --- | --- | --- | --- | --- | --- | --- |
+| Active | Archive, explicit confirmation | Archived; persist archive timestamp | No active care actions | Excluded from active Today | Cancel pending plant reminders | Remains readable |
+| Archived | Restore, explicit confirmation | Active; clear archive timestamp | Eligible under existing task settings | Appears according to current due state | Recreate only eligible future reminders and only when permitted | Preserved |
+| Active | Cancel archive | No change | Unchanged | Unchanged | Unchanged | Unchanged |
+| Archived | Cancel restore | No change | Remains unavailable for active care | Remains excluded | Remains cancelled | Remains readable |
+
+The table reuses the delivered PRD-015 archive contract; it does not authorize a second persisted state field. This table is the approved lifecycle contract for the current release.
+
+## 6. Behavior changes
+- Keep Active/Archived as the only supported lifecycle distinction for this delivery.
+- Reuse PRD-015's persisted `Plant.archivedAt: Date?`; do not add an enum or duplicate archive flag.
+- Keep archive and restore explicit and reversible.
+- Keep journal/story readable while archived; suppress active-care, Today and routine-review actions while archived.
+- Keep temporary care pauses separate and time-bounded/open-ended only through PRD-020 Quiet Periods.
+- Do not infer dormancy, health, inactivity or care needs.
+
+## 7. Out of scope
+Automatic dormancy detection, inactivity inference, weather/location inference, multiple gardens, shared ownership, social memorials, lifecycle analytics and a second archive representation.
+
+## 8. Surfaces
+Existing archive/restore controls and status presentation in Plant Profile, active and archived collections, Today/care exclusion and preserved Plant Story. No new status picker is proposed unless a distinct additional state is approved.
+
+## 9. Safety and product boundaries
 - Archived means removed from active collection/care and is reversible under PRD-015.
-- Dormant/Away, if approved, must have a distinct user need and must not silently archive a plant.
-- Quiet Period under PRD-020 is a care-schedule adjustment, not a lifecycle state.
+- A Quiet Period under PRD-020 is a care-schedule adjustment, not a lifecycle state.
 - State transitions never delete or rewrite care events, journal entries, photos or milestones.
 - Unknown stored values must not crash or silently turn an archived plant Active.
 - Lifecycle state is not a plant-health diagnosis.
+- The delivered archive timestamp remains the single source of truth.
 
-## 9. Launch plan
-1. Approve a transition table before implementation: source/destination, action, confirmation, care eligibility, Today visibility, reminder behavior and restore behavior.
-2. Decide whether any additional state beyond Active/Archived is justified.
-3. Define migration and unknown-value behavior.
-4. Implement transitions and impact summaries.
-5. Test every approved transition, cancellation, persistence, archive compatibility and export/restore.
-6. Complete product/content, accessibility and physical-device review.
+## 10. Launch plan
+1. Record the approved Active/Archived-only decision in issue #70 and this PRD.
+2. Close #70 as a completed design decision; no additional lifecycle implementation or schema change is required.
+3. Use this approved lifecycle contract as the prerequisite for PRD-020 / #74.
+4. Any future additional state requires a separate validated product decision and behavior contract.
 
-## 10. Replaces
+## 11. Replaces
 Replaces ambiguous or overloaded plant status labels. It does not replace archive, care routines or quiet periods.
 
-## 11. Decisions and dependencies
-- Hard prerequisite: PRD-015 / issue #69 archive/restore and its persisted data contract.
-- Precedes and blocks PRD-020 / issue #74.
-- Related to PRD-017 / issue #71, but neither is a hard prerequisite for the other's initial implementation.
+## 12. Decisions and dependencies
+- Hard prerequisite: PRD-015 / issue #69 archive/restore and its persisted data contract — complete and merged.
+- Precedes and blocks PRD-020 / issue #74 until lifecycle vocabulary and transition behavior are explicitly resolved.
+- Related to PRD-017 / issue #71, which is implemented in merged PR #82; archive-aware integration is included in merged PR #88.
 - Builds on Plant Collection #1, Care Routine #4, Care Reminders #5, Plant Story #14 and Data Portability #15.
-- The approved transition table and any additional state decision are design gates, not assumptions.
+- Product approval recorded 2026-11-23: Active/Archived-only; no new lifecycle enum, duplicate archive flag or schema migration.
 
-## 12. Delivery tracking
+## 13. Delivery tracking
 - GitHub issue: [#70 — Add explicit plant lifecycle states after archive/restore](https://github.com/melusi-k/Feed-Good/issues/70).
-- Status: proposal consistent; design and implementation outstanding.
+- Phase 2 Stage 1: lifecycle vocabulary and transition decision.
+- Status: design decision approved; no additional lifecycle implementation is required for this release. Quiet Periods (#74) is the next dependent feature.

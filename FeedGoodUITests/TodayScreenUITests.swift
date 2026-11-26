@@ -22,12 +22,12 @@ final class TodayScreenUITests: XCTestCase {
         let darkOption = app.buttons["Dark"]
         XCTAssertTrue(darkOption.waitForExistence(timeout: 3))
         darkOption.tap()
-        XCTAssertTrue(app.staticTexts["Dark appearance"].exists)
+        XCTAssertTrue(app.staticTexts["Dark appearance"].waitForExistence(timeout: 5))
 
         app.buttons["Light"].tap()
-        XCTAssertTrue(app.staticTexts["Light appearance"].exists)
+        XCTAssertTrue(app.staticTexts["Light appearance"].waitForExistence(timeout: 5))
 
         app.buttons["System"].tap()
-        XCTAssertTrue(app.staticTexts["System appearance"].exists)
+        XCTAssertTrue(app.staticTexts["System appearance"].waitForExistence(timeout: 5))
     }
 }

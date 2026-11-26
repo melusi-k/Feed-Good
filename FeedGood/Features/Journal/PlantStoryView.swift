@@ -5,11 +5,17 @@ struct PlantStoryView: View {
     let plant: Plant
     @Query private var careEvents: [CareEvent]
     @Query private var journalEntries: [JournalEntry]
+    @Query private var quietPeriodSnapshots: [QuietPeriodTaskSnapshot]
     @State private var adding = false
     @State private var editing: JournalEntry?
 
     private var items: [PlantStoryItem] {
-        PlantStory.items(plantID: plant.id, careEvents: careEvents, journalEntries: journalEntries)
+        PlantStory.items(
+            plantID: plant.id,
+            careEvents: careEvents,
+            journalEntries: journalEntries,
+            quietPeriodSnapshots: quietPeriodSnapshots
+        )
     }
 
     var body: some View {
@@ -28,6 +34,7 @@ struct PlantStoryView: View {
                 NavigationLink("Open growth review") { GrowthReviewView(plant: plant) }
                     .accessibilityIdentifier("story.growth")
             }
+            Section { PlantJournalPromptCard(plant: plant) }
             if items.isEmpty {
                 ContentUnavailableView("A story waiting to grow", systemImage: "leaf", description: Text("Record care in this plant's routine, or add an observation, photo or milestone."))
                     .accessibilityIdentifier("story.empty")
@@ -56,6 +63,10 @@ struct PlantStoryView: View {
                         if !entry.note.isEmpty { Text(entry.note).fixedSize(horizontal: false, vertical: true) }
                         Button("Edit observation") { editing = entry }
                             .font(.callout).accessibilityIdentifier("story.edit.\(entry.id)")
+                    case .quietPeriod(let snapshot):
+                        Text(snapshot.taskTitleSnapshot).font(.subheadline.weight(.medium))
+                        Text(quietPeriodDescription(snapshot))
+                            .font(.callout).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.vertical, 6)
@@ -75,13 +86,41 @@ struct PlantStoryView: View {
     private func kindLabel(_ item: PlantStoryItem) -> String {
         switch item {
         case .care: return "Recorded care"
-        case .journal(let entry): return entry.milestone?.title ?? "Journal observation"
+        // A plant change is labelled explicitly so it reads as a record of what the
+        // person changed, never as care completed or a plant-health assessment.
+        case .journal(let entry):
+            if let change = entry.changeKind { return "Plant change: \(change.title)" }
+            return entry.milestone?.title ?? "Journal observation"
+        case .quietPeriod(let snapshot):
+            switch snapshot.membershipStatusRaw {
+            case QuietPeriodMembershipStatus.removed.rawValue: return "Quiet Period · removed task"
+            case QuietPeriodMembershipStatus.disabled.rawValue: return "Quiet Period · disabled task"
+            default:
+                switch snapshot.quietPeriod?.statusRaw ?? QuietPeriodStatus.ended.rawValue {
+                case QuietPeriodStatus.scheduled.rawValue: return "Quiet Period · scheduled task"
+                case QuietPeriodStatus.active.rawValue: return "Quiet Period · paused task"
+                case QuietPeriodStatus.cancelled.rawValue: return "Quiet Period · cancelled"
+                default: return "Quiet Period · ended"
+                }
+            }
         }
     }
+
     private func kindIcon(_ item: PlantStoryItem) -> String {
         switch item {
         case .care: return "drop"
-        case .journal(let entry): return entry.milestone == nil ? "book.closed" : "sparkle"
+        case .journal(let entry):
+            if entry.changeKind != nil { return "arrow.triangle.2.circlepath" }
+            return entry.milestone == nil ? "book.closed" : "sparkle"
+        case .quietPeriod: return "pause.circle"
+        }
+    }
+
+    private func quietPeriodDescription(_ snapshot: QuietPeriodTaskSnapshot) -> String {
+        switch snapshot.membershipStatusRaw {
+        case QuietPeriodMembershipStatus.removed.rawValue: return "This task was removed from the care routine. Its Quiet Period history is retained."
+        case QuietPeriodMembershipStatus.disabled.rawValue: return "This task was disabled and is no longer part of the Quiet Period."
+        default: return "This task was included in a Quiet Period."
         }
     }
 }

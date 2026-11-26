@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct GrowthReviewTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self])
+        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 

@@ -35,11 +35,19 @@ Every feature should help someone understand, notice, learn about or connect wit
 | PRD-019 | Plant Journal Prompts | [PRD-019-plant-journal-prompts.md](PRD-019-plant-journal-prompts.md) | [#73](https://github.com/melusi-k/Feed-Good/issues/73) | Encourage optional, thoughtful plant observations |
 | PRD-020 | Seasonal and Quiet Periods | [PRD-020-seasonal-quiet-periods.md](PRD-020-seasonal-quiet-periods.md) | [#74](https://github.com/melusi-k/Feed-Good/issues/74) | Let users explicitly adjust care during quiet periods |
 | PRD-021 | Optional Plant Tags | [PRD-021-optional-plant-tags.md](PRD-021-optional-plant-tags.md) | [#75](https://github.com/melusi-k/Feed-Good/issues/75) | Organise a growing collection with lightweight user tags |
+| PRD-022 | Care Activity Lifecycle and Occurrence Management | [PRD-022-care-activity-lifecycle.md](PRD-022-care-activity-lifecycle.md) | — | Separate recurring care definitions, scheduled occurrences and historical outcomes |
+| PRD-023 | Structured Care Outcomes | [PRD-023-structured-care-outcomes.md](PRD-023-structured-care-outcomes.md) | — | Capture optional, task-relevant care outcomes without slowing quick completion |
+| PRD-024 | Care Insights and Plant Health Story | [PRD-024-care-insights-and-plant-health-story.md](PRD-024-care-insights-and-plant-health-story.md) | — | Derive traceable, neutral summaries from existing plant records |
+| PRD-025 | Context-Aware Plant Care | [PRD-025-context-aware-plant-care.md](PRD-025-context-aware-plant-care.md) | — | Offer user-invoked, source-backed next checks without automatic routine changes |
+| PRD-026 | First-Run Onboarding and Release What's New | [PRD-026-first-run-onboarding-and-whats-new.md](PRD-026-first-run-onboarding-and-whats-new.md) | Parent [#89](https://github.com/melusi-k/Feed-Good/issues/89); stages [#94](https://github.com/melusi-k/Feed-Good/issues/94)–[#97](https://github.com/melusi-k/Feed-Good/issues/97) | Introduce Feed Good on first launch and explain meaningful changes after updates |
+| PRD-027 | User Lifecycle & Meaningful Engagement | [PRD-027-user-lifecycle-and-meaningful-engagement.md](PRD-027-user-lifecycle-and-meaningful-engagement.md) | [#114](https://github.com/melusi-k/Feed-Good/issues/114) | A meaningful, privacy-conscious journey from first plant to sustained plant-care relationship |
+| PRD-028 | Accessibility Foundations | [PRD-028-accessibility-foundations.md](PRD-028-accessibility-foundations.md) | [#131](https://github.com/melusi-k/Feed-Good/issues/131) | Make accessibility a documented, testable part of product delivery |
 
 ## Release scope
 
 ### Initial release / MVP
 - Core plant collection and profiles, including basic search and useful sorting.
+- Three-page, skippable first-run onboarding and a separate, once-per-release What's New experience (PRD-026).
 - Optional, skippable growing context; it must not block adding a plant.
 - Plant-specific care routines and optional local reminders.
 - Plant journal, milestones and combined plant story.
@@ -57,20 +65,20 @@ Every feature should help someone understand, notice, learn about or connect wit
 
 ### Post-MVP proposal portfolio
 
-The linked issues #63–66 and #69–75 have been reviewed and marked **Proposal Consistent** in their issue bodies. This means their scope, boundaries, acceptance criteria and dependencies are internally aligned; it does not mean implementation is complete or approved for release.
+The linked post-MVP issues have been reviewed for scope, boundaries, acceptance criteria and dependencies. **Proposal Consistent** means a proposal is coherent; it does not mean implementation is complete or approved for release. Phase 1 (#63, #64, #69) is complete. Phase 2 is active with #70 as its first design gate.
 
 | Sequence | PRD / issue | Proposal | Delivery note |
 | --- | --- | --- | --- |
-| Trust and relationship | [PRD-011 / #63](PRD-011-care-history-corrections.md) | Care History Corrections | PR #68 merged; remaining Today/reminder/export verification is a release gate for #69 |
-| Trust and relationship | [PRD-012 / #64](PRD-012-growth-review.md) | Growth Review | PR #76 is open; comparison/source-navigation coverage remains |
+| Trust and relationship | [PRD-011 / #63](PRD-011-care-history-corrections.md) | Care History Corrections | Complete; owner-confirmed manual verification recorded |
+| Trust and relationship | [PRD-012 / #64](PRD-012-growth-review.md) | Growth Review | Complete; populated two-photo device verification recorded |
 | Trust and relationship | [PRD-013 / #65](PRD-013-weekly-garden-reflection.md) | Weekly Garden Reflection | Independent local derived experience |
 | Safety-gated | [PRD-014 / #66](PRD-014-plant-check-ins.md) | Plant Check-ins | No troubleshooting content ships before editorial/safety ownership and review |
-| Data foundation | [PRD-015 / #69](PRD-015-plant-archive.md) | Plant Archive and Restore | Selected foundation; #63 verification gates parent merge |
-| Dependent | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Requires #69; blocks #74 |
-| Independent | [PRD-017 / #71](PRD-017-care-routine-review.md) | Care Routine Review | Builds on existing CareTaskEditor and Plant profile editors; blocks #74 |
+| Data foundation | [PRD-015 / #69](PRD-015-plant-archive.md) | Plant Archive and Restore | Complete; parent PR #88 merged and owner sign-off recorded |
+| Phase 2 Stage 1 | [PRD-016 / #70](PRD-016-plant-lifecycle-states.md) | Plant Lifecycle States | Approved: Active/Archived only; no additional lifecycle state or schema work for this release |
+| Foundation delivered | [PRD-017 / #71](PRD-017-care-routine-review.md) | Care Routine Review | Implemented in PR #82 and archive-aware in PR #88; prerequisite for #74 satisfied |
 | Dependent | [PRD-018 / #72](PRD-018-plant-changes-timeline.md) | Plant Changes Timeline | Requires #69 compatibility; model choice is a design gate |
 | Independent | [PRD-019 / #73](PRD-019-plant-journal-prompts.md) | Plant Journal Prompts | #65 integration optional |
-| Dependent | [PRD-020 / #74](PRD-020-seasonal-quiet-periods.md) | Seasonal and Quiet Periods | Requires both #70 and #71 |
+| Phase 2 Stage 2 | [PRD-020 / #74](PRD-020-seasonal-quiet-periods.md) | Seasonal and Quiet Periods | Next critical-path feature after #70 decision; #70 AND #71 required |
 | Dependent | [PRD-021 / #75](PRD-021-optional-plant-tags.md) | Optional Plant Tags | Requires #69 compatibility; not dependent on #70 |
 
 A later opportunity needs its own product decision, PRD and issue before implementation. A proposal's presence in this register is not implementation authorization.

@@ -2,7 +2,15 @@ import XCTest
 
 final class NavigationHeaderUITests: XCTestCase {
     private func header(_ app: XCUIApplication, _ title: String) {
-        let label = app.navigationBars[title].staticTexts[title].firstMatch
+        // iOS 26 exposes the nav-bar title UILabel as StaticText or Other
+        // depending on the title transition state (XCTest logs an "Automation
+        // type mismatch"), so match the title label regardless of element
+        // type, still scoped to the navigation bars. Exclude the leading
+        // logo, whose accessibility label is also "Feed Good".
+        let label = app.navigationBars
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@ AND identifier != %@", title, "app.header.logo"))
+            .firstMatch
         XCTAssertTrue(label.waitForExistence(timeout: 5))
         XCTAssertEqual(label.label, title)
         XCTAssertTrue(label.isHittable)

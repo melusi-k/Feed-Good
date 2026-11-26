@@ -5,7 +5,7 @@ import UIKit
 
 @MainActor
 struct JournalTests {
-    private var schema: Schema { Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]) }
+    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV6.self) }
     private func memory() throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
@@ -107,7 +107,7 @@ struct JournalTests {
             careEvents: [event]
         )
         let decoded = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(decoded.version == 2)
+        #expect(decoded.version == 5)
         #expect(decoded.careTasks?.count == 1)
         #expect(decoded.careEvents?.count == 1)
 
@@ -187,7 +187,7 @@ struct JournalTests {
         try destinationContext.save()
 
         let preview = try JournalArchive.preview(data, context: destinationContext)
-        #expect(preview.version == 2)
+        #expect(preview.version == 5)
         #expect(preview.plantsToAdd == 0)
         #expect(preview.plantsAlreadyPresent == 1)
         #expect(preview.entriesToAdd == 1)
@@ -415,7 +415,7 @@ struct JournalTests {
 
     @Test func olderVersionTwoArchiveWithoutArchivedAtDefaultsToActive() throws {
         let plant = Plant(name: "Legacy fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
-        let archive = JournalArchive(
+        var archive = JournalArchive(
             plants: [
                 JournalArchive.PlantRecord(
                     id: plant.id, name: plant.name, species: "", notes: "",
@@ -426,6 +426,7 @@ struct JournalTests {
             careTasks: [],
             careEvents: []
         )
+        archive.version = 2
         let encoded = try JSONEncoder().encode(archive)
         var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         var plantRecords = try #require(object["plants"] as? [[String: Any]])

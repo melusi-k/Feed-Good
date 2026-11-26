@@ -97,20 +97,74 @@ final class CareEvent {
 
 enum CareRecorderError: Error, Equatable {
     case archivedPlant
+    case taskDisabled
 }
 
 @MainActor
 enum CareRecorder {
-    static func complete(_ task: CareTask, note: String, at date: Date = .now, in context: ModelContext, calendar: Calendar = .current) throws {
-        guard let plant = task.plant, plant.archivedAt == nil else { throw CareRecorderError.archivedPlant }
+    static func complete(
+        _ task: CareTask,
+        note: String,
+        at date: Date = .now,
+        in context: ModelContext,
+        calendar: Calendar = .current,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard let plant = task.plant, plant.archivedAt == nil else {
+            throw CareRecorderError.archivedPlant
+        }
+        guard task.isEnabled else { throw CareRecorderError.taskDisabled }
+
         let previousDate = task.dueDate
+        let quietSnapshot = try QuietPeriodTaskIntegration.activeSnapshot(for: task.id, in: context)
+        let previousFrozenInterval = quietSnapshot?.frozenIntervalDays
+        let previousOverride = quietSnapshot?.nextCareOverrideAt
+        let previousSnapshotUpdate = quietSnapshot?.updatedAt
+        let isPaused = quietSnapshot != nil
+        let opportunitySnapshot = try CareOpportunityLifecycle.snapshot(for: [task.id], in: context)
+        let opportunity = try CareOpportunityLifecycle.ensureCurrent(for: task, at: date, in: context)
+
+        if let quietSnapshot {
+            quietSnapshot.frozenIntervalDays = max(1, task.intervalDays)
+            quietSnapshot.nextCareOverrideAt = nil
+            quietSnapshot.updatedAt = date
+        }
+
         let event = CareEvent(task: task, completedAt: date, note: note)
         context.insert(event)
-        task.dueDate = CareSchedule.nextDate(after: date, intervalDays: task.intervalDays, calendar: calendar)
-        do { try context.save() }
-        catch {
+
+        if !isPaused {
+            if let opportunity, date >= opportunity.effectiveDueAt {
+                try CareOpportunityLifecycle.complete(opportunity, with: event.id, at: date)
+            }
+            let nextDueDate = CareSchedule.nextDate(
+                after: date,
+                intervalDays: task.intervalDays,
+                calendar: calendar
+            )
+            if let opportunity,
+               date < opportunity.effectiveDueAt,
+               nextDueDate != previousDate {
+                try CareOpportunityLifecycle.cancelOpen(
+                    for: task.id,
+                    effectiveDueAt: opportunity.effectiveDueAt,
+                    at: date,
+                    in: context
+                )
+            }
+            task.dueDate = nextDueDate
+            _ = try CareOpportunityLifecycle.ensureCurrent(for: task, at: date, in: context)
+        }
+
+        do {
+            try save(context)
+        } catch {
             task.dueDate = previousDate
+            quietSnapshot?.frozenIntervalDays = previousFrozenInterval
+            quietSnapshot?.nextCareOverrideAt = previousOverride
+            if let previousSnapshotUpdate { quietSnapshot?.updatedAt = previousSnapshotUpdate }
             context.delete(event)
+            CareOpportunityLifecycle.restore(opportunitySnapshot, in: context)
             throw error
         }
     }
@@ -143,8 +197,10 @@ enum CareRecorder {
     static func delete(
         _ event: CareEvent,
         in context: ModelContext,
+        at date: Date = .now,
         save: (ModelContext) throws -> Void = { try $0.save() }
     ) throws {
+        try CareOpportunityLifecycle.reopen(linkedTo: event.id, at: date, in: context)
         context.delete(event)
         do { try save(context) }
         catch {

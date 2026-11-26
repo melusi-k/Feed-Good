@@ -7,7 +7,7 @@ import Testing
 struct PlantArchiveTests {
     private func makeContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self]), configurations: configuration)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV6.self), configurations: configuration)
         return ModelContext(container)
     }
 
@@ -109,6 +109,53 @@ struct PlantArchiveTests {
             try CareRecorder.complete(task, note: "Should not be recorded", in: context)
         }
         #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+    }
+
+
+    @Test func failedArchiveRestoresQuietPeriodOpportunityIdentityAndSchedule() throws {
+        enum InjectedFailure: Error { case save }
+        let context = try makeContext()
+        let plant = Plant(name: "Calathea")
+        context.insert(plant)
+        let originalDue = Date(timeIntervalSince1970: 1_800_000_000)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: originalDue, plant: plant)
+        context.insert(task)
+        let periodStart = Date(timeIntervalSince1970: 1_790_000_000)
+        let period = QuietPeriod(
+            startAt: periodStart,
+            statusRaw: QuietPeriodStatus.active.rawValue,
+            activatedAt: periodStart,
+            plant: plant
+        )
+        let snapshot = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: task.title,
+            remainingCalendarDays: 6,
+            originalDueHour: 9,
+            originalDueMinute: 0,
+            originalDueSecond: 0,
+            frozenIntervalDays: 7,
+            quietPeriod: period
+        )
+        context.insert(period)
+        context.insert(snapshot)
+        let opportunity = try #require(try CareOpportunityLifecycle.ensureCurrent(for: task, at: periodStart, in: context))
+        try context.save()
+
+        #expect(throws: InjectedFailure.self) {
+            try PlantArchive.archive(
+                plant,
+                at: Date(timeIntervalSince1970: 1_795_000_000),
+                in: context,
+                save: { _ in throw InjectedFailure.save }
+            )
+        }
+
+        #expect(plant.archivedAt == nil)
+        #expect(period.statusRaw == QuietPeriodStatus.active.rawValue)
+        #expect(task.dueDate == originalDue)
+        #expect(opportunity.status == .open)
+        #expect(try context.fetch(FetchDescriptor<CareOpportunity>()).count == 1)
     }
 
 }

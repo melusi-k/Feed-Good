@@ -4,7 +4,7 @@ The app icon is a simple potted plant with two leaves, no lettering, and a warm 
 
 ## Source and build output
 
-- `FeedGood/Assets.xcassets/AppIcon.appiconset/FeedGood-AppIcon.svg` is the editable vector source.
+- `FeedGood/Assets.xcassets/AppIcon.appiconset/FeedGood-AppIcon.svg` is the build source. It wraps the owner-approved 1024 x 1024 raster artwork embedded as base64 data, so the pipeline output matches the approved icon exactly; the artwork is not meant to be hand-edited as vectors.
 - `FeedGood/Assets.xcassets/AppIcon.appiconset/FeedGood-AppIcon.png` is committed at 1024 × 1024 pixels and generated from the SVG for the iOS app icon asset catalog.
 - `Contents.json` declares the universal iOS 1024 × 1024 icon entry.
 

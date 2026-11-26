@@ -16,8 +16,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Classify changed paths
+        id: classify
+        run: |
+          # Resolve the live base branch tip: pull_request.base.sha can be stale
+          # on long-lived PRs. Always run the trusted classifier from that base.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="${{ github.event.pull_request.base.ref }}"
+            git fetch origin "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+            BASE_SHA="$(git rev-parse "refs/remotes/origin/$BASE_REF")"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="HEAD"
+            HEAD_SHA="$(git rev-parse HEAD)"
+          fi
+          git show "$BASE_SHA:scripts/ci/classify-changes.sh" > "$RUNNER_TEMP/classify-changes.sh"
+          bash "$RUNNER_TEMP/classify-changes.sh" "${{ github.event_name }}" "$BASE_SHA" "$HEAD_SHA"
+      - name: Test change classifier
+        run: bash scripts/ci/test-classify-changes.sh
+
   thread-sanitizer:
-    runs-on: macos-15
+    needs: classify-changes
+    if: always() && (github.event_name != 'pull_request' || (needs.classify-changes.result == 'success' && needs.classify-changes.outputs.docs_only != 'true'))
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

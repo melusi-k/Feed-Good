@@ -20,6 +20,16 @@ struct PlantCareView: View {
         events.first { $0.taskID == event.taskID }?.id == event.id
     }
 
+    private func isPausedByQuietPeriod(_ task: CareTask) -> Bool {
+        (plant.quietPeriods ?? []).contains { period in
+            period.statusRaw == QuietPeriodStatus.active.rawValue &&
+            (period.taskSnapshots ?? []).contains { snapshot in
+                snapshot.taskID == task.id &&
+                snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+            }
+        }
+    }
+
     var body: some View {
         List {
             Section {
@@ -47,7 +57,7 @@ struct PlantCareView: View {
                         Button { editing = task } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(task.title).font(.headline)
-                                Text(task.isEnabled ? "\(CareSchedule.state(for: task.dueDate).rawValue.capitalized) · \(task.dueDate.formatted(date: .abbreviated, time: .shortened))" : "Paused")
+                                Text(!task.isEnabled ? "Paused" : (isPausedByQuietPeriod(task) ? "Quiet Period · paused" : "\(CareSchedule.state(for: task.dueDate).rawValue.capitalized) · \(task.dueDate.formatted(date: .abbreviated, time: .shortened))"))
                                     .font(.subheadline).foregroundStyle(.secondary)
                                 Text("Every \(task.intervalDays) days · user-defined").font(.caption).foregroundStyle(.secondary)
                             }
@@ -125,6 +135,8 @@ struct CareTaskEditor: View {
     @State private var errorMessage: String?
     @State private var confirmingDelete = false
     @State private var confirmingSave = false
+    @State private var isSaving = false
+    @State private var isDeleting = false
 
     var body: some View {
         NavigationStack {
@@ -151,10 +163,10 @@ struct CareTaskEditor: View {
             }
             .feedGoodHeader(task == nil ? "Add care task" : "Edit care task")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isDeleting) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { confirmingSave = true }
-                        .disabled(kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(isSaving || isDeleting || (kind == .custom && customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                         .accessibilityIdentifier("care.taskSave")
                 }
             }
@@ -164,17 +176,31 @@ struct CareTaskEditor: View {
             .task { reminders = task?.reminderEnabled ?? false }
             .alert("Review care changes", isPresented: $confirmingSave) {
                 Button("Save changes") { save() }
+                    .disabled(isSaving || isDeleting)
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(saveImpactSummary)
             }
             .confirmationDialog("Remove this task? Its care history will stay.", isPresented: $confirmingDelete, titleVisibility: .visible) {
                 Button("Remove task", role: .destructive) {
-                    guard let task else { return }
-                    context.delete(task)
-                    do { try context.save(); dismiss() }
-                    catch { context.rollback(); errorMessage = "Couldn't remove this task. Try again." }
+                    guard let task, isDeleting == false else { return }
+                    isDeleting = true
+                    Task { @MainActor in
+                        do {
+                            try await CareTaskEditorPersistence.deleteAndReconcile(
+                                plantID: plant.id,
+                                taskID: task.id,
+                                in: context.container,
+                                scheduler: scheduler
+                            )
+                            dismiss()
+                        } catch {
+                            isDeleting = false
+                            errorMessage = "Couldn't remove this task. Your task and care history are unchanged. Try again."
+                        }
+                    }
                 }
+                .disabled(isDeleting)
             }
         }
     }
@@ -196,16 +222,28 @@ struct CareTaskEditor: View {
     }
 
     private func save() {
-        let record = task ?? CareTask(kind: kind, intervalDays: interval, dueDate: dueDate, plant: plant)
-        if task == nil { context.insert(record) }
-        record.kindRaw = kind.rawValue
-        record.customTitle = customTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        record.intervalDays = interval
-        record.dueDate = dueDate
-        record.isEnabled = enabled
-        record.reminderEnabled = reminders
-        do { try context.save(); dismiss() }
-        catch { context.rollback(); errorMessage = "Couldn't save this routine. Try again." }
+        guard isSaving == false else { return }
+        isSaving = true
+        Task { @MainActor in
+            do {
+                try await CareTaskEditorPersistence.saveAndReconcile(
+                    plantID: plant.id,
+                    taskID: task?.id,
+                    kind: kind,
+                    customTitle: customTitle,
+                    intervalDays: interval,
+                    dueDate: dueDate,
+                    isEnabled: enabled,
+                    reminderEnabled: reminders,
+                    in: context.container,
+                    scheduler: scheduler
+                )
+                dismiss()
+            } catch {
+                isSaving = false
+                errorMessage = "Couldn't save this routine. Your existing routine and reminders are unchanged. Try again."
+            }
+        }
     }
 }
 

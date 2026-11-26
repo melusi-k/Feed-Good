@@ -6,7 +6,10 @@ import Testing
 @MainActor
 struct PlantStoryTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema([Plant.self, CareTask.self, CareEvent.self, JournalEntry.self])
+        let schema = Schema([
+            Plant.self, CareTask.self, CareEvent.self, JournalEntry.self,
+            QuietPeriod.self, QuietPeriodTaskSnapshot.self
+        ])
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
@@ -53,6 +56,38 @@ struct PlantStoryTests {
         let care = CareEvent(task: task)
         #expect(PlantStory.items(plantID: plant.id, careEvents: [], journalEntries: [entry]).count == 1)
         #expect(PlantStory.items(plantID: plant.id, careEvents: [care], journalEntries: []).count == 1)
+    }
+
+    @Test func removedTaskQuietPeriodSnapshotRemainsInPlantStory() throws {
+        let context = ModelContext(try memory())
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: .distantFuture, plant: plant)
+        context.insert(task)
+        let period = QuietPeriod(startAt: .now, statusRaw: QuietPeriodStatus.ended.rawValue, activatedAt: .now, endedAt: .now, plant: plant)
+        let snapshot = QuietPeriodTaskSnapshot(taskID: task.id, taskTitleSnapshot: task.title, quietPeriod: period)
+        context.insert(period)
+        context.insert(snapshot)
+        try context.save()
+
+        try QuietPeriodTaskIntegration.markDeleted(taskID: task.id, at: Date(timeIntervalSince1970: 500), in: context)
+        context.delete(task)
+        try context.save()
+
+        let items = PlantStory.items(
+            plantID: plant.id,
+            careEvents: [],
+            journalEntries: [],
+            quietPeriodSnapshots: try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>())
+        )
+        #expect(items.count == 1)
+        if case .quietPeriod(let retained) = try #require(items.first) {
+            #expect(retained.taskID == task.id)
+            #expect(retained.taskTitleSnapshot == "Watering")
+            #expect(retained.membershipStatusRaw == QuietPeriodMembershipStatus.removed.rawValue)
+        } else {
+            Issue.record("Expected retained Quiet Period audit item")
+        }
     }
 
     @Test func sourceEditAndDeleteReprojectWithoutDuplicatingOrLosingOtherRecords() throws {

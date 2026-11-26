@@ -24,6 +24,17 @@ enum PlantCollection {
         return self.plants(from: plants.filter { $0.archivedAt != nil }, query: query, sort: sort)
     }
 
+    /// Tag filtering uses OR semantics (decided for #75 and documented in the
+    /// implementation PR): tags are lightweight find-again labels, so selecting
+    /// several shows plants carrying ANY of them. An empty selection filters
+    /// nothing. Deterministic ordering is unchanged.
+    static func tagged(_ plants: [Plant], selectedTagIDs: Set<UUID>) -> [Plant] {
+        guard !selectedTagIDs.isEmpty else { return plants }
+        return plants.filter { plant in
+            (plant.tags ?? []).contains { selectedTagIDs.contains($0.id) }
+        }
+    }
+
     static func plants(from plants: [Plant], query: String, sort: PlantCollectionSort) -> [Plant] {
         let search = key(query.trimmingCharacters(in: .whitespacesAndNewlines))
         return plants.filter { search.isEmpty || key($0.name).contains(search) || key($0.species).contains(search) }.sorted {

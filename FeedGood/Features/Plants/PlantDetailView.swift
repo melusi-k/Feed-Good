@@ -65,6 +65,20 @@ struct PlantDetailView: View {
                     .accessibilityIdentifier("plantDetail.growingContext")
                 }
 
+                NavigationLink {
+                    PlantScheduledCareAnalyticsView(plant: plant)
+                } label: {
+                    Label("Scheduled care", systemImage: "chart.bar")
+                }
+                .accessibilityIdentifier("plantDetail.scheduledCareAnalytics")
+
+                NavigationLink {
+                    PlantInsightsView(plant: plant)
+                } label: {
+                    Label("Plant insights", systemImage: "leaf")
+                }
+                .accessibilityIdentifier("plantDetail.insights")
+
                 if plant.archivedAt == nil {
                     NavigationLink { CareRoutineReviewView(plant: plant) } label: {
                         Label("Review care routine", systemImage: "calendar.badge.clock")
@@ -75,6 +89,17 @@ struct PlantDetailView: View {
                         Label("Care routine and history", systemImage: "drop")
                     }
                     .accessibilityIdentifier("plantDetail.care")
+
+                    NavigationLink { QuietPeriodView(plant: plant) } label: {
+                        Label(
+                            (plant.quietPeriods ?? []).contains {
+                                $0.statusRaw == QuietPeriodStatus.active.rawValue ||
+                                $0.statusRaw == QuietPeriodStatus.scheduled.rawValue
+                            } ? "Manage Quiet Period" : "Quiet Period",
+                            systemImage: "pause.circle"
+                        )
+                    }
+                    .accessibilityIdentifier("plantDetail.quietPeriod")
                 }
 
                 NavigationLink { JournalView(plant: plant) } label: {
@@ -205,8 +230,9 @@ struct PlantDetailView: View {
     }
 
     private func deletePlant() {
-        modelContext.delete(plant)
         do {
+            try CareOpportunityLifecycle.deleteAll(for: plant.id, in: modelContext)
+            modelContext.delete(plant)
             try modelContext.save()
             dismiss()
         } catch {

@@ -24,6 +24,14 @@ enum TodayCare {
         return tasks
             .compactMap { task -> TodayCareItem? in
                 guard task.isEnabled, let plant = task.plant, plant.archivedAt == nil else { return nil }
+                let isPaused = (plant.quietPeriods ?? []).contains { period in
+                    period.statusRaw == QuietPeriodStatus.active.rawValue &&
+                    (period.taskSnapshots ?? []).contains { snapshot in
+                        snapshot.taskID == task.id &&
+                        snapshot.membershipStatusRaw == QuietPeriodMembershipStatus.active.rawValue
+                    }
+                }
+                guard !isPaused else { return nil }
                 let state = CareSchedule.state(for: task.dueDate, now: now, calendar: calendar)
                 if state == .upcoming, calendar.startOfDay(for: task.dueDate) > horizon { return nil }
                 return TodayCareItem(task: task, plant: plant, state: state)
@@ -92,6 +100,7 @@ struct TodayView: View {
                     careCheckIn
                     myGarden
                     journalPrompt
+                    gardenReflection
                     footer
                 }
                 .padding(.horizontal, FeedGoodTheme.contentPadding)
@@ -439,6 +448,16 @@ struct TodayView: View {
 
     private var journalPrompt: some View {
         RecentJournalView(selectedTab: $selectedTab)
+    }
+
+    /// The weekly look-back. Tapping a moment opens its source plant through
+    /// the same navigation path every other Today route uses.
+    private var gardenReflection: some View {
+        GardenReflectionView { plantID in
+            if plants.contains(where: { $0.id == plantID }) {
+                navigationPath = [plantID]
+            }
+        }
     }
 
     private var footer: some View {

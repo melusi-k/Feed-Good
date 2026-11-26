@@ -21,6 +21,7 @@ struct JournalView: View {
                 NavigationLink { PlantStoryView(plant: plant) } label: {
                     Label("Plant story: care and journal", systemImage: "clock.arrow.circlepath")
                 }.accessibilityIdentifier("journal.story")
+                PlantJournalPromptCard(plant: plant)
             }
             if plants.isEmpty {
                 ContentUnavailableView("Your garden story starts here", systemImage: "book.closed", description: Text("Add a plant in My Plants, then keep its notes and photos here."))
@@ -35,6 +36,7 @@ struct JournalView: View {
                         Text(entry.date.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
                     }
                     if let milestone = entry.milestone { Label(milestone.title, systemImage: "sparkle").font(.subheadline).foregroundStyle(FeedGoodTheme.leaf).accessibilityIdentifier("journal.milestoneLabel") }
+                    if let change = entry.changeKind { Label("Plant change: \(change.title)", systemImage: "arrow.triangle.2.circlepath").font(.subheadline).foregroundStyle(FeedGoodTheme.leaf).accessibilityIdentifier("journal.changeLabel") }
                     if let photo = entry.photoData {
                         PlantPhotoView(photoData: photo).frame(maxWidth: .infinity).frame(height: 190).clipped().accessibilityLabel("Journal photo")
                     }
@@ -75,6 +77,20 @@ struct JournalEditor: View {
     var entry: JournalEntry?
     @State private var selectedPlant: UUID?
     @State private var draft = JournalDraft()
+    @State private var entryType: EntryType = .observation
+
+    /// One record is one kind: a plain observation, a milestone or a plant change (PRD-018).
+    enum EntryType: String, CaseIterable, Identifiable {
+        case observation, milestone, change
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .observation: return "Observation"
+            case .milestone: return "Milestone"
+            case .change: return "Plant change"
+            }
+        }
+    }
     @State private var photoItem: PhotosPickerItem?
     @State private var importingPhoto = false
     @State private var errorMessage: String?
@@ -88,11 +104,23 @@ struct JournalEditor: View {
                     }.accessibilityIdentifier("journal.plant")
                 } else { Text(entry?.plant?.name ?? "Plant unavailable") }
                 DatePicker("Date", selection: $draft.date)
-                Picker("Milestone", selection: $draft.milestone) {
-                    Text("No milestone").tag(JournalMilestone?.none)
-                    ForEach(JournalMilestone.allCases) { Text($0.title).tag(Optional($0)) }
-                }.accessibilityIdentifier("journal.milestone")
-                Text("Optional observation, not a plant-health assessment. Use a note for any other moment.").font(.caption).foregroundStyle(.secondary)
+                Picker("Entry type", selection: $entryType) {
+                    ForEach(EntryType.allCases) { Text($0.title).tag($0) }
+                }.accessibilityIdentifier("journal.entryType")
+                if entryType == .milestone {
+                    Picker("Milestone", selection: $draft.milestone) {
+                        Text("No milestone").tag(JournalMilestone?.none)
+                        ForEach(JournalMilestone.allCases) { Text($0.title).tag(Optional($0)) }
+                    }.accessibilityIdentifier("journal.milestone")
+                }
+                if entryType == .change {
+                    Picker("Change", selection: $draft.changeKind) {
+                        ForEach(PlantChangeKind.allCases) { Text($0.title).tag(Optional($0)) }
+                    }.accessibilityIdentifier("journal.changeKind")
+                    Text("A change you made, not something the plant did. It never changes care tasks or due dates.").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("Optional observation, not a plant-health assessment. Use a note for any other moment.").font(.caption).foregroundStyle(.secondary)
+                }
                 TextField("What did you notice?", text: $draft.note, axis: .vertical).lineLimit(3...10).accessibilityIdentifier("journal.note")
                 Section {
                     if let photo = draft.photoData { PlantPhotoView(photoData: photo).frame(height: 180).clipped() }
@@ -113,7 +141,13 @@ struct JournalEditor: View {
             }
             .onAppear {
                 selectedPlant = entry?.plant?.id ?? plants.first?.id
-                if let entry { draft = JournalDraft(date: entry.date, note: entry.note, photoData: entry.photoData, milestone: entry.milestone) }
+                if let entry {
+                    draft = JournalDraft(date: entry.date, note: entry.note, photoData: entry.photoData, milestone: entry.milestone, changeKind: entry.changeKind)
+                    entryType = entry.changeKind != nil ? .change : (entry.milestone != nil ? .milestone : .observation)
+                }
+            }
+            .onChange(of: entryType) { _, type in
+                if type == .change, draft.changeKind == nil { draft.changeKind = .movedLocation }
             }
             .onChange(of: photoItem) { _, item in
                 guard let item else { return }
@@ -131,7 +165,14 @@ struct JournalEditor: View {
 
     private func save() {
         guard let plant = plants.first(where: { $0.id == selectedPlant }) else { errorMessage = "Choose a plant before saving."; return }
-        do { try JournalStore.save(draft, plant: plant, entry: entry, context: context); dismiss() }
+        // The type picker owns which structured kind applies; clear the other so one record stays one kind.
+        var saving = draft
+        switch entryType {
+        case .observation: saving.milestone = nil; saving.changeKind = nil
+        case .milestone: saving.changeKind = nil
+        case .change: saving.milestone = nil; if saving.changeKind == nil { saving.changeKind = .movedLocation }
+        }
+        do { try JournalStore.save(saving, plant: plant, entry: entry, context: context); dismiss() }
         catch { errorMessage = "Couldn't save this entry. Your draft is kept here. Try again." }
     }
 }

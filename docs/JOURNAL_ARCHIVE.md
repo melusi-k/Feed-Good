@@ -1,4 +1,4 @@
-# Journal archive and recovery contract (v1 and v2)
+# Journal archive and recovery contract (v1, v2 and v3)
 
 Set before the Journal schema is introduced.
 
@@ -19,3 +19,19 @@ Journal entries may optionally record New leaf, Flowering, Repotting or Recovery
 New exports use journal archive version 2 and retain the optional milestone string. Recovery accepts original version-1 archives without the field (nil), or version 2. An unknown milestone or a version-1 archive carrying a milestone is rejected before writes. Version-1 apps reject version 2 rather than silently dropping the observation. Entry-ID conflict comparisons include the milestone. The 25 MB and 1,000-entry limits and additive recovery rules are unchanged.
 
 Full-garden archive integrations must include this field and its conflict/validation semantics before accepting milestone records. This journal-only archive remains separate and still excludes care records and profile photos. Schema defaulting and disk reopen tests do not establish installed-store migration acceptance. Upgrade a retained pre-milestone install on a device and verify existing notes/photos before claiming that acceptance.
+
+
+## Quiet Period extension (archive v3)
+
+New exports use version 3 and add two optional arrays:
+
+- `quietPeriods`: stable period ID, owning plant ID, creation/start/end instants, lifecycle status, reason and activation/end timestamps.
+- `quietPeriodTaskSnapshots`: stable snapshot ID, parent period ID, scalar task UUID and title snapshot, membership state, signed remaining-day offset, original local due-time components, frozen interval, exact Next care override and capture/update timestamps.
+
+Version 1 and 2 archives remain importable. Missing v3 keys decode as empty, so older files do not lose compatibility. Version 1/2 files carrying v3-only records are invalid rather than silently dropping them.
+
+Before writes, recovery validates period and snapshot UUID uniqueness, plant ownership, snapshot-to-period references, lifecycle/membership enum values, date ordering, active-period membership consistency and the referenced enabled task for each active member. A plant may not have overlapping scheduled/active periods. Active periods must contain at least one active snapshot; deleted or disabled task snapshots remain valid audit history when their membership is marked accordingly.
+
+Recovery remains additive and idempotent. Existing same-ID Quiet Periods and snapshots are skipped only when every archived field and relationship matches; changed content is a conflict. New plants, tasks, periods and snapshots are assembled in an isolated context and committed together. Any invalid reference, conflict or save failure rejects the whole import without partial writes or mutation of existing records.
+
+The export includes archived and active plants' Quiet Period history. App settings and notification permissions remain excluded. Plant hard deletion still cascades locally through its Quiet Periods and snapshots; a previously exported archive can restore them as part of explicit recovery.

@@ -37,6 +37,14 @@ final class JournalUITests: XCTestCase {
         XCTAssertTrue(app.buttons["journal.export"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["journal.recover"].exists)
         XCTAssertTrue(app.staticTexts["journal.archiveScope"].exists)
+        // iOS 26 materializes lazy Form rows only once they scroll into view;
+        // the recovery-policy note sits below the fold, so scroll it on
+        // screen before expecting it.
+        var settingsScrolls = 0
+        while app.staticTexts["journal.recoveryPolicy"].exists == false, settingsScrolls < 8 {
+            app.swipeUp()
+            settingsScrolls += 1
+        }
         XCTAssertTrue(app.staticTexts["journal.recoveryPolicy"].exists)
         let settingsImage = XCTAttachment(screenshot: app.screenshot())
         settingsImage.name = "Settings journal archive controls"
