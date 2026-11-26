@@ -26,7 +26,14 @@ final class PlantScheduledCareAnalyticsUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Completion rate"].exists)
         // The empty-history row is below the initial viewport in this List.
         // Scroll it into the accessibility tree before asserting its identifier.
+        // The consistency section is above the opportunity history; scroll it
+        // into the accessibility tree first, then continue to the empty state.
         app.swipeUp()
+        let consistency = app.staticTexts["Care consistency"]
+        XCTAssertTrue(consistency.waitForExistence(timeout: 5))
+        let consistencyEmpty = app.descendants(matching: .any)["scheduledCareAnalytics.consistency.empty"]
+        XCTAssertTrue(consistencyEmpty.exists)
+
         app.swipeUp()
 
         let emptyHistory = app.descendants(matching: .any)["scheduledCareAnalytics.emptyHistory"]
