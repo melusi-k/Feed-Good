@@ -32,8 +32,10 @@ struct AppLaunchStateStorePersistenceTests {
             migrationPlan: FeedGoodMigrationPlan.self,
             configurations: [configuration]
         )
+        let emptyContext = ModelContext(container)
+        try emptyContext.save()
         #expect(FileManager.default.fileExists(atPath: configuration.url.path))
-        #expect(try ModelContext(container).fetch(FetchDescriptor<Plant>()).isEmpty)
+        #expect(try emptyContext.fetch(FetchDescriptor<Plant>()).isEmpty)
 
         let defaults = UserDefaults(suiteName: "AppLaunchStateStorePersistenceTests.empty.\(UUID().uuidString)")!
         let launchState = AppLaunchStateStore(
