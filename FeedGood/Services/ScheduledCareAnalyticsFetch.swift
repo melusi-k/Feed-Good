@@ -50,19 +50,26 @@ enum ScheduledCareAnalyticsFetch {
         )
     }
 
-    /// Only active memberships can pause an opportunity; ended history never
-    /// enters the read model. Scoped to the plant through the owning Quiet
-    /// Period so unrelated plants' memberships are neither loaded nor able
-    /// to invalidate this screen's query.
-    static func activeQuietMembershipsPredicate(plantID: UUID) -> Predicate<QuietPeriodTaskSnapshot> {
-        let active = QuietPeriodMembershipStatus.active.rawValue
-        return #Predicate<QuietPeriodTaskSnapshot> {
-            $0.membershipStatusRaw == active && $0.quietPeriod?.plant?.id == plantID
-        }
+    /// Quiet Periods owned by the plant. Core Data cannot translate a
+    /// membership -> period -> plant chained predicate, so the plant scope
+    /// is applied on the owning period and memberships are derived in
+    /// memory; unrelated plants' periods are neither loaded nor able to
+    /// invalidate this screen's query.
+    static func quietPeriodsPredicate(plantID: UUID) -> Predicate<QuietPeriod> {
+        #Predicate<QuietPeriod> { $0.plant?.id == plantID }
     }
 
-    static func activeQuietMemberships(plantID: UUID) -> FetchDescriptor<QuietPeriodTaskSnapshot> {
-        FetchDescriptor(predicate: activeQuietMembershipsPredicate(plantID: plantID))
+    static func quietPeriods(plantID: UUID) -> FetchDescriptor<QuietPeriod> {
+        FetchDescriptor(predicate: quietPeriodsPredicate(plantID: plantID))
+    }
+
+    /// Only active memberships can pause an opportunity; ended history never
+    /// enters the read model.
+    static func activeMemberships(in periods: [QuietPeriod]) -> [QuietPeriodTaskSnapshot] {
+        let active = QuietPeriodMembershipStatus.active.rawValue
+        return periods.flatMap { $0.taskSnapshots ?? [] }.filter {
+            $0.membershipStatusRaw == active
+        }
     }
 
     /// Care tasks for display titles; a deleted task's history keeps the
