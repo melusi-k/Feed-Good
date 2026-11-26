@@ -282,4 +282,33 @@ struct PlantScheduledCareAnalyticsTests {
         #expect(localCalendar.dateComponents([.day], from: period.start, to: period.end).day == 30)
         #expect(localCalendar.timeZone.identifier == "America/New_York")
     }
+
+    @Test func localCalendarPeriodsRespectSpringForwardAndFallBackDuration() throws {
+        var localCalendar = Calendar(identifier: .gregorian)
+        localCalendar.firstWeekday = 2
+        localCalendar.timeZone = TimeZone(identifier: "America/New_York")!
+
+        // Thirty local calendar days spanning spring-forward contain one
+        // fewer elapsed hour than thirty fixed 24-hour periods.
+        let springNow = ISO8601DateFormatter().date(from: "2026-03-15T16:00:00Z")!
+        let spring = try #require(
+            PlantScheduledCareAnalyticsSummary.recent30Days(now: springNow, calendar: localCalendar)
+        )
+        #expect(localCalendar.dateComponents([.day], from: spring.start, to: spring.end).day == 30)
+        #expect(spring.end.timeIntervalSince(spring.start) == (30 * 86_400) - 3_600)
+        #expect(localCalendar.component(.hour, from: spring.start) == 0)
+        #expect(localCalendar.component(.hour, from: spring.end) == 0)
+
+        // Thirty local calendar days spanning fall-back contain one
+        // additional elapsed hour; the period remains thirty calendar days.
+        let fallNow = ISO8601DateFormatter().date(from: "2026-11-02T17:00:00Z")!
+        let fall = try #require(
+            PlantScheduledCareAnalyticsSummary.recent30Days(now: fallNow, calendar: localCalendar)
+        )
+        #expect(localCalendar.dateComponents([.day], from: fall.start, to: fall.end).day == 30)
+        #expect(fall.end.timeIntervalSince(fall.start) == (30 * 86_400) + 3_600)
+        #expect(localCalendar.component(.hour, from: fall.start) == 0)
+        #expect(localCalendar.component(.hour, from: fall.end) == 0)
+    }
+
 }
