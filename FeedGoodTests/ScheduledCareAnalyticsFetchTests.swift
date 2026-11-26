@@ -75,11 +75,18 @@ struct ScheduledCareAnalyticsFetchTests {
         context.insert(plant)
         let task = CareTask(kind: .watering, intervalDays: 7, dueDate: date(1_800_000_000), plant: plant)
         context.insert(task)
-        let active = QuietPeriodTaskSnapshot(taskID: task.id, taskTitleSnapshot: "Watering")
+        let quietPeriod = QuietPeriod(plant: plant)
+        context.insert(quietPeriod)
+        let active = QuietPeriodTaskSnapshot(
+            taskID: task.id,
+            taskTitleSnapshot: "Watering",
+            quietPeriod: quietPeriod
+        )
         let removed = QuietPeriodTaskSnapshot(
             taskID: task.id,
             taskTitleSnapshot: "Watering",
-            membershipStatusRaw: QuietPeriodMembershipStatus.removed.rawValue
+            membershipStatusRaw: QuietPeriodMembershipStatus.removed.rawValue,
+            quietPeriod: quietPeriod
         )
         context.insert(active)
         context.insert(removed)
