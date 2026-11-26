@@ -4,7 +4,7 @@
 **Stage:** 3 — Care understanding, consistency and plant-health evidence  
 **Priority:** Proposed P2 capability  
 **Release:** Incremental delivery after the source-record contracts in PRD-022, PRD-023 and relevant plant-history foundations are stable  
-**Primary surfaces:** Plant Profile, Garden Profile (per-task streaks highlight), Plant Story, Growth Review and Today  
+**Primary surfaces:** Plant Profile (scheduled-care analytics and per-task consistency), Plant Story, Growth Review and Today  
 **Data posture:** Local-first, derived from authoritative user records; no duplicate care ledger
 
 ## 1. One-line goal
@@ -196,7 +196,7 @@ Unknown future source types must be preserved in the underlying data and either 
 - Use neutral labels such as “completed opportunities”, “skipped”, “deferred”, “not scheduled” and “records available”.
 - Avoid judgemental labels, red failure states, guilt language, competitive rankings and celebratory prompts that imply extra care is desirable.
 - Show the definition or an explanatory detail for every metric and streak.
-- The User Profile streak highlight may show separate summaries for individual care tasks, but each task must remain clearly labelled; never display a composite plant/garden streak.
+- Plant Profile may show separate summaries for individual care tasks, but each task must remain clearly labelled; never display a composite plant/garden streak.
 - Every chart/list item must navigate to the correct source record and plant.
 - Sparse-data states explain what is and is not known, without manufacturing percentages or trends.
 - Archived plant history is read-only and clearly identified.
@@ -344,15 +344,20 @@ These are dependency gates, not reasons to block the PRD document. Phase 0 must 
 - **Reflection:** [PRD-013 — Weekly Garden Reflection](PRD-013-weekly-garden-reflection.md), which continues to exclude streaks and scores; do not add task streaks to the reflection.
 - **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to record the approved narrow exception for private, descriptive per-task streak histories. PRD-013 Weekly Garden Reflection remains streak-free.
 - **Related proposals:** [#64 — Growth Review](https://github.com/melusi-k/Feed-Good/issues/64), [#65 — Weekly Garden Reflection](https://github.com/melusi-k/Feed-Good/issues/65), [#66 — Plant Check-ins](https://github.com/melusi-k/Feed-Good/issues/66), [#72 — Plant Changes Timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- **Implementation issue:** Scheduled-opportunity identity/lifecycle implementation is tracked in [issue #143](https://github.com/melusi-k/Feed-Good/issues/143). Scheduled-care analytics and per-task streak UI remain separate later slices, gated on #143 implementation and archive compatibility.
-- **Implementation status:** Not started. This document records the expanded product and technical contract for review.
+- **Scheduled-opportunity foundation:** implemented in merged PRs [#145](https://github.com/melusi-k/Feed-Good/pull/145) and [#150](https://github.com/melusi-k/Feed-Good/pull/150), including immutable opportunity identity, effective-due handling, archive compatibility and the inclusive 24-hour completion window.
+- **Recorded-care activity:** delivered in merged PR [#140](https://github.com/melusi-k/Feed-Good/pull/140).
+- **Scheduled-care analytics:** delivered in merged PRs [#153](https://github.com/melusi-k/Feed-Good/pull/153) and [#154](https://github.com/melusi-k/Feed-Good/pull/154), including the plant-profile entry point, transparent outcome denominator, date ranges and source-linked history.
+- **Per-task consistency streaks:** delivered in merged PR [#155](https://github.com/melusi-k/Feed-Good/pull/155). Current and longest runs are private, task-scoped and recomputed from source records.
+- **Habit distinction:** approved and documented in merged PR [#151](https://github.com/melusi-k/Feed-Good/pull/151). This release does not measure habit formation, automaticity or habit strength.
+- **Evidence-led plant insights:** delivered for currently available source classes in merged PR [#157](https://github.com/melusi-k/Feed-Good/pull/157). PRD-014 check-in evidence remains gated and is intentionally excluded until its source contract is delivered.
+- **Delivery status:** the recorded-activity, scheduled-analytics, per-task streak and delivered-source plant-insight slices are implemented. Broader PRD acceptance still requires release-level accessibility, offline, import/restore and representative-device performance validation; those are not claimed complete by the feature PRs.
 
 
 ## 15. Scheduled-opportunity contract status — 2026-11-25
 
 The PRD-022 identity/lifecycle contract is approved. The minimum persisted record has immutable opportunity UUID, CareTask UUID, plant ownership, immutable original `scheduledDueAt`, mutable `effectiveDueAt`, `open`/`completed`/`cancelled` state and optional CareEvent UUID. Passing `effectiveDueAt` makes an open opportunity due/unresolved; it becomes definitively overdue only after the approved PRD-024 completion window expires. V5 migration seeds at most one current open opportunity for each enabled, non-archived task with a valid due date; it does not reconstruct prior intervals or link historical CareEvents. Explicit Next care edits cancel/replace; disable/delete cancels; Quiet Period resume preserves opportunity identity and updates `effectiveDueAt` under PRD-020 while retaining original `scheduledDueAt`. Skip/snooze/defer are excluded. Existing CareEvents remain unlinked.
 
-Implementation and source/archive compatibility are tracked in issue #143. PRD-024 scheduled-care analytics and private per-task streak UI remain blocked until that implementation is merged and verified. The recorded-care activity foundation in PR #140 remains complete and unchanged.
+The foundation is implemented and verified in merged PRs #145 and #150. Scheduled-care analytics is delivered in #153/#154, and private per-task consistency streaks are delivered in #155. These slices consume the approved opportunity contract without changing source records or persisting derived streak values.
 
 ### Scheduled-opportunity boundary clarifications (approved 2026-11-25)
 
@@ -396,9 +401,9 @@ If the product later needs to understand whether a user has developed a habit, t
 
 ### 16.4 Acceptance criteria for this extension
 
-- [ ] Product copy and analytics distinguish care routine, activity, consistency, streak and habit.
-- [ ] No habit-formation or habit-strength metric is calculated from streaks, opportunities, CareEvents or app engagement.
-- [ ] Per-task streaks remain separate and do not aggregate into plant, garden or user-wide totals.
-- [ ] Consistency metrics disclose their period, scope, eligibility definition and denominator where applicable.
-- [ ] No UX, notification or growth mechanic rewards unnecessary, early or excessive plant care.
-- [ ] Any future habit research is separately scoped and requires explicit product approval before instrumentation or implementation.
+- [x] Product copy and analytics distinguish care routine, activity, consistency, streak and habit.
+- [x] No habit-formation or habit-strength metric is calculated from streaks, opportunities, CareEvents or app engagement.
+- [x] Per-task streaks remain separate and do not aggregate into plant, garden or user-wide totals.
+- [x] Consistency metrics disclose their period, scope, eligibility definition and denominator where applicable.
+- [x] No UX, notification or growth mechanic rewards unnecessary, early or excessive plant care.
+- [x] Any future habit research is separately scoped and requires explicit product approval before instrumentation or implementation.
