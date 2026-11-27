@@ -173,6 +173,10 @@ struct ProfileView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(FeedGoodTheme.muted)
                 .accessibilityAddTraits(.isHeader)
+                // Section anchor lives on the header, not the card: an
+                // identifier-bearing container replaces the identifiers of
+                // its identifier-bearing children in the accessibility tree.
+                .accessibilityIdentifier("profile.gardenStreak")
             VStack(alignment: .leading, spacing: 12) {
                 if let streak = gardenStreak(now: now), let coverageStart = streak.coverageStart {
                     Text("Garden Care Streak")
@@ -229,7 +233,6 @@ struct ProfileView: View {
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(FeedGoodTheme.surface, in: RoundedRectangle(cornerRadius: FeedGoodTheme.cardRadius))
-            .accessibilityIdentifier("profile.gardenStreak")
         }
     }
 
