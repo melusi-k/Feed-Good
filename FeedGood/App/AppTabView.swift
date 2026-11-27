@@ -34,28 +34,126 @@ enum AppTab: Int, Hashable, CaseIterable {
     }
 }
 
+private enum AppSheet: Identifiable {
+    case onboarding
+    case addPlant
+    case whatsNew(ReleaseNotesEntry)
+    case profile
+
+    var id: String {
+        switch self {
+        case .onboarding: "onboarding"
+        case .addPlant: "addPlant"
+        case .whatsNew(let entry): "whatsNew-\(entry.version)"
+        case .profile: "profile"
+        }
+    }
+}
+
 struct AppTabView: View {
+    let launchStateStore: AppLaunchStateStore
+
     @AppStorage("feedGood.appearance") private var appearanceRawValue = FeedGoodAppearance.system.rawValue
     @State private var selectedTab: AppTab = .today
-    @State private var showingProfile = false
+    @State private var activeSheet: AppSheet?
+    @State private var nextSheet: AppSheet?
+    @State private var lastPresentedSheet: AppSheet?
+    @State private var launchFlow: AppLaunchFlow?
+    @State private var launchChecked = false
 
     private var appearance: FeedGoodAppearance {
         FeedGoodAppearance(rawValue: appearanceRawValue) ?? .system
     }
 
+    private func present(_ sheet: AppSheet) {
+        lastPresentedSheet = sheet
+        activeSheet = sheet
+    }
+
+    private func startLaunchFlow() {
+        guard launchChecked == false else { return }
+        launchChecked = true
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
+        let flow = AppLaunchFlow(
+            stateStore: launchStateStore,
+            shortVersion: shortVersion,
+            versionIdentity: "\(shortVersion) (\(buildNumber))"
+        )
+        launchFlow = flow
+        switch flow.step() {
+        case .onboarding:
+            present(.onboarding)
+        case .whatsNew(let entry):
+            present(.whatsNew(entry))
+        case .none:
+            break
+        }
+    }
+
+    private func finishOnboarding(addPlant: Bool) {
+        launchFlow?.completeOnboarding()
+        nextSheet = addPlant
+            ? .addPlant
+            : launchFlow?.whatsNewEntry().map(AppSheet.whatsNew)
+        activeSheet = nil
+    }
+
+    private func handleSheetDismissal() {
+        let dismissedSheet = lastPresentedSheet
+        lastPresentedSheet = nil
+
+        switch dismissedSheet {
+        case .onboarding:
+            if let nextSheet {
+                self.nextSheet = nil
+                present(nextSheet)
+            }
+        case .addPlant:
+            presentWhatsNewIfNeeded()
+        case .whatsNew:
+            launchFlow?.markWhatsNewSeen()
+        case .profile, .none:
+            break
+        }
+    }
+
+    private func presentWhatsNewIfNeeded() {
+        guard let entry = launchFlow?.whatsNewEntry() else { return }
+        present(.whatsNew(entry))
+    }
+
     var body: some View {
         FeedGoodTabs(selection: $selectedTab, appearanceRawValue: $appearanceRawValue)
-        .buttonStyle(FeedGoodPressStyle())
-        .modifier(FeedGoodMotionAccessibility())
-        .tint(FeedGoodTheme.leaf)
-        .preferredColorScheme(appearance.preferredColorScheme)
-        .environment(\.showFeedGoodProfile, { showingProfile = true })
-        .sheet(isPresented: $showingProfile) {
-            ProfileView {
-                showingProfile = false
-                selectedTab = .settings
+            .buttonStyle(FeedGoodPressStyle())
+            .modifier(FeedGoodMotionAccessibility())
+            .tint(FeedGoodTheme.leaf)
+            .preferredColorScheme(appearance.preferredColorScheme)
+            .environment(\.showFeedGoodProfile, { present(.profile) })
+            .onAppear(perform: startLaunchFlow)
+            .sheet(item: $activeSheet, onDismiss: handleSheetDismissal) { sheet in
+                switch sheet {
+                case .onboarding:
+                    OnboardingFlowView(
+                        onSkip: { finishOnboarding(addPlant: false) },
+                        onAddFirstPlant: { finishOnboarding(addPlant: true) },
+                        onExploreFirst: { finishOnboarding(addPlant: false) }
+                    )
+                    .interactiveDismissDisabled()
+                case .addPlant:
+                    AddPlantView()
+                case .whatsNew(let entry):
+                    WhatsNewView(entry: entry) {
+                        activeSheet = nil
+                    }
+                    .presentationDetents([.medium, .large])
+                case .profile:
+                    ProfileView {
+                        activeSheet = nil
+                        selectedTab = .settings
+                    }
+                }
             }
-        }
     }
 }
 

@@ -4,9 +4,10 @@ import SwiftData
 @main
 struct FeedGoodApp: App {
     @UIApplicationDelegateAdaptor(FeedGoodAppDelegate.self) private var appDelegate
-    @StateObject private var reminderScheduler = CareReminderScheduler(boundary: LocalCareNotifications())
+    @StateObject private var reminderScheduler: CareReminderScheduler
     @StateObject private var notificationRouter = CareNotificationRouter.shared
     private let modelContainer: ModelContainer
+    private let launchStateStore: AppLaunchStateStore
 
     init() {
         FeedGoodNavigationAppearance.apply()
@@ -16,16 +17,30 @@ struct FeedGoodApp: App {
             schema: schema,
             isStoredInMemoryOnly: isUITesting
         )
-        if isUITesting == false {
-            let hasExistingPersistentStore = FileManager.default.fileExists(atPath: configuration.url.path)
-            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
-            let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
-            AppLaunchStateStore(
-                defaults: .standard,
-                hasExistingPersistentStore: hasExistingPersistentStore
-            )
-            .bootstrap(versionIdentity: "\(version) (\(build))")
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
+        let versionIdentity = "\(version) (\(build))"
+        let defaults = UserDefaults.standard
+        let launchStateStore = AppLaunchStateStore(
+            defaults: defaults,
+            hasExistingPersistentStore: isUITesting ? false : FileManager.default.fileExists(atPath: configuration.url.path)
+        )
+        let notificationBoundary: CareNotificationBoundary = isUITesting ? UITestCareNotifications() : LocalCareNotifications()
+        _reminderScheduler = StateObject(wrappedValue: CareReminderScheduler(boundary: notificationBoundary))
+        if isUITesting {
+            defaults.removeObject(forKey: AppLaunchStateStore.onboardingCompletedKey)
+            defaults.removeObject(forKey: AppLaunchStateStore.whatsNewLastSeenVersionKey)
+            let arguments = ProcessInfo.processInfo.arguments
+            defaults.set(arguments.contains("FEEDGOOD_ONBOARDING_RESET") == false, forKey: AppLaunchStateStore.onboardingCompletedKey)
+            if let index = arguments.firstIndex(of: "FEEDGOOD_WHATS_NEW_LAST_SEEN"), index + 1 < arguments.count {
+                defaults.set(arguments[index + 1], forKey: AppLaunchStateStore.whatsNewLastSeenVersionKey)
+            } else {
+                defaults.set(versionIdentity, forKey: AppLaunchStateStore.whatsNewLastSeenVersionKey)
+            }
+        } else {
+            launchStateStore.bootstrap(versionIdentity: versionIdentity)
         }
+        self.launchStateStore = launchStateStore
         do {
             modelContainer = try ModelContainer(
                 for: schema,
@@ -39,7 +54,7 @@ struct FeedGoodApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppTabView()
+            AppTabView(launchStateStore: launchStateStore)
                 .modifier(CareRemindersLifecycle())
                 .environmentObject(reminderScheduler)
                 .environmentObject(notificationRouter)

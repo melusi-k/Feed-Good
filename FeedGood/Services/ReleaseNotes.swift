@@ -20,6 +20,26 @@ enum ReleaseNotes {
     /// marketing version that should present a What's New sheet.
     static let entries: [ReleaseNotesEntry] = [
         ReleaseNotesEntry(
+            version: "0.1.102",
+            highlights: [
+                ReleaseNoteHighlight(
+                    symbol: "calendar.badge.checkmark",
+                    title: "A shared garden care streak",
+                    subtitle: "See your garden's daily care rhythm in one combined streak."
+                ),
+                ReleaseNoteHighlight(
+                    symbol: "calendar",
+                    title: "A clearer activity history",
+                    subtitle: "Explore garden activity across the calendar."
+                ),
+                ReleaseNoteHighlight(
+                    symbol: "leaf",
+                    title: "A more complete garden view",
+                    subtitle: "Keep your garden's care and progress together."
+                )
+            ]
+        ),
+        ReleaseNotesEntry(
             version: "0.1.46",
             highlights: [
                 ReleaseNoteHighlight(
@@ -63,5 +83,15 @@ enum ReleaseNotes {
 
     static func entry(forVersion version: String) -> ReleaseNotesEntry? {
         entries.first { $0.version == version }
+    }
+
+    /// The entry a build presents. An exact marketing-version match always
+    /// wins. A build whose marketing version has no bundled entry - a CI
+    /// build stamped with the run number, or a hotfix shipped without notes -
+    /// presents the newest bundled release's notes, labelled with that
+    /// entry's own version, instead of never showing What's New. Only an app
+    /// with no bundled entries at all presents nothing.
+    static func entryForPresentation(version: String) -> ReleaseNotesEntry? {
+        entry(forVersion: version) ?? entries.first
     }
 }

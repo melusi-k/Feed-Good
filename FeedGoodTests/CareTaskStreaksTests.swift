@@ -146,6 +146,33 @@ struct CareTaskStreaksTests {
         #expect(summary.longestStreak == 1)
     }
 
+    @Test func futureDatedCompletionIsNeutralUntilItsCompletionInstant() throws {
+        let first = completedPair(1, due: 0, completedAt: 100)
+        // Second opportunity is completed on time, but its recorded
+        // completion instant is still in the future relative to `now`.
+        let second = completedPair(2, due: 7 * day, completedAt: 7 * day + 3_600)
+        let now = date(7 * day + 3_599)
+        let before = try CareTaskStreaks.calculate(
+            taskID: taskID,
+            now: now,
+            opportunities: [first.0, second.0],
+            events: [first.1, second.1]
+        )
+        // Neutral like any not-yet-resolved outcome: the run neither
+        // advances nor breaks before the completion instant.
+        #expect(before.currentStreak == 1)
+        #expect(before.longestStreak == 1)
+
+        let atInstant = try CareTaskStreaks.calculate(
+            taskID: taskID,
+            now: date(7 * day + 3_600),
+            opportunities: [first.0, second.0],
+            events: [first.1, second.1]
+        )
+        #expect(atInstant.currentStreak == 2)
+        #expect(atInstant.longestStreak == 2)
+    }
+
     @Test func opportunitiesFromOtherTasksNeverMerge() throws {
         let own = completedPair(1, due: 0, completedAt: 100)
         let foreign = completedPair(2, due: day, completedAt: day)

@@ -99,7 +99,7 @@ Do not persist a separate user lifecycle stage, activation flag, engagement scor
 - Accounts, authentication, cloud sync, remote profiles or multiple gardens.
 - Remote analytics, advertising identifiers, attribution SDKs, cross-app tracking, telemetry uploads or server-side cohorts.
 - Growth campaigns, referrals, paid acquisition, subscriptions or monetisation changes.
-- Gamification, scores, rankings, pressure-based retention, and streaks used as engagement or retention mechanics. The narrow private, per-task descriptive-history exception approved under PRD-024 is not a retention mechanic and remains subject to PRD-022 lifecycle and data-integrity gates.
+- Gamification, scores, rankings, pressure-based retention, and streaks used as engagement or retention mechanics. PRD-024 permits only two private, descriptive care-consistency views: Plant Care Streaks scoped to an individual task, and the separate Garden Care Streak based on qualifying scheduled-care days. Neither is an engagement/retention mechanic; both remain subject to PRD-022 lifecycle and data-integrity gates.
 - Remote push, email, SMS or scheduled marketing messages.
 - AI diagnosis, computer vision, inferred plant health, weather/location inference or automatic care recommendations.
 - Replacing Today, My Plants, Care Routine, Journal, Plant Story, Feed Good Moments, Care Guide, Growth Review, Weekly Garden Reflection or reminders.
@@ -163,7 +163,7 @@ Establishes one product-level lifecycle and meaningful-engagement framework acro
 - PRD-026 owns onboarding and What's New.
 - Existing feature PRDs own plant, care, reminders, Today, Journal, Guide, profile, archive/lifecycle, quiet periods, growth review and reflection behavior.
 - No new analytics pipeline, persisted engagement state, account or activity ledger.
-- No streaks or scores as engagement/retention mechanics. PRD-024's private, descriptive per-task streak history is the sole approved exception; retain PRD-013's exclusion of streaks from Weekly Garden Reflection.
+- No streaks or scores as engagement/retention mechanics. PRD-024's private, descriptive Plant Care Streaks and separately defined Garden Care Streak are the only approved care-consistency views; retain PRD-013's exclusion of streaks from Weekly Garden Reflection.
 - Care consistency is not plant health.
 - Notifications remain local, optional and task-derived.
 
@@ -172,7 +172,7 @@ Establishes one product-level lifecycle and meaningful-engagement framework acro
 1. Audit the current app and map each lifecycle stage to existing screens, models, coordinators and tests. Identify only verified gaps.
 2. Confirm first-care definitions against current UX: a saved enabled care task is care setup; a recorded CareEvent is first completed care. Neither is required for a plant to be valid.
 3. Decide whether additional in-app return guidance is needed after the audit. Default: no new UI if Today and existing plant/story surfaces already provide an adequate return path.
-4. Review care analytics/streak/health-conclusion proposals against sections 4.6 and 8. PRD-024 is the approved narrow exception for private, descriptive streak histories scoped to one stable care-task identity. This does not authorise gamification, streak-based reminders, retention nudges, social comparison or combined plant/garden streaks. Implementation remains gated by PRD-022's scheduled-opportunity identity/lifecycle contract and PRD-024's own acceptance criteria.
+4. Review care analytics/streak/health-conclusion proposals against sections 4.6 and 8. PRD-024 is the authority for private, descriptive Plant Care Streaks (per stable task) and the distinct Garden Care Streak (all eligible opportunities completed on time per local calendar day, with no-opportunity days neutral). Neither authorises gamification, streak-based reminders, retention nudges, social comparison or habit inference. Implementation remains gated by PRD-022's scheduled-opportunity identity/lifecycle contract and PRD-024's own acceptance criteria.
 5. If business growth measurement is desired, create a separate privacy proposal. This PRD does not authorise telemetry, analytics SDKs, attribution or cross-user funnel measurement.
 
 These gates prevent duplicated shipped functionality and silent changes to established contracts; they are not permission to expand scope.

@@ -116,6 +116,9 @@ enum CareTaskStreaks {
                   event.plantID == opportunity.plantID else {
                 throw ScheduledCareAnalyticsError.invalidCompletionLink(opportunity.id)
             }
+            // A future-dated completion has not happened yet: neutral, like
+            // any other not-yet-resolved scheduled outcome.
+            guard event.completedAt <= now else { return .neutral }
             if CareOpportunityEligibility.qualifiesForStreak(
                 completedAt: event.completedAt,
                 effectiveDueAt: opportunity.effectiveDueAt
