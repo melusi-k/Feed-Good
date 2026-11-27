@@ -146,6 +146,28 @@ struct GardenCareStreaksTests {
         #expect(summary.currentRun == 1)
         #expect(summary.pendingDay?.dayStart == summary.days.last?.dayStart)
         #expect(summary.pendingDay?.opportunityIDs == [waiting.id])
+        #expect(summary.pendingDay?.pendingInWindowCount == 1)
+        #expect(summary.pendingDay?.pendingNotYetDueCount == 0)
+    }
+
+    @Test func pendingDayDoesNotBridgeQualifyingRunsAcrossIt() throws {
+        // A qualified day, then a day still waiting on its outcome, then
+        // another qualified day: the run must not span the unresolved day.
+        let first = completedPair(1, due: midday(0), completedAt: midday(0))
+        // Due at 20:00 on day 1: still inside its window at midday day 2.
+        let waiting = opportunity(2, due: midday(1).addingTimeInterval(8 * 3_600))
+        let third = completedPair(3, due: midday(2), completedAt: midday(2))
+        let summary = try GardenCareStreaks.calculate(
+            now: midday(2).addingTimeInterval(3_600),
+            calendar: utcCalendar,
+            opportunities: [first.0, waiting, third.0],
+            events: [first.1, third.1]
+        )
+        #expect(summary.days.map(\.state) == [.qualified, .pending, .qualified])
+        // Pending is provisional, not neutral: day 2 starts a fresh run.
+        #expect(summary.currentRun == 1)
+        #expect(summary.longestRun == 1)
+        #expect(summary.currentRunStart == summary.days.last?.dayStart)
     }
 
     @Test func notYetDueOpportunityKeepsItsDayFromResolvingEarly() throws {
@@ -161,6 +183,9 @@ struct GardenCareStreaksTests {
         #expect(summary.days.map(\.state) == [.pending])
         #expect(summary.currentRun == 0)
         #expect(summary.pendingDay != nil)
+        // Not-yet-due care is not inside its 24-hour window yet.
+        #expect(summary.pendingDay?.pendingNotYetDueCount == 1)
+        #expect(summary.pendingDay?.pendingInWindowCount == 0)
     }
 
     @Test func openOpportunityPastDeadlineFailsDayAndLaterCompletionCannotRepair() throws {
@@ -367,6 +392,35 @@ struct GardenCareStreaksTests {
         #expect(empty.days.isEmpty)
     }
 
+    @Test func coverageStartsAtFirstEligibleDayAndSkipsFullyExcludedDays() throws {
+        // Day 0 holds only an archived plant's open opportunity: neutral,
+        // and it must not open coverage.
+        let archived = opportunity(1, plantID: plantA, due: midday(0))
+        let eligible = completedPair(2, taskID: taskB, plantID: plantB, due: midday(1), completedAt: midday(1))
+        let summary = try GardenCareStreaks.calculate(
+            now: midday(3),
+            calendar: utcCalendar,
+            opportunities: [archived, eligible.0],
+            events: [eligible.1],
+            archivedPlantIDs: [plantA]
+        )
+        #expect(summary.days.map(\.state) == [.neutral, .qualified])
+        #expect(summary.coverageStart == summary.days.last?.dayStart)
+
+        // With only excluded records, coverage stays nil and the Profile
+        // keeps its empty state instead of a misleading start date.
+        let excludedOnly = try GardenCareStreaks.calculate(
+            now: midday(3),
+            calendar: utcCalendar,
+            opportunities: [archived],
+            events: [],
+            archivedPlantIDs: [plantA]
+        )
+        #expect(excludedOnly.coverageStart == nil)
+        #expect(excludedOnly.days.map(\.state) == [.neutral])
+        #expect(excludedOnly.currentRun == 0)
+    }
+
     @Test func halfOpenBoundariesAttributeEachOpportunityToExactlyOneDay() throws {
         let calendar = utcCalendar
         // One second before local midnight belongs to the previous day;
@@ -392,7 +446,9 @@ struct GardenCareStreaksTests {
 
         // 2026-03-08 is the 23-hour spring-forward day in New York.
         let shortDay = calendar.date(from: DateComponents(year: 2026, month: 3, day: 8))!
-        #expect(calendar.dateInterval(of: .day, for: shortDay)?.duration == 23 * 3_600)
+        // Sub-second tolerance: DateInterval duration is Double arithmetic and
+        // can drift below printed precision across the transition instant.
+        #expect(abs((calendar.dateInterval(of: .day, for: shortDay)?.duration ?? 0) - 23 * 3_600) < 0.5)
         let earlySameDay = completedPair(1, due: calendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 1, minute: 30))!, completedAt: calendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 1, minute: 45))!)
         let lateSameDay = completedPair(2, due: calendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 22, minute: 30))!, completedAt: calendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 22, minute: 45))!)
         let before = completedPair(3, due: calendar.date(from: DateComponents(year: 2026, month: 3, day: 7, hour: 23, minute: 30))!, completedAt: calendar.date(from: DateComponents(year: 2026, month: 3, day: 7, hour: 23, minute: 45))!)
@@ -427,7 +483,7 @@ struct GardenCareStreaksTests {
 
         // 2026-11-01 is the 25-hour fall-back day.
         let longDay = calendar.date(from: DateComponents(year: 2026, month: 11, day: 1))!
-        #expect(calendar.dateInterval(of: .day, for: longDay)?.duration == 25 * 3_600)
+        #expect(abs((calendar.dateInterval(of: .day, for: longDay)?.duration ?? 0) - 25 * 3_600) < 0.5)
         let onLongDay = completedPair(5, due: calendar.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 3, minute: 30))!, completedAt: calendar.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 4, minute: 30))!)
         let longSummary = try GardenCareStreaks.calculate(
             now: calendar.date(from: DateComponents(year: 2026, month: 11, day: 4))!,
