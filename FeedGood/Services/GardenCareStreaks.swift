@@ -27,6 +27,21 @@ struct GardenCareStreakDay: Equatable {
     let state: GardenCareStreakDayState
     /// Eligible source opportunities attributed to the day, oldest first.
     let opportunityIDs: [UUID]
+    /// Of a pending day's unresolved opportunities: how many have not
+    /// reached their effective due instant yet, so their 24-hour window
+    /// has not started.
+    let pendingNotYetDueCount: Int
+    /// Of a pending day's unresolved opportunities: how many are due and
+    /// inside their inclusive 24-hour window right now.
+    let pendingInWindowCount: Int
+
+    init(dayStart: Date, state: GardenCareStreakDayState, opportunityIDs: [UUID], pendingNotYetDueCount: Int = 0, pendingInWindowCount: Int = 0) {
+        self.dayStart = dayStart
+        self.state = state
+        self.opportunityIDs = opportunityIDs
+        self.pendingNotYetDueCount = pendingNotYetDueCount
+        self.pendingInWindowCount = pendingInWindowCount
+    }
 }
 
 /// Garden-wide descriptive run of qualifying scheduled-care days.
@@ -136,6 +151,8 @@ enum GardenCareStreaks {
             var eligibleIDs: [UUID] = []
             var hasUnresolved = false
             var hasFailure = false
+            var notYetDue = 0
+            var inWindow = 0
             for opportunity in bucket {
                 switch try resolution(
                     of: opportunity,
@@ -154,6 +171,11 @@ enum GardenCareStreaks {
                 case .unresolved:
                     eligibleIDs.append(opportunity.id)
                     hasUnresolved = true
+                    if opportunity.effectiveDueAt > now {
+                        notYetDue += 1
+                    } else {
+                        inWindow += 1
+                    }
                 }
             }
             let state: GardenCareStreakDayState
@@ -169,37 +191,48 @@ enum GardenCareStreaks {
             } else {
                 state = .qualified
             }
-            days.append(GardenCareStreakDay(dayStart: dayStart, state: state, opportunityIDs: eligibleIDs))
+            days.append(GardenCareStreakDay(dayStart: dayStart, state: state, opportunityIDs: eligibleIDs, pendingNotYetDueCount: notYetDue, pendingInWindowCount: inWindow))
         }
 
         // Runs: qualifying days advance, failed days interrupt, neutral
-        // no-opportunity days are skipped, and pending days are neither
-        // counted nor declared.
+        // no-opportunity days are skipped. Pending days never join a run:
+        // they reset the accumulator so a later qualifying day cannot
+        // bridge a day whose outcome is still unresolved. The reported
+        // current run still ends at the latest resolved day.
         var currentRun: [GardenCareStreakDay] = []
         var longestRun: [GardenCareStreakDay] = []
+        var lastResolvedRun: [GardenCareStreakDay] = []
         for day in days {
             switch day.state {
             case .qualified:
                 currentRun.append(day)
+                lastResolvedRun = currentRun
                 if currentRun.count > longestRun.count {
                     longestRun = currentRun
                 }
             case .failed:
                 currentRun = []
-            case .neutral, .pending:
+                lastResolvedRun = []
+            case .neutral:
                 continue
+            case .pending:
+                currentRun = []
             }
         }
 
         return GardenCareStreakSummary(
-            currentRun: currentRun.count,
+            currentRun: lastResolvedRun.count,
             longestRun: longestRun.count,
-            currentRunStart: currentRun.first?.dayStart,
+            currentRunStart: lastResolvedRun.first?.dayStart,
             longestRunStart: longestRun.first?.dayStart,
             longestRunEnd: longestRun.last?.dayStart,
-            currentRunOpportunityIDs: currentRun.flatMap(\.opportunityIDs),
+            currentRunOpportunityIDs: lastResolvedRun.flatMap(\.opportunityIDs),
             longestRunOpportunityIDs: longestRun.flatMap(\.opportunityIDs),
-            coverageStart: days.first?.dayStart,
+            // Coverage begins on the first day with at least one eligible
+            // opportunity; days whose records are all excluded (archived
+            // plants, active Quiet Periods) do not open coverage, and a
+            // garden with only excluded records keeps the empty state.
+            coverageStart: days.first(where: { !$0.opportunityIDs.isEmpty })?.dayStart,
             pendingDay: days.first(where: { $0.state == .pending && $0.dayStart <= now }),
             days: days
         )
