@@ -540,26 +540,37 @@ struct GardenCareStreaksTests {
     }
 
     @Test func largeHistoryCalculatesDeterministically() throws {
-        // 400 qualifying days across two plants: full-history coverage with
-        // no truncation, sampling or derived cache.
+        // Two years of daily opportunities across two plants (730 days,
+        // 1,460 records): full-history coverage with no truncation, sampling
+        // or derived cache. The 5-second wall-clock bound is a generous smoke
+        // bound for a pure computation that normally completes in
+        // milliseconds; it guards against accidental superlinear growth.
+        let dayCount = 730
         var opportunities: [ScheduledCareOpportunitySnapshot] = []
         var events: [ScheduledCareEventSnapshot] = []
-        for offset in 0..<400 {
+        opportunities.reserveCapacity(dayCount * 2)
+        events.reserveCapacity(dayCount * 2)
+        for offset in 0..<dayCount {
             let a = completedPair(10_000 + offset, taskID: taskA, plantID: plantA, due: midday(offset), completedAt: midday(offset))
             let b = completedPair(20_000 + offset, taskID: taskB, plantID: plantB, due: midday(offset).addingTimeInterval(-3_600), completedAt: midday(offset).addingTimeInterval(-3_600))
             opportunities.append(contentsOf: [a.0, b.0])
             events.append(contentsOf: [a.1, b.1])
         }
+        let started = Date()
         let summary = try GardenCareStreaks.calculate(
-            now: midday(401),
+            now: midday(dayCount + 1),
             calendar: utcCalendar,
             opportunities: opportunities,
             events: events
         )
-        #expect(summary.days.count == 400)
-        #expect(summary.currentRun == 400)
-        #expect(summary.longestRun == 400)
-        #expect(summary.currentRunOpportunityIDs.count == 800)
+        let elapsed = Date().timeIntervalSince(started)
+        #expect(summary.days.count == dayCount)
+        #expect(summary.days.allSatisfy { $0.state == .qualified })
+        #expect(summary.currentRun == dayCount)
+        #expect(summary.longestRun == dayCount)
+        #expect(summary.currentRunOpportunityIDs.count == dayCount * 2)
         #expect(summary.coverageStart == summary.days.first?.dayStart)
+        #expect(summary.days[dayCount - 1].opportunityIDs.count == 2)
+        #expect(elapsed < 5)
     }
 }
