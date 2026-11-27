@@ -7,10 +7,10 @@ Diagrams are grouped by their owning product requirements document (PRD). Direct
 | PRD | Diagram | Status |
 |---|---|---|
 | [PRD-001 — My Plants](../PRDS/PRD-001-my-plants.md) | [Application architecture](PRD-001-my-plants/application-architecture.svg) | Current architecture snapshot; cross-cutting anchor |
-| [PRD-022 — Care Activity Lifecycle and Occurrence Management](../PRDS/PRD-022-care-activity-lifecycle.md) | [Care activity lifecycle](PRD-022-care-activity-lifecycle/care-activity-lifecycle.svg) | Conceptual model; design gates remain open |
-| [PRD-020 — Seasonal and Quiet Periods](../PRDS/PRD-020-seasonal-quiet-periods.md) | [Quiet period scheduling contract](PRD-020-seasonal-quiet-periods/quiet-period-scheduling.svg) | Proposal; pause/resume decisions open |
-| [PRD-009 — Settings & Data Portability](../PRDS/PRD-009-settings-data-portability.md) | [Export and recovery](PRD-009-settings-data-portability/export-recovery.svg) | V2 target contract; distinguish from delivered implementation |
-| [PRD-024 — Care Insights and Plant Health Story](../PRDS/PRD-024-care-insights-and-plant-health-story.md) | [Care insights and plant story](PRD-024-care-insights-and-plant-health-story/care-insights-data-lineage.svg) | Proposed derived experience; source contracts govern |
+| [PRD-022 — Care Activity Lifecycle and Occurrence Management](../PRDS/PRD-022-care-activity-lifecycle.md) | [Care activity lifecycle](PRD-022-care-activity-lifecycle/care-activity-lifecycle.svg) | Delivered lifecycle foundation and opportunity ledger; skip/snooze deferred |
+| [PRD-020 — Seasonal and Quiet Periods](../PRDS/PRD-020-seasonal-quiet-periods.md) | [Quiet period scheduling contract](PRD-020-seasonal-quiet-periods/quiet-period-scheduling.svg) | Delivered pause-clock contract (#121–125); issue #74 closed |
+| [PRD-009 — Settings & Data Portability](../PRDS/PRD-009-settings-data-portability.md) | [Export and recovery](PRD-009-settings-data-portability/export-recovery.svg) | Delivered archive v1–v5; additive versions governed by owning PRDs |
+| [PRD-024 — Care Insights and Plant Health Story](../PRDS/PRD-024-care-insights-and-plant-health-story.md) | [Care insights and plant story](PRD-024-care-insights-and-plant-health-story/care-insights-data-lineage.svg) | Approved contract; analytics, streaks and insights slice delivered; check-ins gated |
 
 ## Maintenance rules
 
