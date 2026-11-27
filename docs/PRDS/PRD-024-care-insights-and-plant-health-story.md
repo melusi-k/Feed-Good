@@ -1,10 +1,10 @@
 # PRD-024 — Care Analytics, Streaks & Plant Health Insights
 
-**Status:** Expanded draft for product and technical decision review; PRD-027 alignment recorded; implementation gates remain open  
+**Status:** Product contract approved 2026-11-26; implementation and release-hardening gates remain open  
 **Stage:** 3 — Care understanding, consistency and plant-health evidence  
 **Priority:** Proposed P2 capability  
 **Release:** Incremental delivery after the source-record contracts in PRD-022, PRD-023 and relevant plant-history foundations are stable  
-**Primary surfaces:** Plant Profile (scheduled-care analytics and per-task consistency), Plant Story, Growth Review and Today  
+**Primary surfaces:** Garden Profile (Garden Care Streak), Plant Profile (Plant Care Streaks), Plant Story, Growth Review and Today  
 **Data posture:** Local-first, derived from authoritative user records; no duplicate care ledger
 
 ## 1. One-line goal
@@ -20,7 +20,7 @@ Care information is currently distributed across schedules, care outcomes, check
 3. **Plant story and health evidence:** What has the user observed about this plant, what has visibly changed, and what can reasonably be said from the available evidence?
 
 The product must keep these questions distinct. A care metric is not a plant-health measurement. A streak is not a judgement of a user's commitment or a reason to perform unnecessary interventions. An observation is not a diagnosis.
-- Any proposed streak is a private, descriptive history for one care task—not an engagement, retention or plant-health metric.
+- Plant Care Streaks are private, descriptive histories for one care task. The Garden Care Streak is a separate, private, descriptive garden-wide summary of qualifying scheduled-care days. Neither is an engagement, retention or plant-health metric.
 
 Success means users can understand their own records, spot meaningful changes, and navigate from every displayed result to the records that support it.
 
@@ -89,9 +89,9 @@ The denominator and treatment of skipped/deferred outcomes must be consistent wi
 
 No metric may claim that a user is a good/bad plant owner or that a plant is healthy/unhealthy.
 
-### 5.2 Care consistency streaks
+### 5.2 Plant Care Streaks (per-task consistency)
 
-Provide a private, informational consistency history for **each individual care task**, calculated from that task's eligible scheduled opportunities—not raw event volume. A watering routine and a feeding routine therefore have separate histories, even when they belong to the same plant.
+Provide a private, informational **Plant Care Streak** for each individual care task, calculated from that task's eligible scheduled opportunities—not raw event volume. A watering routine and a feeding routine therefore have separate Plant Care Streaks, even when they belong to the same plant. The Garden Care Streak in §5.2.1 is a distinct garden-level measure and must never be presented as a combined Plant Care Streak.
 
 Initial product contract:
 
@@ -114,14 +114,44 @@ Initial product contract:
 - Longest historical streak for that task, with its date range and eligible-opportunity count.
 - Recent history for that task, including interruptions and neutral periods.
 
-**Explicitly excluded**
+**Explicitly excluded from Plant Care Streaks**
 
-- Plant-wide streaks that combine multiple care tasks.
-- Garden-wide or collection-wide streaks, scores or consistency totals.
+- Plant-wide Plant Care Streaks that combine multiple care tasks.
+- Combining Plant Care Streak counts into a garden-level score or total.
 - Streak milestones, badges, rewards, targets, leaderboards, social sharing or streak-loss notifications.
 - Inclusion of streaks in PRD-013 Weekly Garden Reflection.
 
-The plant may display separate task-level summaries together, but must label each task clearly and must not calculate or imply a combined plant/garden streak.
+The Plant Profile may display separate Plant Care Streak summaries together, but must label each task clearly. It must not calculate or imply a combined Plant Care Streak. The Garden Care Streak is displayed separately on the Garden Profile under §5.2.1.
+
+
+
+### 5.2.1 Garden Care Streak (garden-wide scheduled-care days)
+
+Provide a separate, private, descriptive **Garden Care Streak** representing consecutive qualifying local calendar days across the user's active garden. It is not a sum, average, maximum or relabelling of Plant Care Streaks. It is calculated directly from all eligible scheduled-care opportunities across the garden.
+
+**Approved qualification contract (2026-11-26):**
+
+- **Qualification rule: all.** For a local calendar day to qualify, every eligible scheduled-care opportunity whose authoritative `effectiveDueAt` falls within that local day must have an authoritative linked CareEvent completed on time.
+- **Period: local calendar day.** Use the user's configured calendar/time zone, injected into a deterministic calculator. Local day boundaries are half-open: [local midnight, next local midnight). Calendar days may therefore be 23, 24 or 25 elapsed hours across daylight-saving transitions.
+- **On-time definition:** use the shared inclusive 24-hour opportunity grace window [effectiveDueAt, effectiveDueAt + 24 hours]. Do not substitute a calendar-day deadline for this opportunity-specific deadline.
+- **Pending day:** a day with one or more eligible opportunities still open within their grace windows remains provisional. Do not count it as a success or a failure until all its eligible opportunities have resolved or their individual grace deadlines have expired.
+- **Failed day:** if any eligible opportunity is completed outside its grace window, or remains open after its deadline, that day does not qualify. A later completion cannot repair the day or restore a broken run.
+- **Neutral day:** a local day with no eligible opportunities does not advance or break the Garden Care Streak. The streak is a run of consecutive qualifying scheduled-care days, with no-opportunity days skipped; it does not assert that the user should perform care every calendar day.
+- **Eligibility:** cancelled opportunities are excluded. Disabled tasks and active Quiet Period intervals remain neutral under the owning lifecycle contract. Archived plants generate no new eligible obligations; open opportunities made neutral by archive must not fail the day. Historical completed opportunities remain part of the historical garden record for the day on which they were due.
+- **Scope:** include eligible opportunities for all non-deleted plants in the user's local garden, regardless of care type or plant schedule. A plant/task added later contributes only from its first persisted eligible opportunity; do not backfill missing historical opportunities or infer past care.
+- **Corrections:** recompute affected historical days from authoritative opportunity and CareEvent state after completion correction/deletion, schedule edits, Quiet Period changes, archive/restore and import. Preserve the source lifecycle's identity and audit rules.
+- **No incentives:** do not encourage early, additional or unnecessary care to protect the Garden Care Streak. Plant need and the authoritative schedule always take precedence. No rewards, badges, targets, leaderboards, social comparison, streak-loss notifications or retention nudges.
+- **No habit inference:** the Garden Care Streak is not a habit score or a measure of motivation, commitment, automaticity or plant health.
+
+**Garden Care Streak outputs and presentation:**
+
+- Current run of qualifying scheduled-care days and its local start date.
+- Longest historical run and its local date range.
+- A clear pending state while any opportunity in the current candidate day remains within its grace window.
+- An explanation that all due scheduled care must be completed on time, days with no scheduled care are neutral, and a streak is not a daily-care target.
+- Display on Garden Profile with the exact local time-zone basis and coverage start. Do not place it in Plant Profile as a plant-level streak.
+
+The Garden Care Streak and Plant Care Streaks must have separate names, definitions, calculators, outputs and UI labels. Never call both simply “streak” without context, and never derive one by aggregating the displayed counts of the other.
 
 ### 5.3 Plant-health insights and conclusions
 
@@ -196,7 +226,8 @@ Unknown future source types must be preserved in the underlying data and either 
 - Use neutral labels such as “completed opportunities”, “skipped”, “deferred”, “not scheduled” and “records available”.
 - Avoid judgemental labels, red failure states, guilt language, competitive rankings and celebratory prompts that imply extra care is desirable.
 - Show the definition or an explanatory detail for every metric and streak.
-- Plant Profile may show separate summaries for individual care tasks, but each task must remain clearly labelled; never display a composite plant/garden streak.
+- Garden Profile may display the Garden Care Streak as defined in §5.2.1.
+- Plant Profile may display separately labelled Plant Care Streaks for individual tasks. Never present the Garden Care Streak as a plant-level metric or combine Plant Care Streak counts into it.
 - Every chart/list item must navigate to the correct source record and plant.
 - Sparse-data states explain what is and is not known, without manufacturing percentages or trends.
 - Archived plant history is read-only and clearly identified.
@@ -228,14 +259,15 @@ Included in the local-first app. No account, network service, subscription or th
 - [ ] Each displayed result can navigate to its source records.
 
 ### Streaks
-- [ ] Streaks use eligible scheduled opportunities, not raw event count.
-- [ ] Completed, skipped, deferred, unresolved, disabled, paused and no-due periods follow the contract in §5.2.
-- [ ] A streak cannot incentivise unnecessary or early care.
-- [ ] Each streak is scoped to one stable care-task identity; distinct tasks never share or inherit a streak.
-- [ ] Current and longest streaks are deterministic and traceable to that task's source opportunities.
-- [ ] No plant-wide, garden-wide or collection-wide streak/score is calculated or displayed.
-- [ ] Streaks do not create reminders, retention nudges, rewards, badges, targets, competition or streak-loss messaging.
-- [ ] Streaks are not included in PRD-013 Weekly Garden Reflection.
+- [ ] Plant Care Streaks remain scoped to one stable care-task identity; distinct tasks never share or inherit a Plant Care Streak.
+- [ ] The Garden Care Streak is a separate calculation over all eligible scheduled-care opportunities across the active garden; it is never derived by summing or combining Plant Care Streak outputs.
+- [ ] Garden Care Streak qualification uses the all-opportunities rule and local calendar-day period in §5.2.1.
+- [ ] Pending, failed and neutral days follow the opportunity grace, cancellation, Quiet Period and archive rules in §5.2.1.
+- [ ] Local day boundaries, 23/24/25-hour days, time-zone changes and DST are deterministic and tested.
+- [ ] New plants/tasks do not create fabricated historical opportunities; coverage start is disclosed.
+- [ ] Current and longest runs are traceable to source opportunities and local dates.
+- [ ] Neither streak incentivises unnecessary or early care, or creates reminders, retention nudges, rewards, badges, targets, competition or streak-loss messaging.
+- [ ] Neither streak is included in PRD-013 Weekly Garden Reflection.
 - [ ] Source corrections and historical edits recompute results without fabricating events.
 
 ### Plant-health insights
@@ -258,9 +290,10 @@ Deliver in independently reviewable phases, with one coherent PRD and explicit d
 1. **Phase 0 — Contract and inventory:** Confirm source schemas and lifecycle semantics in PRD-022/023 and PRD-014/018/012; map fields and missing data; approve metric catalogue, time rules and insight evidence classes.
 2. **Phase 1 — Plant Story foundation:** Build deterministic source aggregation, ordering, navigation and sparse-data states. No analytics scores or streak UI.
 3. **Phase 2 — Care analytics:** Add plant-level activity summaries and eligible-opportunity metrics; add collection aggregation only after plant-level correctness and source coverage are proven.
-4. **Phase 3 — Per-task care streaks:** Add a separate calculator and history for each stable care-task identity. Do not calculate plant-wide or collection-wide streaks. This phase remains blocked until PRD-022 approves the scheduled-opportunity identity and lifecycle contract.
-5. **Phase 4 — Evidence-led plant insights:** Add approved deterministic templates over check-ins, journal/plant-change records and comparable Growth Review evidence. No AI interpretation.
-6. **Phase 5 — Hardening and release:** Validate edits/deletes, time-zone changes, quiet periods, pause/disable, archive/restore, import/export, offline, accessibility and performance.
+4. **Phase 3 — Plant Care Streaks:** Add a separate calculator and history for each stable care-task identity. This remains separate from any garden-level calculation.
+5. **Phase 3b — Garden Care Streak:** Add a separate pure calculator over all eligible garden opportunities, using the all-opportunities/local-calendar-day contract in §5.2.1. This is not an aggregation of Plant Care Streak counts and requires explicit pending/failed/neutral day handling plus DST/time-zone coverage.
+6. **Phase 4 — Evidence-led plant insights:** Add approved deterministic templates over check-ins, journal/plant-change records and comparable Growth Review evidence. No AI interpretation.
+7. **Phase 5 — Hardening and release:** Validate edits/deletes, time-zone changes, quiet periods, pause/disable, archive/restore, import/export, offline, accessibility and performance.
 
 Each phase requires its own implementation issue or sub-issue with testable acceptance criteria. Do not start implementation until the product decisions in §13 are approved and the required source contracts are stable.
 
@@ -274,13 +307,14 @@ The product defaults below are approved for this PRD:
 2. **Analytics scope:** Plant-level metrics ship first. Collection analytics follow after denominator and cross-plant semantics are validated.
 3. **Completion rate:** Completed eligible opportunities divided by resolved eligible opportunities. Skipped and other final non-completion outcomes remain separately visible; unresolved opportunities are reported separately.
 4. **Deferred care:** A deferred occurrence moves to its authoritative rescheduled due boundary and is counted once, never at both the original and new due dates.
-5. **Streak semantics:** Consecutive eligible opportunities for one individual care task, completed within the approved completion window. A final skip or definitively overdue unresolved opportunity interrupts that task's current streak.
-6. **Neutral intervals:** Disabled tasks, explicit pauses, valid quiet periods and periods when that task has no eligible care due neither advance nor break its streak.
-7. **Streak granularity:** Per stable care-task identity only. No plant-wide, garden-wide or collection-wide streak, score or combined consistency total.
-8. **Health language:** Use “plant insights” / “evidence-led observations”, not definitive health conclusions. No diagnoses, health scores or causal claims.
-9. **Evidence threshold:** A trend requires at least two comparable, dated observations of the same attribute. A single observation is a recorded observation, not a trend. Photo comparisons are user-directed and do not imply automated image interpretation.
-10. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The default preset is still a UX decision; evaluate a recent 30-local-calendar-day window as the leading option before locking it.
-11. **Archived plants:** Exclude archived plants from active collection metrics by default; retain read-only individual history.
+5. **Plant Care Streak semantics:** Consecutive eligible opportunities for one individual care task, completed within the approved completion window. A late completion or definitively overdue unresolved opportunity interrupts that task's current run.
+6. **Garden Care Streak semantics (approved 2026-11-26):** All eligible opportunities due on a local calendar day must be completed within their individual inclusive 24-hour grace windows for that day to qualify. Days with no eligible opportunities are neutral and skipped. A day remains pending until all opportunities resolve or expire. The current/longest Garden Care Streak is a run of qualifying scheduled-care days across all active garden plants; it is separate from Plant Care Streaks.
+7. **Neutral intervals:** Disabled tasks, explicit pauses, valid quiet periods and periods when that task has no eligible care due neither advance nor break its Plant Care Streak. Garden Care Streak neutral days follow §5.2.1.
+8. **Streak granularity:** Plant Care Streaks are per stable care-task identity. The separately approved Garden Care Streak is garden-wide and day-based; it is not a combined Plant Care Streak, score or sum of task counts.
+9. **Health language:** Use “plant insights” / “evidence-led observations”, not definitive health conclusions. No diagnoses, health scores or causal claims.
+10. **Evidence threshold:** A trend requires at least two comparable, dated observations of the same attribute. A single observation is a recorded observation, not a trend. Photo comparisons are user-directed and do not imply automated image interpretation.
+11. **Periods:** Provide a user-selectable date range and clearly labelled local-calendar presets. The default preset is still a UX decision; evaluate a recent 30-local-calendar-day window as the leading option before locking it.
+12. **Archived plants:** Exclude archived plants from active collection metrics by default; retain read-only individual history.
 
 ### 13.2 Technical decisions established from the current repository
 
@@ -290,13 +324,13 @@ The following findings were checked against the current `main` source and existi
 | --- | --- | --- |
 | Care task | `CareTask` stores task ID, interval, current `dueDate`, enabled/reminder flags and plant relationship | Treat it as the recurring task definition and current schedule pointer; do not duplicate it |
 | Care history | `CareEvent` stores stable event ID, task ID/title snapshot, completion instant, note and plant relationship | Treat it as immutable-in-meaning historical evidence, subject to the approved history-correction policy |
-| Occurrence identity | No persisted scheduled-occurrence identity or skip/defer outcome is present in the current `CareTask`/`CareEvent` model | **Required upstream change in PRD-022:** introduce a stable occurrence identity and explicit lifecycle outcome before completion-rate or streak calculations ship |
+| Occurrence identity | V6 persists `CareOpportunity` with stable opportunity/task/plant identity, immutable `scheduledDueAt`, mutable `effectiveDueAt`, lifecycle status and optional linked CareEvent | Use this authoritative source for scheduled analytics and streaks; do not backfill prior opportunities or unlinked historical CareEvents |
 | Recurrence | `CareRecorder.complete` advances `dueDate` from the actual completion timestamp plus interval; `CareSchedule` uses an injected/default `Calendar` | Preserve this existing recurrence contract; PRD-024 must not change schedule advancement |
-| Pause | Current task pause is represented by `CareTask.isEnabled`; quiet periods are a separate PRD-020 capability and are not yet represented in the current model | Exclude disabled tasks. Quiet-period exclusion becomes active only when PRD-020 supplies persisted, auditable boundaries and affected-task scope |
+| Pause | Persisted Quiet Period and task-membership records are integrated with the V6 opportunity lifecycle | Treat active Quiet Period intervals as neutral; resume preserves opportunity identity and updates `effectiveDueAt` under PRD-020 calendar/DST rules |
 | Observations | Current `JournalEntry` supports dated notes, photos, milestones and typed plant-change records | Use these as first-release evidence sources; do not pretend a separate `PlantCheckIn` model already exists |
 | Check-ins | PRD-014 leaves the `JournalEntry` extension vs separate `PlantCheckIn` schema unresolved | Consume typed check-ins only after PRD-014 settles its schema and archive contract |
 | Structured care outcomes | PRD-023 is the intended source for typed care observations; current `CareEvent` source does not yet expose those approved fields | Integrate only after PRD-023 schema and migration are approved; notes are not mined or reclassified as structured measurements |
-| Archive | `JournalArchive` version 2 exports plants, journal entries, care tasks and care events, with stable IDs and optional extension keys | Do not export derived analytics/streak caches as authoritative data. Rebuild projections from source records after restore. Any new occurrence/outcome/quiet-period records require a versioned, backward-compatible archive extension |
+| Archive | JournalArchive v5 includes the scheduled-opportunity and Quiet Period compatibility delivered with PR #150 | Do not export derived analytics/streak caches. Rebuild projections from source records after restore; preserve the versioned source-record compatibility contract |
 | Persistence | App uses SwiftData locally, with isolated in-memory/temp stores in tests | Keep calculations local and offline; no remote service or third-party analytics |
 
 ### 13.3 Technical contracts approved for implementation planning
@@ -323,17 +357,17 @@ The following findings were checked against the current `main` source and existi
 
 These cannot be honestly marked resolved by PRD-024 alone:
 
-- **PRD-022:** the minimum scheduled-opportunity identity/lifecycle contract is approved on 2026-11-25 and implementation is tracked in issue #143. Skip/snooze/defer are explicitly excluded from the first release. The remaining gate is implementation plus migration/archive compatibility, not another product identity decision.
-- **PRD-020:** exact quiet-period pause/resume policy, affected-task scope and persisted interval representation.
+- **PRD-022:** the scheduled-opportunity identity/lifecycle contract and implementation are complete in merged PRs #145 and #150; issue #143 is closed. Skip/snooze/defer remain excluded from the first release. This is no longer a blocker for analytics or streak calculation.
+- **PRD-020:** quiet-period pause/resume policy, affected-task scope and persisted interval representation are delivered in merged PRs #121–#125 (V4 persistence, pause/resume lifecycle, care-workflow integration and JournalArchive v3) and integrated with the V6 opportunity lifecycle. The delivered Quiet Period integration is the neutral-interval source for analytics and streaks; it is no longer a gate.
 - **PRD-023:** final typed care-outcome fields, validation and archive representation.
 - **PRD-014:** `JournalEntry` extension versus a dedicated `PlantCheckIn` model, plus its export/restore and evidence semantics.
 - **PRD-012:** exact photo comparison contract and what provenance/metadata it exposes.
 - **PRD-011:** correction/deletion audit semantics and whether prior source values remain available for audit.
-- **Archive:** version bump/compatibility plan once the scheduled-opportunity identity and any required quiet-period source data are approved.
-- **PRD-027:** aligned by its approved change-control update: private, descriptive streak histories are permitted per stable care-task identity and may appear as separately labelled summaries in the user's own Garden Profile and task context. They are not retention mechanics and do not authorise gamification, nudges, rewards or social comparison.
+- **Archive:** the required opportunity/Quiet Period source-record compatibility is delivered in JournalArchive v5. Future source-schema changes still require versioned, backward-compatible archive work.
+- **PRD-027:** permits private, descriptive Plant Care Streaks (per task) and the separately defined Garden Care Streak (garden-wide qualifying days). Neither is a retention mechanic; neither authorises gamification, nudges, rewards or social comparison.
 - **PRD-013:** its Weekly Garden Reflection continues to exclude streaks and scores. PRD-024 must not add task streaks to that reflection.
 
-These are dependency gates, not reasons to block the PRD document. Phase 0 must close them before implementation of the dependent capability begins. The PRD-027 cross-document conflict is resolved by the explicit per-task descriptive-history exception. The remaining implementation gates—especially PRD-022's scheduled-opportunity identity/lifecycle contract and archive compatibility—must still close before streak implementation.
+These are dependency gates for the capabilities they affect, not reasons to block the approved streak contract. PRD-022 identity/lifecycle and archive compatibility are delivered. PRD-023, PRD-014, PRD-012 and PRD-011 remain relevant gates for structured plant insights and historical evidence behavior, but they do not block the already-approved Garden Care Streak source calculation.
  
 ## 14. Dependencies and delivery tracking
 
@@ -342,22 +376,21 @@ These are dependency gates, not reasons to block the PRD document. Phase 0 must 
 - **Plant observations/history:** [PRD-014 — Plant Check-ins](PRD-014-plant-check-ins.md), [PRD-018 — Plant Changes Timeline](PRD-018-plant-changes-timeline.md), JournalEntry and photo source contracts.
 - **Visual history:** [PRD-012 — Growth Review](PRD-012-growth-review.md).
 - **Reflection:** [PRD-013 — Weekly Garden Reflection](PRD-013-weekly-garden-reflection.md), which continues to exclude streaks and scores; do not add task streaks to the reflection.
-- **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to record the approved narrow exception for private, descriptive per-task streak histories. PRD-013 Weekly Garden Reflection remains streak-free.
+- **Lifecycle strategy:** [PRD-027 — User Lifecycle & Meaningful Engagement](PRD-027-user-lifecycle-and-meaningful-engagement.md), updated to permit private, descriptive Plant Care Streaks and the separate Garden Care Streak. PRD-013 Weekly Garden Reflection remains streak-free.
 - **Related proposals:** [#64 — Growth Review](https://github.com/melusi-k/Feed-Good/issues/64), [#65 — Weekly Garden Reflection](https://github.com/melusi-k/Feed-Good/issues/65), [#66 — Plant Check-ins](https://github.com/melusi-k/Feed-Good/issues/66), [#72 — Plant Changes Timeline](https://github.com/melusi-k/Feed-Good/issues/72).
-- **Scheduled-opportunity foundation:** implemented in merged PRs [#145](https://github.com/melusi-k/Feed-Good/pull/145) and [#150](https://github.com/melusi-k/Feed-Good/pull/150), including immutable opportunity identity, effective-due handling, archive compatibility and the inclusive 24-hour completion window.
-- **Recorded-care activity:** delivered in merged PR [#140](https://github.com/melusi-k/Feed-Good/pull/140).
-- **Scheduled-care analytics:** delivered in merged PRs [#153](https://github.com/melusi-k/Feed-Good/pull/153) and [#154](https://github.com/melusi-k/Feed-Good/pull/154), including the plant-profile entry point, transparent outcome denominator, date ranges and source-linked history.
-- **Per-task consistency streaks:** delivered in merged PR [#155](https://github.com/melusi-k/Feed-Good/pull/155). Current and longest runs are private, task-scoped and recomputed from source records.
-- **Habit distinction:** approved and documented in merged PR [#151](https://github.com/melusi-k/Feed-Good/pull/151). This release does not measure habit formation, automaticity or habit strength.
-- **Evidence-led plant insights:** delivered for currently available source classes in merged PR [#157](https://github.com/melusi-k/Feed-Good/pull/157). PRD-014 check-in evidence remains gated and is intentionally excluded until its source contract is delivered.
-- **Delivery status:** the recorded-activity, scheduled-analytics, per-task streak and delivered-source plant-insight slices are implemented. Broader PRD acceptance still requires release-level accessibility, offline, import/restore and representative-device performance validation; those are not claimed complete by the feature PRs.
+- **Scheduled-care analytics:** [#148](https://github.com/melusi-k/Feed-Good/issues/148), delivered by merged PRs #153 and #154; post-merge hardening remains in [#170](https://github.com/melusi-k/Feed-Good/issues/170).
+- **Plant Care Streaks:** [#149](https://github.com/melusi-k/Feed-Good/issues/149), delivered by merged PR #155; issue #149 is closed.
+- **Garden Care Streak:** approved by merged PR #169; implementation is tracked separately in [#171](https://github.com/melusi-k/Feed-Good/issues/171), gated on #170.
+- **Scheduled-opportunity foundation:** delivered by PRs #145 and #150; issue #143 is closed.
+- **Evidence-led plant insights:** the first slice is delivered by merged PR #157 under [#156](https://github.com/melusi-k/Feed-Good/issues/156): the deterministic JournalEntry-based calculation (`PlantInsights` / `PlantInsightsView`) over the user’s own journal notes, milestones, plant changes and photos. Issue #156 stays open for the gated expansion to additional evidence sources — typed check-ins (PRD-014), structured care outcomes (PRD-023) and comparable Growth Review evidence (PRD-012).
+- **Implementation status:** Recorded-care activity, scheduled-care analytics, Plant Care Streaks and the JournalEntry-based plant-insights slice are implemented. Analytics hardening (#170) is delivered. Garden Care Streak (§5.2.1) is implemented by the PRD-024 / 3b change: the deterministic `GardenCareStreaks` calculator over garden-wide opportunity/event snapshots and its separate Garden Profile presentation. Expansion of plant insights beyond the JournalEntry evidence base remains a separate gated slice.
 
 
 ## 15. Scheduled-opportunity contract status — 2026-11-25
 
 The PRD-022 identity/lifecycle contract is approved. The minimum persisted record has immutable opportunity UUID, CareTask UUID, plant ownership, immutable original `scheduledDueAt`, mutable `effectiveDueAt`, `open`/`completed`/`cancelled` state and optional CareEvent UUID. Passing `effectiveDueAt` makes an open opportunity due/unresolved; it becomes definitively overdue only after the approved PRD-024 completion window expires. V5 migration seeds at most one current open opportunity for each enabled, non-archived task with a valid due date; it does not reconstruct prior intervals or link historical CareEvents. Explicit Next care edits cancel/replace; disable/delete cancels; Quiet Period resume preserves opportunity identity and updates `effectiveDueAt` under PRD-020 while retaining original `scheduledDueAt`. Skip/snooze/defer are excluded. Existing CareEvents remain unlinked.
 
-The foundation is implemented and verified in merged PRs #145 and #150. Scheduled-care analytics is delivered in #153/#154, and private per-task consistency streaks are delivered in #155. These slices consume the approved opportunity contract without changing source records or persisting derived streak values.
+Implementation and source/archive compatibility were delivered in merged PRs #145 and #150; issue #143 is closed. Scheduled-care analytics was delivered in PRs #153/#154, Plant Care Streaks in PR #155, and the separate Garden Care Streak contract in PR #169. The remaining scheduled-analytics correctness hardening is tracked in #170; Garden Care Streak implementation is tracked in #171. The recorded-care activity foundation in PR #140 remains complete and unchanged.
 
 ### Scheduled-opportunity boundary clarifications (approved 2026-11-25)
 
@@ -378,7 +411,8 @@ These concepts must remain separate in product language, data contracts and repo
 | Care routine | A user-configured recurring care task for a particular plant, with its own stable identity and schedule | Task configuration, schedule and lifecycle |
 | Care activity | A care action recorded by the user | Authoritative CareEvent and its source linkage |
 | Consistency | How scheduled opportunities for one task are completed over a defined period | Eligible opportunities, on-time completions, completion rate and interruptions under the approved lifecycle contract |
-| Streak | A descriptive run of consecutive eligible opportunities for one task completed within the approved completion window | Current and longest per-task sequences; never a plant-wide or user-wide sequence |
+| Plant Care Streak | A descriptive run of consecutive eligible opportunities for one task completed within the approved completion window | Current and longest per-task sequences |
+| Garden Care Streak | A run of qualifying local calendar days across the active garden, where all eligible scheduled-care opportunities due that day are completed on time | Current and longest runs of qualifying scheduled-care days; not a measure of daily care or habit strength |
 | Habit | A repeated behaviour that has become sufficiently automatic or integrated into a person's routine | Not directly observable from task completion, app opens or streak length alone |
 
 A care task is a plant-care requirement, not proof of a human habit. Some healthy routines are intentionally infrequent or seasonal. The product must never imply that a longer streak, more frequent care or a higher completion count is inherently better.
@@ -387,7 +421,8 @@ A care task is a plant-care requirement, not proof of a human habit. Some health
 
 For this release, Feed Good measures **care activity and scheduled-care consistency**, not habit formation.
 
-- Streaks remain private, descriptive, task-scoped histories governed by §5.2 and the approved PRD-022/PRD-024 opportunity lifecycle.
+- Plant Care Streaks remain private, descriptive, task-scoped histories governed by §5.2.
+- The Garden Care Streak is a separate private, descriptive garden-wide measure governed by §5.2.1 and the same authoritative opportunity lifecycle.
 - Completion rate and other consistency measures remain descriptive operational metrics. They must disclose scope, period, numerator/denominator where applicable, eligibility rules and source coverage.
 - A streak is one view of consecutive consistency; it is not a habit score, habit milestone, habit-strength proxy or success criterion.
 - Do not introduce labels such as “habit formed”, “strong habit”, “habit health”, “habit score” or “habit strength” based solely on care records.
@@ -403,7 +438,8 @@ If the product later needs to understand whether a user has developed a habit, t
 
 - [x] Product copy and analytics distinguish care routine, activity, consistency, streak and habit.
 - [x] No habit-formation or habit-strength metric is calculated from streaks, opportunities, CareEvents or app engagement.
-- [x] Per-task streaks remain separate and do not aggregate into plant, garden or user-wide totals.
+- [x] Plant Care Streaks remain separate per-task histories and are not aggregated into a Garden Care Streak.
+- [x] The Garden Care Streak is calculated independently from eligible source opportunities using the approved all-opportunities/local-calendar-day contract.
 - [x] Consistency metrics disclose their period, scope, eligibility definition and denominator where applicable.
 - [x] No UX, notification or growth mechanic rewards unnecessary, early or excessive plant care.
 - [x] Any future habit research is separately scoped and requires explicit product approval before instrumentation or implementation.
