@@ -38,6 +38,12 @@ final class ProfileUITests: XCTestCase {
 
     func testGardenCareStreakIsLabelledOnProfile() {
         let app = launch()
+        // A prior test may have left an in-app appearance override, which
+        // wins over the simulator-level appearance. Reset it to System so
+        // XCUIDevice.appearance drives the effective scheme.
+        app.tabBars.buttons["Settings"].tap()
+        let systemAppearance = app.buttons["System"]
+        if systemAppearance.waitForExistence(timeout: 5) { systemAppearance.tap() }
         app.tabBars.buttons["Today"].tap()
         app.buttons["profile.open"].tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
@@ -48,6 +54,19 @@ final class ProfileUITests: XCTestCase {
         // Empty garden: no fabricated run, only the honest empty state.
         XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak.empty"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.descendants(matching: .any)["profile.gardenStreak.current"].exists)
+        capture(app, "Garden Care Streak light")
+
+        // Dark appearance: the section anchor, exact label and honest empty
+        // state must survive the appearance change unchanged.
+        XCUIDevice.shared.appearance = .dark
+        XCTAssertTrue(app.staticTexts["Garden Care Streak"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak.empty"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["profile.gardenStreak.current"].exists)
+        capture(app, "Garden Care Streak dark")
+        // XCUIDevice.appearance only accepts .light/.dark; .unspecified is rejected.
+        XCUIDevice.shared.appearance = .light
+
         app.buttons["profile.done"].tap()
     }
 
