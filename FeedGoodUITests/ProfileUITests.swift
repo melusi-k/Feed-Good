@@ -36,6 +36,21 @@ final class ProfileUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Dark"].exists)
     }
 
+    func testGardenCareStreakIsLabelledOnProfile() {
+        let app = launch()
+        app.tabBars.buttons["Today"].tap()
+        app.buttons["profile.open"].tap()
+        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+        // The garden-wide streak is labelled exactly "Garden Care Streak" and
+        // is separate from the per-task Plant Care Streaks on plant screens.
+        XCTAssertTrue(app.staticTexts["Garden Care Streak"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak"].exists)
+        // Empty garden: no fabricated run, only the honest empty state.
+        XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak.empty"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["profile.gardenStreak.current"].exists)
+        app.buttons["profile.done"].tap()
+    }
+
     func testSavedPlantAppearsInProfileAndIconStaysOffPushedPages() {
         let app = launch()
         app.tabBars.buttons["My Plants"].tap()
