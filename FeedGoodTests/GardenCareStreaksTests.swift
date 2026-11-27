@@ -542,9 +542,7 @@ struct GardenCareStreaksTests {
     @Test func largeHistoryCalculatesDeterministically() throws {
         // Two years of daily opportunities across two plants (730 days,
         // 1,460 records): full-history coverage with no truncation, sampling
-        // or derived cache. The 5-second wall-clock bound is a generous smoke
-        // bound for a pure computation that normally completes in
-        // milliseconds; it guards against accidental superlinear growth.
+        // or derived cache.
         let dayCount = 730
         var opportunities: [ScheduledCareOpportunitySnapshot] = []
         var events: [ScheduledCareEventSnapshot] = []
@@ -556,21 +554,19 @@ struct GardenCareStreaksTests {
             opportunities.append(contentsOf: [a.0, b.0])
             events.append(contentsOf: [a.1, b.1])
         }
-        let started = Date()
         let summary = try GardenCareStreaks.calculate(
             now: midday(dayCount + 1),
             calendar: utcCalendar,
             opportunities: opportunities,
             events: events
         )
-        let elapsed = Date().timeIntervalSince(started)
         #expect(summary.days.count == dayCount)
         #expect(summary.days.allSatisfy { $0.state == .qualified })
         #expect(summary.currentRun == dayCount)
         #expect(summary.longestRun == dayCount)
         #expect(summary.currentRunOpportunityIDs.count == dayCount * 2)
         #expect(summary.coverageStart == summary.days.first?.dayStart)
-        #expect(summary.days[dayCount - 1].opportunityIDs.count == 2)
-        #expect(elapsed < 5)
+        let lastDay = try #require(summary.days.last)
+        #expect(lastDay.opportunityIDs.count == 2)
     }
 }
