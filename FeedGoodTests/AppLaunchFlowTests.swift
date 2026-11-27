@@ -54,14 +54,21 @@ struct AppLaunchFlowTests {
         #expect(flow.step() == .whatsNew(entry))
     }
 
-    @Test func releaseWithoutNotesDoesNotShowAnEmptySheetOrAcknowledgeVersion() {
+    @Test func buildWithoutItsOwnNotesPresentsTheNewestBundledRelease() throws {
         let defaults = makeDefaults()
         let store = AppLaunchStateStore(defaults: defaults, hasExistingPersistentStore: true)
         store.bootstrap(versionIdentity: "9.9.9 (99)")
         let flow = AppLaunchFlow(stateStore: store, shortVersion: "9.9.9", versionIdentity: "9.9.9 (99)")
+        let newest = try #require(ReleaseNotes.entries.first)
 
-        #expect(flow.step() == .none)
+        // The sheet presents the newest bundled release's notes, labelled with
+        // that release's version, and stays unacknowledged until dismissed.
+        #expect(flow.step() == .whatsNew(newest))
         #expect(defaults.string(forKey: AppLaunchStateStore.whatsNewLastSeenVersionKey) == nil)
+
+        flow.markWhatsNewSeen()
+        #expect(flow.step() == .none)
+        #expect(defaults.string(forKey: AppLaunchStateStore.whatsNewLastSeenVersionKey) == "9.9.9 (99)")
     }
 
     @Test func dismissingWhatsNewAcknowledgesOnlyTheReleaseNotesState() {
