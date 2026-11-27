@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
-<title id="title">Care insights & plant story</title><desc id="desc">PRD-024 · proposed derived experience; every statement must remain traceable to current source records</desc>
+<title id="title">Care insights &amp; plant story</title><desc id="desc">PRD-024 · approved contract (2026-11-26); derived views are recomputed from source records and stay traceable</desc>
 <defs><style>
 :root{color-scheme:light} text{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#26372d}
 .h1{font-size:34px;font-weight:700}.sub{font-size:16px;fill:#617267}.kicker{font-size:12px;font-weight:700;letter-spacing:2px;fill:#55745e}
@@ -7,15 +7,16 @@
 .nt{font-size:17px;font-weight:650}.small{font-size:13px;fill:#617267}.tiny{font-size:11px;fill:#718077}.line{stroke:#78917c;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.dash{stroke:#b18c49;stroke-width:2.5;stroke-dasharray:8 7;fill:none;marker-end:url(#arrowGold)}
 </style><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#78917c" stroke-width="1.5"/></marker><marker id="arrowGold" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#b18c49" stroke-width="1.5"/></marker></defs>
 <rect width="1200" height="760" rx="26" fill="#f8f7f1"/>
-<text x="64" y="62" class="kicker">FEED GOOD · PRODUCT ATLAS</text><text x="64" y="112" class="h1">Care insights & plant story</text><text x="64" y="142" class="sub">PRD-024 · proposed derived experience; every statement must remain traceable to current source records</text>
+<text x="64" y="62" class="kicker">FEED GOOD · PRODUCT ATLAS</text><text x="64" y="112" class="h1">Care insights &amp; plant story</text><text x="64" y="142" class="sub">PRD-024 · approved contract (2026-11-26); derived views are recomputed from source records and stay traceable</text>
 
-<rect x="64" y="190" width="240" height="124" rx="16" class="green"/><text x="88" y="228" class="kicker">CARE</text><text x="88" y="260" class="nt">CareEvent</text><text x="88" y="286" class="small">Recorded actions</text>
-<rect x="340" y="190" width="240" height="124" rx="16" class="green"/><text x="364" y="228" class="kicker">OBSERVATIONS</text><text x="364" y="260" class="nt">Plant check-ins</text><text x="364" y="286" class="small">User-entered observations</text>
-<rect x="616" y="190" width="240" height="124" rx="16" class="green"/><text x="640" y="228" class="kicker">JOURNAL</text><text x="640" y="260" class="nt">JournalEntry</text><text x="640" y="286" class="small">Notes · photos · milestones</text>
-<rect x="892" y="190" width="244" height="124" rx="16" class="green"/><text x="916" y="228" class="kicker">CHANGES</text><text x="916" y="260" class="nt">Plant changes</text><text x="916" y="286" class="small">Explicit recorded changes</text>
-<path d="M184 314V370H600M460 314V370M736 314V370M1014 314V370H600V410" class="line"/>
+<rect x="64" y="190" width="200" height="124" rx="16" class="green"/><text x="88" y="228" class="kicker">CARE</text><text x="88" y="260" class="nt">CareEvent</text><text x="88" y="286" class="small">Recorded actions</text>
+<rect x="282" y="190" width="200" height="124" rx="16" class="green"/><text x="306" y="228" class="kicker">LEDGER</text><text x="306" y="260" class="nt">CareOpportunity</text><text x="306" y="286" class="small">Scheduled-care ledger</text>
+<rect x="500" y="190" width="200" height="124" rx="16" class="green"/><text x="524" y="228" class="kicker">OBSERVATIONS</text><text x="524" y="260" class="nt">Plant check-ins</text><text x="524" y="286" class="small">PRD-014 gated source</text>
+<rect x="718" y="190" width="200" height="124" rx="16" class="green"/><text x="742" y="228" class="kicker">JOURNAL</text><text x="742" y="260" class="nt">JournalEntry</text><text x="742" y="286" class="small">Notes · photos · milestones</text>
+<rect x="936" y="190" width="200" height="124" rx="16" class="green"/><text x="960" y="228" class="kicker">CHANGES</text><text x="960" y="260" class="nt">Plant changes</text><text x="960" y="286" class="small">Explicit recorded changes</text>
+<path d="M164 314V370H600M382 314V370M600 314V370M818 314V370M1036 314V370H600V410" class="line"/>
 <rect x="340" y="414" width="520" height="112" rx="16" class="sand"/><text x="364" y="452" class="kicker">DERIVED PLANT STORY / SUMMARY</text><text x="364" y="484" class="nt">Chronological, plant-scoped, recomputed from source records</text><text x="364" y="508" class="small">Stable ordering · local-calendar periods · source navigation</text>
 <path d="M600 526V568" class="line"/>
-<rect x="64" y="572" width="1072" height="92" rx="16" class="warn"/><text x="88" y="608" class="kicker">EDITORIAL & SAFETY GUARDRAILS</text><text x="88" y="638" class="nt">Describe what was recorded — never infer health, diagnosis, neglect or causality.</text><text x="88" y="656" class="tiny">No scores, grades, streaks or collection performance metrics. Sparse history must remain neutral and useful.</text>
+<rect x="64" y="572" width="1072" height="92" rx="16" class="warn"/><text x="88" y="608" class="kicker">EDITORIAL &amp; SAFETY GUARDRAILS</text><text x="88" y="638" class="nt">Describe what was recorded — never infer health, diagnosis, neglect or causality.</text><text x="88" y="656" class="tiny">No scores, grades or diagnosis. Delivered streaks are neutral scheduled-care records, not habit or performance measures. Sparse history stays neutral and useful.</text>
 <text x="64" y="720" class="tiny">Feed Good · Documentation diagram · See adjacent README for scope, source PRD and decision status</text>
 </svg>
