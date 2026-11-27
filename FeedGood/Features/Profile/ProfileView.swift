@@ -197,10 +197,17 @@ struct ProfileView: View {
                         let dayLabel = pending.dayStart == todayStart
                             ? "Today"
                             : pending.dayStart.formatted(date: .abbreviated, time: .omitted)
-                        Text("\(dayLabel) is still open: \(pending.opportunityIDs.count) scheduled care \(pending.opportunityIDs.count == 1 ? "opportunity is" : "opportunities are") waiting inside their 24-hour windows.")
-                            .font(.caption)
-                            .foregroundStyle(FeedGoodTheme.muted)
-                            .accessibilityIdentifier("profile.gardenStreak.pending")
+                        if pending.pendingInWindowCount > 0 {
+                            Text("\(dayLabel) is still open: \(pending.pendingInWindowCount) scheduled care \(pending.pendingInWindowCount == 1 ? "opportunity is" : "opportunities are") waiting inside their 24-hour windows.")
+                                .font(.caption)
+                                .foregroundStyle(FeedGoodTheme.muted)
+                                .accessibilityIdentifier("profile.gardenStreak.pending")
+                        } else {
+                            Text("\(dayLabel) is still open: \(pending.pendingNotYetDueCount) scheduled care \(pending.pendingNotYetDueCount == 1 ? "opportunity is" : "opportunities are") due later; their 24-hour windows have not started yet.")
+                                .font(.caption)
+                                .foregroundStyle(FeedGoodTheme.muted)
+                                .accessibilityIdentifier("profile.gardenStreak.pending")
+                        }
                     }
                     Divider()
                     Text("A day qualifies when every scheduled care opportunity due that day is completed within its own 24-hour window. Days with no scheduled care are neutral and do not count for or against a run. This is a record of your saved care, not a daily-care target.")
