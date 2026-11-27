@@ -383,7 +383,7 @@ These are dependency gates for the capabilities they affect, not reasons to bloc
 - **Garden Care Streak:** approved by merged PR #169; implementation is tracked separately in [#171](https://github.com/melusi-k/Feed-Good/issues/171), gated on #170.
 - **Scheduled-opportunity foundation:** delivered by PRs #145 and #150; issue #143 is closed.
 - **Evidence-led plant insights:** the first slice is delivered by merged PR #157 under [#156](https://github.com/melusi-k/Feed-Good/issues/156): the deterministic JournalEntry-based calculation (`PlantInsights` / `PlantInsightsView`) over the user’s own journal notes, milestones, plant changes and photos. Issue #156 stays open for the gated expansion to additional evidence sources — typed check-ins (PRD-014), structured care outcomes (PRD-023) and comparable Growth Review evidence (PRD-012).
-- **Implementation status:** Recorded-care activity, scheduled-care analytics, Plant Care Streaks and the JournalEntry-based plant-insights slice are implemented. Garden Care Streak implementation and analytics hardening remain open; expansion of plant insights beyond the JournalEntry evidence base remains a separate gated slice.
+- **Implementation status:** Recorded-care activity, scheduled-care analytics, Plant Care Streaks and the JournalEntry-based plant-insights slice are implemented. Analytics hardening (#170) is delivered. Garden Care Streak (§5.2.1) is implemented by the PRD-024 / 3b change: the deterministic `GardenCareStreaks` calculator over garden-wide opportunity/event snapshots and its separate Garden Profile presentation. Expansion of plant insights beyond the JournalEntry evidence base remains a separate gated slice.
 
 
 ## 15. Scheduled-opportunity contract status — 2026-11-25
