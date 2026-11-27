@@ -28,6 +28,7 @@ private struct PlantScheduledCareAnalyticsContent: View {
 
     @Environment(\.calendar) private var calendar
     @Query private var opportunities: [CareOpportunity]
+    @Query private var opportunityHistory: [CareOpportunity]
     @Query private var events: [CareEvent]
     @Query private var quietPeriodRecords: [QuietPeriod]
     @Query private var tasks: [CareTask]
@@ -46,6 +47,10 @@ private struct PlantScheduledCareAnalyticsContent: View {
                 plantID: plantID,
                 periodStart: periodStart
             ),
+            sort: \CareOpportunity.effectiveDueAt
+        )
+        _opportunityHistory = Query(
+            filter: ScheduledCareAnalyticsFetch.opportunityHistoryPredicate(plantID: plantID),
             sort: \CareOpportunity.effectiveDueAt
         )
         _events = Query(
@@ -97,11 +102,14 @@ private struct PlantScheduledCareAnalyticsContent: View {
 
     /// The exact instants at which a displayed outcome can change while
     /// source records stay static: due instants, grace deadlines and
-    /// future-dated completion instants among the fetched records.
+    /// future-dated completion instants. Computed over the plant's full
+    /// opportunity history so the consistency runs refresh at their own
+    /// transitions too, including a future-dated completion linked to an
+    /// opportunity outside the selected period.
     private var refreshTransitions: [Date] {
         ScheduledCareRefreshSchedule.transitions(
             after: .now,
-            opportunities: opportunities.map(ScheduledCareOpportunitySnapshot.init),
+            opportunities: opportunityHistory.map(ScheduledCareOpportunitySnapshot.init),
             events: events.map(ScheduledCareEventSnapshot.init)
         )
     }
@@ -169,6 +177,8 @@ private struct PlantScheduledCareAnalyticsContent: View {
 
                 PlantCareConsistencySection(
                     plant: plant,
+                    now: now,
+                    opportunityHistory: opportunityHistory,
                     events: events.map(ScheduledCareEventSnapshot.init),
                     quietPeriods: ScheduledCareAnalyticsFetch.activeMemberships(
                         in: quietPeriodRecords
@@ -264,46 +274,20 @@ private struct PlantScheduledCareAnalyticsContent: View {
     }
 }
 
-/// Per-task consistency history. Runs span any window, so this section
-/// keeps its own plant-scoped full-history opportunity fetch while reusing
-/// the parent's already-scoped events, quiet periods and tasks.
+/// Per-task consistency history. Runs span any window, so the parent hands
+/// this section the plant's full-history opportunities alongside its
+/// already-scoped events, quiet periods and tasks; the parent's
+/// `TimelineView(.explicit)` refresh schedule covers full-history
+/// transitions, so no nested timeline is needed here.
 private struct PlantCareConsistencySection: View {
     let plant: Plant
+    let now: Date
+    let opportunityHistory: [CareOpportunity]
     let events: [ScheduledCareEventSnapshot]
     let quietPeriods: [ScheduledCareQuietPeriodSnapshot]
     let tasks: [CareTask]
 
-    @Query private var opportunityHistory: [CareOpportunity]
-
-    init(
-        plant: Plant,
-        events: [ScheduledCareEventSnapshot],
-        quietPeriods: [ScheduledCareQuietPeriodSnapshot],
-        tasks: [CareTask]
-    ) {
-        self.plant = plant
-        self.events = events
-        self.quietPeriods = quietPeriods
-        self.tasks = tasks
-        _opportunityHistory = Query(
-            filter: ScheduledCareAnalyticsFetch.opportunityHistoryPredicate(plantID: plant.id),
-            sort: \CareOpportunity.effectiveDueAt
-        )
-    }
-
-    /// Full-history transitions: a future-dated linked completion on an
-    /// opportunity outside the selected period still changes these runs at
-    /// its completion instant, so this section schedules its own refresh
-    /// from the same history it calculates over.
-    private var consistencyTransitions: [Date] {
-        ScheduledCareRefreshSchedule.transitions(
-            after: .now,
-            opportunities: opportunityHistory.map(ScheduledCareOpportunitySnapshot.init),
-            events: events
-        )
-    }
-
-    private func streakSummaries(now: Date) -> [CareTaskStreakSummary] {
+    private var streakSummaries: [CareTaskStreakSummary] {
         let opportunitySnapshots = opportunityHistory.map(ScheduledCareOpportunitySnapshot.init)
         // Task identity comes from the retained opportunities, so a deleted
         // task's consistency history stays visible alongside live tasks.
@@ -326,21 +310,14 @@ private struct PlantCareConsistencySection: View {
     }
 
     var body: some View {
-        TimelineView(.explicit(consistencyTransitions)) { context in
-            section(now: context.date)
-        }
-    }
-
-    private func section(now: Date) -> some View {
-        let summaries = streakSummaries(now: now)
-        return Section {
-            if summaries.isEmpty {
+        Section {
+            if streakSummaries.isEmpty {
                 Text("Consistency history appears here once scheduled opportunities are completed within their 24-hour window.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("scheduledCareAnalytics.consistency.empty")
             } else {
-                ForEach(summaries, id: \.taskID) { streak in
+                ForEach(streakSummaries, id: \.taskID) { streak in
                     streakRow(streak)
                 }
             }
