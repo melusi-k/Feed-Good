@@ -242,6 +242,73 @@ struct PlantScheduledCareAnalyticsTests {
         #expect(summary.overdueCount == 0)
     }
 
+    @Test func futureDatedLinkedCompletionStaysOutOfCountsUntilItsCompletionInstant() throws {
+        let due = date(1_800_000_000)
+        let eventID = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
+        let completionInstant = due.addingTimeInterval(3_600)
+        let opportunities = [
+            opportunity(1, due: due, status: CareOpportunityStatus.completed.rawValue, eventID: eventID)
+        ]
+        let events = [
+            ScheduledCareEventSnapshot(id: eventID, taskID: taskID, plantID: plantID, completedAt: completionInstant)
+        ]
+        let period = DateInterval(start: due, end: due.addingTimeInterval(2 * 86_400))
+
+        // Immediately before the recorded completion instant the correction
+        // is neutral: no completed count, no numerator, no rate.
+        let before = try PlantScheduledCareAnalyticsSummary.calculate(
+            plantID: plantID,
+            period: period,
+            now: completionInstant.addingTimeInterval(-0.001),
+            calendar: calendar,
+            opportunities: opportunities,
+            events: events
+        )
+        #expect(before.records.isEmpty)
+        #expect(before.completedCount == 0)
+        #expect(before.completionRate == nil)
+
+        // At the exact completion instant it enters the completed outcomes.
+        let atInstant = try PlantScheduledCareAnalyticsSummary.calculate(
+            plantID: plantID,
+            period: period,
+            now: completionInstant,
+            calendar: calendar,
+            opportunities: opportunities,
+            events: events
+        )
+        #expect(atInstant.records.count == 1)
+        #expect(atInstant.completedCount == 1)
+        #expect(atInstant.completedOnTimeCount == 1)
+        #expect(atInstant.completionRate == 1)
+    }
+
+    @Test func singleLocalDaysSpanningDSTTransitionsAre23And25Hours() throws {
+        var localCalendar = Calendar(identifier: .gregorian)
+        localCalendar.firstWeekday = 2
+        localCalendar.timeZone = TimeZone(identifier: "America/New_York")!
+
+        // Spring-forward day: 23 elapsed hours, still one local calendar day.
+        let springDay = try #require(localCalendar.dateInterval(
+            of: .day,
+            for: ISO8601DateFormatter().date(from: "2026-03-08T16:00:00Z")!
+        ))
+        #expect(springDay.duration == 23 * 3_600)
+        #expect(localCalendar.dateComponents([.day], from: springDay.start, to: springDay.end).day == 1)
+        #expect(localCalendar.component(.hour, from: springDay.start) == 0)
+        #expect(localCalendar.component(.hour, from: springDay.end) == 0)
+
+        // Fall-back day: 25 elapsed hours, still one local calendar day.
+        let fallDay = try #require(localCalendar.dateInterval(
+            of: .day,
+            for: ISO8601DateFormatter().date(from: "2026-11-01T16:00:00Z")!
+        ))
+        #expect(fallDay.duration == 25 * 3_600)
+        #expect(localCalendar.dateComponents([.day], from: fallDay.start, to: fallDay.end).day == 1)
+        #expect(localCalendar.component(.hour, from: fallDay.start) == 0)
+        #expect(localCalendar.component(.hour, from: fallDay.end) == 0)
+    }
+
     @Test func zeroResolvedDenominatorDoesNotProduceCompletionRate() throws {
         let due = date(1_800_000_000)
         let summary = try PlantScheduledCareAnalyticsSummary.calculate(

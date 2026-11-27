@@ -249,6 +249,10 @@ struct PlantScheduledCareAnalyticsSummary: Equatable {
                       event.plantID == opportunity.plantID else {
                     throw ScheduledCareAnalyticsError.invalidCompletionLink(opportunity.id)
                 }
+                // A future-dated linked completion is not yet a completed
+                // outcome: it enters counts and the completion-rate
+                // numerator only from its recorded completion instant.
+                guard event.completedAt <= now else { continue }
                 let deadline = CareOpportunityEligibility.streakDeadline(
                     for: opportunity.effectiveDueAt
                 )
