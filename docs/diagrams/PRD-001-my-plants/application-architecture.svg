@@ -11,13 +11,13 @@
 
 <rect x="64" y="190" width="1072" height="94" rx="18" class="green"/><text x="88" y="226" class="kicker">PRESENTATION</text><text x="88" y="256" class="nt">SwiftUI app surfaces</text><text x="365" y="245" class="small">Today · My Plants · Plant Profile · Care · Journal · Settings</text>
 <path d="M600 284V328" class="line"/>
-<rect x="64" y="330" width="1072" height="112" rx="18" class="node"/><text x="88" y="366" class="kicker">DOMAIN & FEATURE LOGIC</text>
+<rect x="64" y="330" width="1072" height="112" rx="18" class="node"/><text x="88" y="366" class="kicker">DOMAIN &amp; FEATURE LOGIC</text>
 <rect x="88" y="382" width="220" height="42" rx="10" class="green"/><text x="198" y="408" text-anchor="middle" class="nt">Plant domain</text>
 <rect x="330" y="382" width="220" height="42" rx="10" class="green"/><text x="440" y="408" text-anchor="middle" class="nt">Care scheduling</text>
-<rect x="572" y="382" width="220" height="42" rx="10" class="green"/><text x="682" y="408" text-anchor="middle" class="nt">Journal & story</text>
+<rect x="572" y="382" width="220" height="42" rx="10" class="green"/><text x="682" y="408" text-anchor="middle" class="nt">Journal &amp; story</text>
 <rect x="814" y="382" width="294" height="42" rx="10" class="green"/><text x="961" y="408" text-anchor="middle" class="nt">Insights / projections</text>
 <path d="M600 442V484" class="line"/>
-<rect x="64" y="486" width="1072" height="104" rx="18" class="sand"/><text x="88" y="522" class="kicker">LOCAL DATA & PLATFORM ADAPTERS</text>
+<rect x="64" y="486" width="1072" height="104" rx="18" class="sand"/><text x="88" y="522" class="kicker">LOCAL DATA &amp; PLATFORM ADAPTERS</text>
 <rect x="88" y="538" width="300" height="36" rx="9" class="node"/><text x="238" y="562" text-anchor="middle" class="nt">SwiftData · local source records</text>
 <rect x="450" y="538" width="250" height="36" rx="9" class="node"/><text x="575" y="562" text-anchor="middle" class="nt">Photo storage</text>
 <rect x="762" y="538" width="346" height="36" rx="9" class="node"/><text x="935" y="562" text-anchor="middle" class="nt">UserNotifications · optional local alerts</text>
