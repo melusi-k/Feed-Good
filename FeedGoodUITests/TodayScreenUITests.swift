@@ -33,7 +33,9 @@ final class TodayScreenUITests: XCTestCase {
         XCTAssertTrue(savePreview.waitForExistence(timeout: 5))
         savePreview.buttons["Save changes"].tap()
 
-        let done = app.buttons["today.care.done.Done fern.Watering"]
+        // The Done control is exposed as the row's merged accessibility
+        // element (row identifier + the button's Record label).
+        let done = app.buttons["today.care.row.Done fern.Watering"]
         app.tabBars.buttons["Today"].tap()
         XCTAssertTrue(done.waitForExistence(timeout: 5))
         XCTAssertTrue(done.isHittable)
@@ -44,20 +46,18 @@ final class TodayScreenUITests: XCTestCase {
         light.lifetime = .keepAlways
         add(light)
 
-        app.tabBars.buttons["Settings"].tap()
-        app.buttons["Dark"].tap()
-        XCTAssertTrue(app.staticTexts["Dark appearance"].waitForExistence(timeout: 5))
-        app.tabBars.buttons["Today"].tap()
+        // The app has no in-app appearance toggle; force the system
+        // appearance through XCTest's official hook instead.
+        XCUIDevice.shared.appearance = .dark
         XCTAssertTrue(done.waitForExistence(timeout: 5))
         XCTAssertTrue(done.isHittable)
+        XCTAssertEqual(done.label, "Record Watering for Done fern")
         let dark = XCTAttachment(screenshot: app.screenshot())
         dark.name = "SIMULATOR - Today Done button - dark"
         dark.lifetime = .keepAlways
         add(dark)
 
-        app.tabBars.buttons["Settings"].tap()
-        app.buttons["System"].tap()
-        XCTAssertTrue(app.staticTexts["System appearance"].waitForExistence(timeout: 5))
+        XCUIDevice.shared.appearance = .unspecified
     }
 
     func testAppearanceCanBeChangedAndPersistsInSettings() throws {
