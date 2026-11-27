@@ -88,6 +88,21 @@ final class LocalCareNotifications: CareNotificationBoundary {
     }
 }
 
+/// UI-test boundary. UI tests launch a fresh process per test; real
+/// UNUserNotificationCenter calls there wait on the notification daemon, and
+/// that latency is OS infrastructure, unbounded on a busy machine, and
+/// unrelated to what the tests exercise. Returning the fresh-install state
+/// (permission not determined, nothing pending) keeps the visible UI and the
+/// scheduler's logic identical while making every test run deterministic.
+@MainActor
+struct UITestCareNotifications: CareNotificationBoundary {
+    func permission() async -> ReminderPermission { .notDetermined }
+    func requestPermission() async throws -> Bool { false }
+    func pendingIDs() async -> [String] { [] }
+    func remove(_ ids: [String]) {}
+    func add(_ reminder: CareReminder) async throws {}
+}
+
 /// Serialized reconciliations prevent an older asynchronous add from undoing a newer cancellation.
 @MainActor
 final class CareReminderScheduler: ObservableObject {
