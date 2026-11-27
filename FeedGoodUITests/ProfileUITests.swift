@@ -48,6 +48,19 @@ final class ProfileUITests: XCTestCase {
         // Empty garden: no fabricated run, only the honest empty state.
         XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak.empty"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.descendants(matching: .any)["profile.gardenStreak.current"].exists)
+        capture(app, "Garden Care Streak light")
+
+        // Dark appearance: the section anchor, exact label and honest empty
+        // state must survive the appearance change unchanged.
+        XCUIDevice.shared.appearance = .dark
+        XCTAssertTrue(app.staticTexts["Garden Care Streak"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["profile.gardenStreak.empty"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["profile.gardenStreak.current"].exists)
+        capture(app, "Garden Care Streak dark")
+        // XCUIDevice.appearance only accepts .light/.dark; .unspecified is rejected.
+        XCUIDevice.shared.appearance = .light
+
         app.buttons["profile.done"].tap()
     }
 
