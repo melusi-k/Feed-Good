@@ -16,4 +16,18 @@ struct ReleaseNotesTests {
         #expect(ReleaseNotes.entry(forVersion: "9.9.9") == nil)
         #expect(ReleaseNotes.entry(forVersion: "0.1.46 (46)") == nil)
     }
+
+    @Test func presentationLookupPrefersAnExactMatch() throws {
+        for entry in ReleaseNotes.entries {
+            #expect(ReleaseNotes.entryForPresentation(version: entry.version) == entry)
+        }
+    }
+
+    @Test func presentationLookupFallsBackToTheNewestBundledRelease() throws {
+        let newest = try #require(ReleaseNotes.entries.first)
+        // A CI build stamped with the run number has no entry of its own.
+        #expect(ReleaseNotes.entryForPresentation(version: "0.1.108") == newest)
+        #expect(ReleaseNotes.entryForPresentation(version: "9.9.9") == newest)
+        #expect(ReleaseNotes.entryForPresentation(version: "0.1.46 (46)") == newest)
+    }
 }
