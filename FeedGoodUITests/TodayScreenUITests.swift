@@ -38,6 +38,7 @@ final class TodayScreenUITests: XCTestCase {
         let done = app.buttons["today.care.row.Done fern.Watering"]
         app.tabBars.buttons["Today"].tap()
         XCTAssertTrue(done.waitForExistence(timeout: 5))
+        scrollToVisible(done, in: app)
         XCTAssertTrue(done.isHittable)
         XCTAssertEqual(done.label, "Record Watering for Done fern")
         XCTAssertGreaterThanOrEqual(done.frame.height, 44)
@@ -50,6 +51,7 @@ final class TodayScreenUITests: XCTestCase {
         // appearance through XCTest's official hook instead.
         XCUIDevice.shared.appearance = .dark
         XCTAssertTrue(done.waitForExistence(timeout: 5))
+        scrollToVisible(done, in: app)
         XCTAssertTrue(done.isHittable)
         XCTAssertEqual(done.label, "Record Watering for Done fern")
         let dark = XCTAttachment(screenshot: app.screenshot())
@@ -57,7 +59,18 @@ final class TodayScreenUITests: XCTestCase {
         dark.lifetime = .keepAlways
         add(dark)
 
-        XCUIDevice.shared.appearance = .unspecified
+        // XCUIDevice.appearance only accepts .light/.dark; .unspecified is rejected.
+        XCUIDevice.shared.appearance = .light
+    }
+
+    /// Rows below the fold exist in the accessibility tree but are not
+    /// hittable; scroll until the element is on screen.
+    private func scrollToVisible(_ element: XCUIElement, in app: XCUIApplication, maxSwipes: Int = 5) {
+        var swipes = 0
+        while !element.isHittable && swipes < maxSwipes {
+            app.swipeUp()
+            swipes += 1
+        }
     }
 
     func testAppearanceCanBeChangedAndPersistsInSettings() throws {
