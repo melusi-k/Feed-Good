@@ -29,7 +29,7 @@ struct JournalArchiveSection: View {
                     .accessibilityIdentifier("journal.status")
             }
             Section("Local garden archive") {
-                Text("Version 4 exports plant details and photos, care routines and history, scheduled-care opportunities, Quiet Period history, plus journal notes and photos. It excludes app settings and notification permissions. Save the archive outside the app; it contains private text and photos.")
+                Text("Version 5 exports plant details and photos, care routines and history, scheduled-care opportunities, Quiet Period history, plus journal notes and photos. It excludes app settings and notification permissions. Save the archive outside the app; it contains private text and photos.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("journal.archiveScope")
@@ -37,7 +37,7 @@ struct JournalArchiveSection: View {
                     .accessibilityIdentifier("journal.export")
                 Button("Recover garden data") { importing = true }
                     .accessibilityIdentifier("journal.recover")
-                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Versions 1–3 remain supported.")
+                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Versions 1–4 remain supported.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("journal.recoveryPolicy")
