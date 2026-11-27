@@ -226,7 +226,7 @@ struct CareTaskEditor: View {
         isSaving = true
         Task { @MainActor in
             do {
-                try await CareTaskEditorPersistence.saveAndReconcile(
+                let savedReminders = try CareTaskEditorPersistence.save(
                     plantID: plant.id,
                     taskID: task?.id,
                     kind: kind,
@@ -235,10 +235,12 @@ struct CareTaskEditor: View {
                     dueDate: dueDate,
                     isEnabled: enabled,
                     reminderEnabled: reminders,
-                    in: context.container,
-                    scheduler: scheduler
+                    in: context.container
                 )
+                // Dismiss once the routine is saved. Reminder reconciliation is
+                // OS notification work and must never hold the editor open.
                 dismiss()
+                await scheduler.reconcile(savedReminders)
             } catch {
                 isSaving = false
                 errorMessage = "Couldn't save this routine. Your existing routine and reminders are unchanged. Try again."
