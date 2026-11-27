@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
-<title id="title">Quiet period scheduling contract</title><desc id="desc">PRD-020 · proposal consistent; pause/resume policy is intentionally shown as undecided</desc>
+<title id="title">Quiet period scheduling contract</title><desc id="desc">PRD-020 · delivered pause-clock contract, approved 2026-11-23 and merged in #121–125</desc>
 <defs><style>
 :root{color-scheme:light} text{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#26372d}
 .h1{font-size:34px;font-weight:700}.sub{font-size:16px;fill:#617267}.kicker{font-size:12px;font-weight:700;letter-spacing:2px;fill:#55745e}
@@ -7,7 +7,7 @@
 .nt{font-size:17px;font-weight:650}.small{font-size:13px;fill:#617267}.tiny{font-size:11px;fill:#718077}.line{stroke:#78917c;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.dash{stroke:#b18c49;stroke-width:2.5;stroke-dasharray:8 7;fill:none;marker-end:url(#arrowGold)}
 </style><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#78917c" stroke-width="1.5"/></marker><marker id="arrowGold" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6" fill="none" stroke="#b18c49" stroke-width="1.5"/></marker></defs>
 <rect width="1200" height="760" rx="26" fill="#f8f7f1"/>
-<text x="64" y="62" class="kicker">FEED GOOD · PRODUCT ATLAS</text><text x="64" y="112" class="h1">Quiet period scheduling contract</text><text x="64" y="142" class="sub">PRD-020 · proposal consistent; pause/resume policy is intentionally shown as undecided</text>
+<text x="64" y="62" class="kicker">FEED GOOD · PRODUCT ATLAS</text><text x="64" y="112" class="h1">Quiet period scheduling contract</text><text x="64" y="142" class="sub">PRD-020 · delivered pause-clock contract, approved 2026-11-23 and merged in #121–125</text>
 
 <rect x="64" y="190" width="250" height="112" rx="16" class="node"/><text x="88" y="228" class="kicker">START</text><text x="88" y="260" class="nt">Active plant</text><text x="88" y="282" class="small">Not archived</text>
 <path d="M314 246H365" class="line"/>
@@ -17,6 +17,6 @@
 <path d="M931 302V354" class="line"/>
 <rect x="370" y="358" width="766" height="112" rx="16" class="green"/><text x="394" y="396" class="kicker">ACTIVE PERIOD</text><text x="394" y="428" class="nt">No silent expiry · no inferred dormancy · journal remains available</text><text x="394" y="450" class="small">Can be edited, ended early or cancelled by the user</text>
 <path d="M753 470V516" class="dash"/>
-<rect x="64" y="520" width="1072" height="138" rx="16" class="warn"/><text x="88" y="556" class="kicker">UNRESOLVED BEFORE IMPLEMENTATION · PRD-020 / ISSUE #74</text><text x="88" y="588" class="nt">Resume policy: preserve prior due date, shift by duration, or require a new date?</text><text x="88" y="618" class="small">What happens to tasks due during an open-ended period? All tasks vs selected tasks? How do edits interact?</text><text x="88" y="642" class="tiny">Hard AND dependencies: PRD-016 / #70 lifecycle decision AND PRD-017 / #71 routine-review policy.</text>
+<rect x="64" y="520" width="1072" height="138" rx="16" class="green"/><text x="88" y="556" class="kicker">DELIVERED CONTRACT · PRD-020 / ISSUE #74 CLOSED</text><text x="88" y="588" class="nt">Pause-clock: remaining time freezes on pause and resumes unchanged; no overdue accrues during a pause</text><text x="88" y="618" class="small">User-selected task snapshot (all enabled tasks preselected) · explicit Next care override stays authoritative · interval edits update the frozen interval</text><text x="88" y="642" class="tiny">Delivered in PRs #121–125 (V4 persistence, pause/resume lifecycle, care-workflow integration, JournalArchive v3). Changes to this contract need explicit product review.</text>
 <text x="64" y="720" class="tiny">Feed Good · Documentation diagram · See adjacent README for scope, source PRD and decision status</text>
 </svg>
