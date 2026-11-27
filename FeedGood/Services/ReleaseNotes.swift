@@ -84,4 +84,14 @@ enum ReleaseNotes {
     static func entry(forVersion version: String) -> ReleaseNotesEntry? {
         entries.first { $0.version == version }
     }
+
+    /// The entry a build presents. An exact marketing-version match always
+    /// wins. A build whose marketing version has no bundled entry - a CI
+    /// build stamped with the run number, or a hotfix shipped without notes -
+    /// presents the newest bundled release's notes, labelled with that
+    /// entry's own version, instead of never showing What's New. Only an app
+    /// with no bundled entries at all presents nothing.
+    static func entryForPresentation(version: String) -> ReleaseNotesEntry? {
+        entry(forVersion: version) ?? entries.first
+    }
 }
