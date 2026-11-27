@@ -86,7 +86,7 @@ What's New is a separate, release-driven experience, not a fourth onboarding pag
 - Do not show What's New on a fresh installation. First-run onboarding covers that journey.
 - If both onboarding and release notes are pending on a device, finish or skip onboarding first, then present What's New. Do not present two sheets simultaneously.
 - Keep its persisted seen-version state independent from onboarding completion. A user skipping onboarding must not accidentally mark release notes as seen, and dismissing release notes must not reset onboarding.
-- Identify the release using the app's version identity (marketing version and build number); use the marketing version to find the bundled release-notes entry.
+- Identify an installed build using the app's version identity (marketing version and build number); use the marketing version to find the bundled release-notes entry. Keep the marketing version stable across CI builds and increment only the build number for routine builds. Bump the marketing version deliberately for a product release and add its bundled notes before shipping. Each newly installed build remains independently acknowledgeable, as required by the version identity.
 - Each release that is intended to show What's New must include a matching local release-notes entry. Include a concise version label and a short list of factual highlights.
 - Bundle release notes in the app. They must be available offline and must not require a remote service.
 - Use a data-driven release-notes model so adding or changing release highlights does not require changing the presentation view.

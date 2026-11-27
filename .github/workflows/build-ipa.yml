@@ -45,9 +45,11 @@ jobs:
 
       - name: Stamp build version and generate project
         run: |
-          BASE_VERSION=$(grep -E '^    MARKETING_VERSION:' project.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-          VERSION="$(echo "$BASE_VERSION" | cut -d. -f1-2).$BUILD_NUMBER"
-          sed -i '' -E "s/^(    MARKETING_VERSION: ).*/\1\"$VERSION\"/; s/^(    CURRENT_PROJECT_VERSION: ).*/\1\"$BUILD_NUMBER\"/" project.yml
+          VERSION=$(grep -E '^    MARKETING_VERSION:' project.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          # Marketing version identifies a product release and stays stable across
+          # CI builds. The monotonically increasing build number distinguishes
+          # individual builds for What's New acknowledgement and artifact naming.
+          sed -i '' -E "s/^(    CURRENT_PROJECT_VERSION: ).*/\1\"$BUILD_NUMBER\"/" project.yml
           echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "IPA_NAME=FeedGood-$VERSION-build$BUILD_NUMBER.ipa" >> "$GITHUB_ENV"
           xcodegen generate
