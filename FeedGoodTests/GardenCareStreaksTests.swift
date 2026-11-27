@@ -469,9 +469,9 @@ struct GardenCareStreaksTests {
         #expect(throws: ScheduledCareAnalyticsError.self) {
             try GardenCareStreaks.calculate(now: midday(1), calendar: utcCalendar, opportunities: [], events: [event, event])
         }
-        let opportunity = opportunity(2, due: midday(0))
+        let duplicated = opportunity(2, due: midday(0))
         #expect(throws: ScheduledCareAnalyticsError.self) {
-            try GardenCareStreaks.calculate(now: midday(1), calendar: utcCalendar, opportunities: [opportunity, opportunity], events: [])
+            try GardenCareStreaks.calculate(now: midday(1), calendar: utcCalendar, opportunities: [duplicated, duplicated], events: [])
         }
         let brokenLink = opportunity(3, due: midday(0), status: CareOpportunityStatus.completed.rawValue, eventID: id)
         #expect(throws: ScheduledCareAnalyticsError.self) {
