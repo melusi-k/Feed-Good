@@ -4,7 +4,7 @@ import SwiftData
 @main
 struct FeedGoodApp: App {
     @UIApplicationDelegateAdaptor(FeedGoodAppDelegate.self) private var appDelegate
-    @StateObject private var reminderScheduler = CareReminderScheduler(boundary: LocalCareNotifications())
+    @StateObject private var reminderScheduler: CareReminderScheduler
     @StateObject private var notificationRouter = CareNotificationRouter.shared
     private let modelContainer: ModelContainer
     private let launchStateStore: AppLaunchStateStore
@@ -25,6 +25,8 @@ struct FeedGoodApp: App {
             defaults: defaults,
             hasExistingPersistentStore: isUITesting ? false : FileManager.default.fileExists(atPath: configuration.url.path)
         )
+        let notificationBoundary: CareNotificationBoundary = isUITesting ? UITestCareNotifications() : LocalCareNotifications()
+        _reminderScheduler = StateObject(wrappedValue: CareReminderScheduler(boundary: notificationBoundary))
         if isUITesting {
             defaults.removeObject(forKey: AppLaunchStateStore.onboardingCompletedKey)
             defaults.removeObject(forKey: AppLaunchStateStore.whatsNewLastSeenVersionKey)
