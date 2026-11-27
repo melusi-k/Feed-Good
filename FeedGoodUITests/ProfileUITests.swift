@@ -38,6 +38,12 @@ final class ProfileUITests: XCTestCase {
 
     func testGardenCareStreakIsLabelledOnProfile() {
         let app = launch()
+        // A prior test may have left an in-app appearance override, which
+        // wins over the simulator-level appearance. Reset it to System so
+        // XCUIDevice.appearance drives the effective scheme.
+        app.tabBars.buttons["Settings"].tap()
+        let systemAppearance = app.buttons["System"]
+        if systemAppearance.waitForExistence(timeout: 5) { systemAppearance.tap() }
         app.tabBars.buttons["Today"].tap()
         app.buttons["profile.open"].tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
