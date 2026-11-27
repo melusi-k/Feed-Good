@@ -436,10 +436,10 @@ If the product later needs to understand whether a user has developed a habit, t
 
 ### 16.4 Acceptance criteria for this extension
 
-- [ ] Product copy and analytics distinguish care routine, activity, consistency, streak and habit.
-- [ ] No habit-formation or habit-strength metric is calculated from streaks, opportunities, CareEvents or app engagement.
-- [ ] Plant Care Streaks remain separate per-task histories and are not aggregated into a Garden Care Streak.
-- [ ] The Garden Care Streak is calculated independently from eligible source opportunities using the approved all-opportunities/local-calendar-day contract.
-- [ ] Consistency metrics disclose their period, scope, eligibility definition and denominator where applicable.
-- [ ] No UX, notification or growth mechanic rewards unnecessary, early or excessive plant care.
-- [ ] Any future habit research is separately scoped and requires explicit product approval before instrumentation or implementation.
+- [x] Product copy and analytics distinguish care routine, activity, consistency, streak and habit.
+- [x] No habit-formation or habit-strength metric is calculated from streaks, opportunities, CareEvents or app engagement.
+- [x] Plant Care Streaks remain separate per-task histories and are not aggregated into a Garden Care Streak.
+- [x] The Garden Care Streak is calculated independently from eligible source opportunities using the approved all-opportunities/local-calendar-day contract.
+- [x] Consistency metrics disclose their period, scope, eligibility definition and denominator where applicable.
+- [x] No UX, notification or growth mechanic rewards unnecessary, early or excessive plant care.
+- [x] Any future habit research is separately scoped and requires explicit product approval before instrumentation or implementation.
