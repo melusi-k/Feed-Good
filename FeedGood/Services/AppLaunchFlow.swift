@@ -25,7 +25,7 @@ struct AppLaunchFlow {
     }
 
     func whatsNewEntry() -> ReleaseNotesEntry? {
-        let entry = ReleaseNotes.entry(forVersion: shortVersion)
+        let entry = ReleaseNotes.entryForPresentation(version: shortVersion)
         guard stateStore.shouldPresentWhatsNew(
             versionIdentity: versionIdentity,
             hasReleaseNotes: entry != nil
