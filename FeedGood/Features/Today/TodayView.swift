@@ -335,6 +335,10 @@ struct TodayView: View {
                 .padding(.horizontal, 14)
                 .frame(minHeight: 44)
                 .background(FeedGoodTheme.leaf, in: Capsule())
+                // The global FeedGoodPressStyle would repaint the label leaf
+                // on the leaf capsule; this style keeps the explicit colours
+                // and shares only the press feedback.
+                .buttonStyle(CareCompleteButtonStyle())
                 .accessibilityLabel("Record \(item.task.title) for \(item.plant.name)")
                 .accessibilityIdentifier("today.care.done.\(item.plant.name).\(item.task.title)")
         }
@@ -483,5 +487,19 @@ struct TodayView: View {
                 .tracking(-0.3)
                 .foregroundStyle(FeedGoodTheme.soil)
         }
+    }
+}
+
+/// Press feedback shared with `FeedGoodPressStyle`, but without its
+/// foreground repaint: the care-complete capsule owns its colours so the
+/// label stays readable on the leaf background in both appearances.
+private struct CareCompleteButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.75 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
