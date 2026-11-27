@@ -1,6 +1,6 @@
 # PRD-009 — Settings & Data Portability
 
-**Status:** Implementation in progress  
+**Status:** Delivered — the Settings surface (appearance, plain-language privacy and data explanation, notification authorization status with a direct iOS Settings route, version and build) and the versioned garden archive with additive, previewed recovery are implemented and merged. The archive is at version 5: v2 complete garden archive (#15), additive v3 Quiet Period history (#125), v4 scheduled-care opportunities and v5 the effective due boundary (#145, #150). The follow-ups in §11 remain open product decisions.  
 **Release:** MVP release-readiness requirement  
 **Primary surface:** Settings, Export, Restore
 
@@ -92,7 +92,8 @@ Replaces opaque app settings and fragile manual recovery with explicit user cont
 
 ## 12. Delivery tracking
 
-- GitHub implementation issue: [#15 — Settings: privacy, notification state, export and recovery](https://github.com/melusi-k/Feed-Good/issues/15).
-- Existing implementation: JSON version 1, journal entries and plant identity only; excludes care records and both plant-profile photos and settings.
-- MVP enhancement: JSON version 2 complete garden archive with additive, idempotent recovery, pre-restore preview and conflict rejection.
-- Implementation PR: [#15 — complete garden archive v2](https://github.com/melusi-k/Feed-Good/pull/15).
+- GitHub implementation issue: [#15 — Settings: privacy, notification state, export and recovery](https://github.com/melusi-k/Feed-Good/issues/15) (closed; delivered by merged PR #15).
+- Delivered archive versions: v1 journal-only import compatibility is retained; v2 complete garden archive (plants, growing context, profile photos, care routines, care history, journal entries and journal photos) merged in #15; additive v3 Quiet Period history and task snapshots (#125); v4 scheduled-care opportunities and v5 effective due boundary (#145, #150). v1–v4 archives remain importable.
+- Delivered Settings surfaces: appearance, plain-language privacy and data explanation, notification authorization status with a direct iOS Settings route, and app version/build in About.
+- Delivered export and recovery: documented archive contents in the export flow; restore validates first, shows a pre-restore preview of what will be added, requires explicit confirmation, then merges additively — adding missing records, skipping identical records and rejecting conflicting IDs before any write. Existing user records are never overwritten, and export/restore failures surface actionable errors while preserving source data.
+- Verification: round-trip, Quiet Period archive compatibility, unsupported-version rejection and failure-path coverage live in FeedGoodTests (including QuietPeriodArchiveTests and JournalTests).
