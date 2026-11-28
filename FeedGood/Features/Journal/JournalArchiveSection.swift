@@ -12,6 +12,7 @@ struct JournalArchiveSection: View {
     @Query private var quietPeriods: [QuietPeriod]
     @Query private var quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshot]
     @Query private var tags: [PlantTag]
+    @Query private var plantCheckIns: [PlantCheckIn]
     @State private var errorMessage: String?
     @State private var exporting = false
     @State private var importing = false
@@ -29,7 +30,7 @@ struct JournalArchiveSection: View {
                     .accessibilityIdentifier("journal.status")
             }
             Section("Local garden archive") {
-                Text("Version 5 exports plant details and photos, care routines and history, scheduled-care opportunities, Quiet Period history, plus journal notes and photos. It excludes app settings and notification permissions. Save the archive outside the app; it contains private text and photos.")
+                Text("Version 6 exports plant details and photos, care routines and history, scheduled-care opportunities, Quiet Period history, plus journal notes, photos and plant check-ins. It excludes app settings and notification permissions. Save the archive outside the app; it contains private text and photos.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("journal.archiveScope")
@@ -37,7 +38,7 @@ struct JournalArchiveSection: View {
                     .accessibilityIdentifier("journal.export")
                 Button("Recover garden data") { importing = true }
                     .accessibilityIdentifier("journal.recover")
-                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Versions 1–4 remain supported.")
+                Text("Recovery adds missing records, recreates missing plants, skips identical records and rejects conflicting IDs before writing. Existing records are never overwritten. Versions 1–5 remain supported; older archives cannot contain check-in records.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("journal.recoveryPolicy")
@@ -94,7 +95,8 @@ struct JournalArchiveSection: View {
                 careOpportunities: careOpportunities,
                 tags: tags,
                 quietPeriods: quietPeriods,
-                quietPeriodTaskSnapshots: quietPeriodTaskSnapshots
+                quietPeriodTaskSnapshots: quietPeriodTaskSnapshots,
+                plantCheckIns: plantCheckIns
             ))
             exporting = true
         } catch {
@@ -106,7 +108,7 @@ struct JournalArchiveSection: View {
         guard let data = pendingRecoveryData, let preview = recoveryPreview else { return }
         do {
             _ = try JournalArchive.recover(data, context: context)
-            statusMessage = "Recovered \(preview.plantsToAdd) plants, \(preview.entriesToAdd) journal entries, \(preview.careTasksToAdd) care routines, \(preview.careEventsToAdd) care-history records, \(preview.careOpportunitiesToAdd) scheduled-care opportunities, \(preview.quietPeriodsToAdd) Quiet Periods and \(preview.quietPeriodSnapshotsToAdd) Quiet Period task snapshots. Existing records were kept."
+            statusMessage = "Recovered \(preview.plantsToAdd) plants, \(preview.entriesToAdd) journal entries, \(preview.careTasksToAdd) care routines, \(preview.careEventsToAdd) care-history records, \(preview.careOpportunitiesToAdd) scheduled-care opportunities, \(preview.quietPeriodsToAdd) Quiet Periods, \(preview.quietPeriodSnapshotsToAdd) Quiet Period task snapshots and \(preview.plantCheckInsToAdd) plant check-ins. Existing records were kept."
         } catch {
             errorMessage = "Recovery failed: \(error.localizedDescription)"
         }

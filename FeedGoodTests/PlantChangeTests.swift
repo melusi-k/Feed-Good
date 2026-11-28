@@ -7,7 +7,7 @@ import UIKit
 @MainActor
 struct PlantChangeTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV7.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
@@ -98,7 +98,7 @@ struct PlantChangeTests {
         let entries = try context.fetch(FetchDescriptor<JournalEntry>())
         let data = try JournalArchive.export(plants: [plant], entries: entries)
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 5)
+        #expect(archive.version == 6)
         #expect(archive.entries.first?.changeKindRaw == "movedIndoorsOrOutdoors")
         let destination = try memory(); let recovery = ModelContext(destination)
         #expect(try JournalArchive.recover(data, context: recovery) == 1)

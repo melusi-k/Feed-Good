@@ -34,6 +34,8 @@ struct JournalArchivePreview: Equatable {
     var quietPeriodsAlreadyPresent: Int = 0
     var quietPeriodSnapshotsToAdd: Int = 0
     var quietPeriodSnapshotsAlreadyPresent: Int = 0
+    var plantCheckInsToAdd: Int = 0
+    var plantCheckInsAlreadyPresent: Int = 0
 
     var confirmationMessage: String {
         """
@@ -45,6 +47,7 @@ struct JournalArchivePreview: Equatable {
         Scheduled care opportunities: \(careOpportunitiesToAdd) to add, \(careOpportunitiesAlreadyPresent) already present
         Quiet Periods: \(quietPeriodsToAdd) to add, \(quietPeriodsAlreadyPresent) already present
         Quiet Period task snapshots: \(quietPeriodSnapshotsToAdd) to add, \(quietPeriodSnapshotsAlreadyPresent) already present
+        Plant check-ins: \(plantCheckInsToAdd) to add, \(plantCheckInsAlreadyPresent) already present
 
         Existing plant records are preserved. Archive timestamps are restored for new plants; existing same-ID plants keep their current state. Existing journal and care records are checked for identical content; any conflict stops recovery before changes are saved.
         """
@@ -53,10 +56,10 @@ struct JournalArchivePreview: Equatable {
 
 /// Version 1 is journal-only, version 2 adds the complete garden record and tags,
 /// version 3 adds Quiet Period history, version 4 adds scheduled-care opportunities,
-/// and version 5 adds the effective due boundary.
+/// version 5 adds the effective due boundary, and version 6 adds Plant Check-ins.
 /// Optional record keys preserve decoding of older archives.
 struct JournalArchive: Codable {
-    var version = 5
+    var version = 6
     var plants: [PlantRecord]
     var entries: [EntryRecord]
     var careTasks: [CareTaskRecord]?
@@ -66,6 +69,23 @@ struct JournalArchive: Codable {
     var tags: [TagRecord]?
     var quietPeriods: [QuietPeriodRecord]?
     var quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshotRecord]?
+    var plantCheckIns: [PlantCheckInRecord]? = nil
+    var hasPlantCheckInsKey = false
+    var wasDecoded = false
+
+    enum CodingKeys: String, CodingKey {
+        case version, plants, entries, careTasks, careEvents, careOpportunities
+        case tags, quietPeriods, quietPeriodTaskSnapshots, plantCheckIns
+    }
+
+    struct PlantCheckInRecord: Codable, Equatable {
+        var id: UUID
+        var plantID: UUID
+        var observedAt: Date
+        var signRawValues: [String]
+        var note: String
+        var photoData: Data?
+    }
 
     struct PlantRecord: Codable {
         var id: UUID
@@ -171,7 +191,8 @@ struct JournalArchive: Codable {
         careOpportunities: [CareOpportunity] = [],
         tags: [PlantTag] = [],
         quietPeriods: [QuietPeriod] = [],
-        quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshot] = []
+        quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshot] = [],
+        plantCheckIns: [PlantCheckIn] = []
     ) throws -> Data {
         let entryRecords = try entries.map { entry -> EntryRecord in
             guard let plantID = entry.plant?.id else { throw JournalArchiveError.invalidRecord }
@@ -246,6 +267,16 @@ struct JournalArchive: Codable {
                 nextCareOverrideAt: snapshot.nextCareOverrideAt, capturedAt: snapshot.capturedAt, updatedAt: snapshot.updatedAt
             )
         }
+        let checkInRecords = plantCheckIns.map { checkIn in
+            PlantCheckInRecord(
+                id: checkIn.id,
+                plantID: checkIn.plantID,
+                observedAt: checkIn.observedAt,
+                signRawValues: checkIn.signRawValues,
+                note: checkIn.note,
+                photoData: checkIn.photoData
+            )
+        }
         let archive = JournalArchive(
             plants: plantRecords,
             entries: entryRecords,
@@ -254,7 +285,8 @@ struct JournalArchive: Codable {
             careOpportunities: opportunityRecords,
             tags: tagRecords,
             quietPeriods: quietPeriodRecords,
-            quietPeriodTaskSnapshots: snapshotRecords
+            quietPeriodTaskSnapshots: snapshotRecords,
+            plantCheckIns: checkInRecords
         )
         try archive.validate()
         let data = try JSONEncoder().encode(archive)
@@ -263,7 +295,13 @@ struct JournalArchive: Codable {
     }
 
     func validate() throws {
-        guard (1...5).contains(version) else { throw JournalArchiveError.unsupportedVersion }
+        guard (1...6).contains(version) else { throw JournalArchiveError.unsupportedVersion }
+        if version < 6, hasPlantCheckInsKey {
+            throw JournalArchiveError.invalidRecord
+        }
+        if version == 6, wasDecoded, (!hasPlantCheckInsKey || plantCheckIns == nil) {
+            throw JournalArchiveError.invalidRecord
+        }
         guard plants.count <= Self.maxRecords,
               entries.count <= Self.maxRecords,
               (careTasks?.count ?? 0) <= Self.maxRecords,
@@ -271,13 +309,15 @@ struct JournalArchive: Codable {
               (careOpportunities?.count ?? 0) <= Self.maxRecords,
               (tags?.count ?? 0) <= Self.maxRecords,
               (quietPeriods?.count ?? 0) <= Self.maxRecords,
-              (quietPeriodTaskSnapshots?.count ?? 0) <= Self.maxRecords else {
+              (quietPeriodTaskSnapshots?.count ?? 0) <= Self.maxRecords,
+              (plantCheckIns?.count ?? 0) <= Self.maxRecords else {
             throw JournalArchiveError.tooLarge
         }
         let plantIDs = Set(plants.map(\.id))
         let periodRecords = quietPeriods ?? []
         let snapshotRecords = quietPeriodTaskSnapshots ?? []
         let opportunityRecords = careOpportunities ?? []
+        let checkInRecords = plantCheckIns ?? []
         let periodIDs = Set(periodRecords.map(\.id))
         guard plantIDs.count == plants.count,
               Set(entries.map(\.id)).count == entries.count,
@@ -286,6 +326,7 @@ struct JournalArchive: Codable {
               Set(opportunityRecords.map(\.id)).count == opportunityRecords.count,
               periodIDs.count == periodRecords.count,
               Set(snapshotRecords.map(\.id)).count == snapshotRecords.count,
+              Set(checkInRecords.map(\.id)).count == checkInRecords.count,
               plants.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             throw JournalArchiveError.invalidRecord
         }
@@ -317,6 +358,26 @@ struct JournalArchive: Codable {
                 throw JournalArchiveError.invalidRecord
             }
             if let data = entry.photoData, UIImage(data: data) == nil {
+                throw JournalArchiveError.invalidRecord
+            }
+        }
+        let isLetter: (UInt8) -> Bool = { (65...90).contains($0) || (97...122).contains($0) }
+        let isWellFormedSignID: (String) -> Bool = { value in
+            let bytes = Array(value.utf8)
+            guard (1...64).contains(bytes.count), let first = bytes.first, isLetter(first) else { return false }
+            return bytes.dropFirst().allSatisfy {
+                isLetter($0) || (48...57).contains($0) || $0 == 45 || $0 == 95
+            }
+        }
+        for checkIn in checkInRecords {
+            guard plantIDs.contains(checkIn.plantID),
+                  !checkIn.signRawValues.isEmpty,
+                  Set(checkIn.signRawValues).count == checkIn.signRawValues.count,
+                  checkIn.signRawValues.allSatisfy(isWellFormedSignID),
+                  !checkIn.signRawValues.contains(PlantCheckInSign.notSure.rawValue) || checkIn.signRawValues.count == 1 else {
+                throw JournalArchiveError.invalidRecord
+            }
+            if let data = checkIn.photoData, UIImage(data: data) == nil {
                 throw JournalArchiveError.invalidRecord
             }
         }
@@ -469,6 +530,7 @@ struct JournalArchive: Codable {
         let eventIDs = Set(try previewContext.fetch(FetchDescriptor<CareEvent>()).map(\.id))
         let quietPeriodIDs = Set(try previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id))
         let quietPeriodSnapshotIDs = Set(try previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id))
+        let plantCheckInIDs = Set(try previewContext.fetch(FetchDescriptor<PlantCheckIn>()).map(\.id))
         let opportunityIDs = Set(try previewContext.fetch(FetchDescriptor<CareOpportunity>()).map(\.id))
         let tasks = archive.careTasks ?? []
         let events = archive.careEvents ?? []
@@ -488,7 +550,9 @@ struct JournalArchive: Codable {
             quietPeriodsToAdd: (archive.quietPeriods ?? []).filter { !quietPeriodIDs.contains($0.id) }.count,
             quietPeriodsAlreadyPresent: (archive.quietPeriods ?? []).filter { quietPeriodIDs.contains($0.id) }.count,
             quietPeriodSnapshotsToAdd: (archive.quietPeriodTaskSnapshots ?? []).filter { !quietPeriodSnapshotIDs.contains($0.id) }.count,
-            quietPeriodSnapshotsAlreadyPresent: (archive.quietPeriodTaskSnapshots ?? []).filter { quietPeriodSnapshotIDs.contains($0.id) }.count
+            quietPeriodSnapshotsAlreadyPresent: (archive.quietPeriodTaskSnapshots ?? []).filter { quietPeriodSnapshotIDs.contains($0.id) }.count,
+            plantCheckInsToAdd: (archive.plantCheckIns ?? []).filter { !plantCheckInIDs.contains($0.id) }.count,
+            plantCheckInsAlreadyPresent: (archive.plantCheckIns ?? []).filter { plantCheckInIDs.contains($0.id) }.count
         )
     }
 
@@ -514,6 +578,7 @@ struct JournalArchive: Codable {
         let existingOpportunities = try recoveryContext.fetch(FetchDescriptor<CareOpportunity>())
         let existingQuietPeriods = try recoveryContext.fetch(FetchDescriptor<QuietPeriod>())
         let existingSnapshots = try recoveryContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>())
+        let existingPlantCheckIns = try recoveryContext.fetch(FetchDescriptor<PlantCheckIn>())
 
         let existingTags = try recoveryContext.fetch(FetchDescriptor<PlantTag>())
         var plants = Dictionary(uniqueKeysWithValues: existingPlants.map { ($0.id, $0) })
@@ -524,6 +589,7 @@ struct JournalArchive: Codable {
         var tags = Dictionary(uniqueKeysWithValues: existingTags.map { ($0.id, $0) })
         let quietPeriods = Dictionary(uniqueKeysWithValues: existingQuietPeriods.map { ($0.id, $0) })
         let quietSnapshots = Dictionary(uniqueKeysWithValues: existingSnapshots.map { ($0.id, $0) })
+        let plantCheckIns = Dictionary(uniqueKeysWithValues: existingPlantCheckIns.map { ($0.id, $0) })
 
         // A valid archive must also remain valid against the destination store.
         // Existing plants are intentionally preserved, so an archived local plant
@@ -621,6 +687,20 @@ struct JournalArchive: Codable {
                 throw JournalArchiveError.conflictingRecord
             }
         }
+        for record in archive.plantCheckIns ?? [] {
+            if let existing = plantCheckIns[record.id] {
+                guard PlantCheckInRecord(
+                    id: existing.id,
+                    plantID: existing.plantID,
+                    observedAt: existing.observedAt,
+                    signRawValues: existing.signRawValues,
+                    note: existing.note,
+                    photoData: existing.photoData
+                ) == record else {
+                    throw JournalArchiveError.conflictingRecord
+                }
+            }
+        }
         for record in archive.quietPeriods ?? [] {
             if let period = quietPeriods[record.id] {
                 guard let plantID = period.plant?.id,
@@ -690,6 +770,21 @@ struct JournalArchive: Codable {
                 guard let plant = plants[record.plantID] else { throw JournalArchiveError.invalidRecord }
                 recoveryContext.insert(JournalEntry(id: record.id, date: record.date, note: record.note, photoData: record.photoData, milestoneRaw: record.milestoneRaw, changeKindRaw: record.changeKindRaw, plant: plant))
                 restoredEntries += 1
+            }
+            for record in archive.plantCheckIns ?? [] where plantCheckIns[record.id] == nil {
+                guard plants[record.plantID] != nil else { throw JournalArchiveError.invalidRecord }
+                let restoredCheckIn = PlantCheckIn(
+                    id: record.id,
+                    plantID: record.plantID,
+                    observedAt: record.observedAt,
+                    signRawValues: record.signRawValues,
+                    note: "",
+                    photoData: record.photoData
+                )
+                // Archive recovery is lossless: unlike user-entered drafts, a
+                // stored archive note must not be normalized or rewritten.
+                restoredCheckIn.note = record.note
+                recoveryContext.insert(restoredCheckIn)
             }
             for record in archive.careTasks ?? [] where tasks[record.id] == nil {
                 guard let plant = plants[record.plantID],
@@ -767,6 +862,43 @@ struct JournalArchive: Codable {
             throw error
         }
         return restoredEntries
+    }
+}
+
+
+extension JournalArchive {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        plants = try container.decode([PlantRecord].self, forKey: .plants)
+        entries = try container.decode([EntryRecord].self, forKey: .entries)
+        careTasks = try container.decodeIfPresent([CareTaskRecord].self, forKey: .careTasks)
+        careEvents = try container.decodeIfPresent([CareEventRecord].self, forKey: .careEvents)
+        careOpportunities = try container.decodeIfPresent([CareOpportunityRecord].self, forKey: .careOpportunities)
+        tags = try container.decodeIfPresent([TagRecord].self, forKey: .tags)
+        quietPeriods = try container.decodeIfPresent([QuietPeriodRecord].self, forKey: .quietPeriods)
+        quietPeriodTaskSnapshots = try container.decodeIfPresent([QuietPeriodTaskSnapshotRecord].self, forKey: .quietPeriodTaskSnapshots)
+        plantCheckIns = try container.decodeIfPresent([PlantCheckInRecord].self, forKey: .plantCheckIns)
+        hasPlantCheckInsKey = container.contains(.plantCheckIns)
+        wasDecoded = true
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(plants, forKey: .plants)
+        try container.encode(entries, forKey: .entries)
+        try container.encodeIfPresent(careTasks, forKey: .careTasks)
+        try container.encodeIfPresent(careEvents, forKey: .careEvents)
+        try container.encodeIfPresent(careOpportunities, forKey: .careOpportunities)
+        try container.encodeIfPresent(tags, forKey: .tags)
+        try container.encodeIfPresent(quietPeriods, forKey: .quietPeriods)
+        try container.encodeIfPresent(quietPeriodTaskSnapshots, forKey: .quietPeriodTaskSnapshots)
+        if let plantCheckIns {
+            try container.encode(plantCheckIns, forKey: .plantCheckIns)
+        } else if version >= 6 {
+            try container.encode([PlantCheckInRecord](), forKey: .plantCheckIns)
+        }
     }
 }
 
