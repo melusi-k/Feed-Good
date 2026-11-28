@@ -615,7 +615,7 @@ struct PlantPersistenceTests {
         let remaining = try context.fetch(FetchDescriptor<PlantCheckIn>())
         #expect(remaining.count == 1)
         #expect(remaining.first?.plantID == aloe.id)
-        #expect(try context.fetch(FetchDescriptor<Plant>()).map(\\.id) == [aloe.id])
+        #expect(try context.fetch(FetchDescriptor<Plant>()).map { $0.id } == [aloe.id])
     }
 
 }
