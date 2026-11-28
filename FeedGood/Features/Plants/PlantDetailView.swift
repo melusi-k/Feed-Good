@@ -165,7 +165,7 @@ struct PlantDetailView: View {
             Button("Delete", role: .destructive) { deletePlant() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes \(plant.name), its photo and its notes. Care history and journal entries belong to the plant and are removed with it. This can't be undone.")
+            Text("This permanently deletes \(plant.name), its photo and its notes. Care history, journal entries and plant check-ins belong to the plant and are removed with it. This can't be undone.")
         }
         .alert("Plant not updated", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
             Button("OK") { actionError = nil }
