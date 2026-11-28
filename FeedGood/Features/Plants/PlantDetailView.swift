@@ -232,10 +232,7 @@ struct PlantDetailView: View {
     private func deletePlant() {
         do {
             try CareOpportunityLifecycle.deleteAll(for: plant.id, in: modelContext)
-            let checkIns = try modelContext.fetch(FetchDescriptor<PlantCheckIn>())
-            for checkIn in checkIns where checkIn.plantID == plant.id {
-                modelContext.delete(checkIn)
-            }
+            try PlantCheckInStore.deleteAll(for: plant.id, in: modelContext)
             modelContext.delete(plant)
             try modelContext.save()
             dismiss()
