@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 struct JournalMilestoneTests {
-    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV6.self) }
+    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV7.self) }
     private func memory() throws -> ModelContainer { try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true)) }
 
     @Test func milestoneOnlyDraftCanSaveEditAndClearWithoutChangingNote() throws {
