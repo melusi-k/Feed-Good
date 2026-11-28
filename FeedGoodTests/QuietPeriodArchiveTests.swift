@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import Testing
+import UIKit
 @testable import FeedGood
 
 @MainActor
@@ -8,6 +9,14 @@ struct QuietPeriodArchiveTests {
     private func memory() throws -> ModelContainer {
         let schema = Schema(versionedSchema: FeedGoodSchemaV7.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }
+
+    private func validPhotoData() -> Data {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1))
+        return renderer.image { context in
+            UIColor.systemGreen.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+        }.pngData()!
     }
 
     @Test func versionFiveRoundTripsQuietPeriodAndTaskSnapshotIdempotently() throws {
@@ -368,12 +377,13 @@ struct QuietPeriodArchiveTests {
         sourceContext.insert(aloe)
         try sourceContext.save()
 
+        let photoData = validPhotoData()
         try PlantCheckInStore.save(
             PlantCheckInDraft(
                 observedAt: Date(timeIntervalSince1970: 1_700_000_000),
                 signs: [.yellowing, .spots],
                 note: "Lower leaves have small marks",
-                photoData: Data([0x01, 0x02, 0x03])
+                photoData: photoData
             ),
             for: fern,
             in: sourceContext
@@ -383,6 +393,8 @@ struct QuietPeriodArchiveTests {
             for: aloe,
             in: sourceContext
         )
+        fern.archivedAt = Date(timeIntervalSince1970: 1_710_000_000)
+        try sourceContext.save()
         let sourceRecords = try sourceContext.fetch(FetchDescriptor<PlantCheckIn>())
         let data = try JournalArchive.export(
             plants: [fern, aloe],
@@ -406,7 +418,8 @@ struct QuietPeriodArchiveTests {
         #expect(restoredFern.signRawValues == ["spots", "yellowing"])
         #expect(restoredFern.observedAt == Date(timeIntervalSince1970: 1_700_000_000))
         #expect(restoredFern.note == "Lower leaves have small marks")
-        #expect(restoredFern.photoData == Data([0x01, 0x02, 0x03]))
+        #expect(restoredFern.photoData == photoData)
+        #expect(try recovery.fetch(FetchDescriptor<Plant>()).first { $0.id == fern.id }?.archivedAt == Date(timeIntervalSince1970: 1_710_000_000))
         #expect(restored.first { $0.plantID == aloe.id }?.signRawValues == ["notSure"])
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
 
