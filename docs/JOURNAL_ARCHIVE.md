@@ -1,4 +1,4 @@
-# Journal archive and recovery contract (v1, v2 and v3)
+# Journal archive and recovery contract (v1–v6)
 
 Set before the Journal schema is introduced.
 
