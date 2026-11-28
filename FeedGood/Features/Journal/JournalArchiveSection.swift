@@ -108,7 +108,7 @@ struct JournalArchiveSection: View {
         guard let data = pendingRecoveryData, let preview = recoveryPreview else { return }
         do {
             _ = try JournalArchive.recover(data, context: context)
-            statusMessage = "Recovered \(preview.plantsToAdd) plants, \(preview.entriesToAdd) journal entries, \(preview.careTasksToAdd) care routines, \(preview.careEventsToAdd) care-history records, \(preview.careOpportunitiesToAdd) scheduled-care opportunities, \(preview.quietPeriodsToAdd) Quiet Periods and \(preview.quietPeriodSnapshotsToAdd) Quiet Period task snapshots. Existing records were kept."
+            statusMessage = "Recovered \(preview.plantsToAdd) plants, \(preview.entriesToAdd) journal entries, \(preview.careTasksToAdd) care routines, \(preview.careEventsToAdd) care-history records, \(preview.careOpportunitiesToAdd) scheduled-care opportunities, \(preview.quietPeriodsToAdd) Quiet Periods and \(preview.quietPeriodSnapshotsToAdd) Quiet Period task snapshots and \\(preview.plantCheckInsToAdd) plant check-ins. Existing records were kept."
         } catch {
             errorMessage = "Recovery failed: \(error.localizedDescription)"
         }
