@@ -67,7 +67,7 @@ struct JournalArchive: Codable {
     var quietPeriods: [QuietPeriodRecord]?
     var quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshotRecord]?
     var plantCheckIns: [PlantCheckInRecord]? = nil
-    private(set) var hasPlantCheckInsKey = false
+    var hasPlantCheckInsKey = false
 
     enum CodingKeys: String, CodingKey {
         case version, plants, entries, careTasks, careEvents, careOpportunities
@@ -322,6 +322,7 @@ struct JournalArchive: Codable {
               Set(opportunityRecords.map(\.id)).count == opportunityRecords.count,
               periodIDs.count == periodRecords.count,
               Set(snapshotRecords.map(\.id)).count == snapshotRecords.count,
+              Set(checkInRecords.map(\.id)).count == checkInRecords.count,
               plants.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             throw JournalArchiveError.invalidRecord
         }
@@ -518,6 +519,7 @@ struct JournalArchive: Codable {
         let eventIDs = Set(try previewContext.fetch(FetchDescriptor<CareEvent>()).map(\.id))
         let quietPeriodIDs = Set(try previewContext.fetch(FetchDescriptor<QuietPeriod>()).map(\.id))
         let quietPeriodSnapshotIDs = Set(try previewContext.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).map(\.id))
+        let plantCheckInIDs = Set(try previewContext.fetch(FetchDescriptor<PlantCheckIn>()).map(\.id))
         let opportunityIDs = Set(try previewContext.fetch(FetchDescriptor<CareOpportunity>()).map(\.id))
         let tasks = archive.careTasks ?? []
         let events = archive.careEvents ?? []
