@@ -42,6 +42,6 @@ The export includes archived and active plants' Quiet Period history. App settin
 New exports use archive version 6 and add `plantCheckIns`, each containing the stable check-in ID, owning plant ID, observation instant, validated observable-sign identifiers, optional context note and optional local photo bytes.
 
 - Versions 1–5 remain supported and decode with no check-ins. Any v1–v5 JSON payload that contains the v6-only `plantCheckIns` key is rejected, including an empty array; newer observation data is never silently discarded.
-- Version 6 requires the `plantCheckIns` key. Validate unique check-in IDs, an existing plant reference, one or more known sign identifiers, unique signs, the exclusive `notSure` selection and valid image data before writes.
+- Version 6 requires the `plantCheckIns` key. Validate unique check-in IDs, an existing plant reference, one or more well-formed sign identifiers, unique signs, the exclusive `notSure` selection and valid image data before writes. Preserve unknown but well-formed sign IDs verbatim so newer observations survive older-app recovery and can render neutrally.
 - Preview reports check-ins to add and already present. Recovery is additive: an identical same-ID check-in is skipped; a differing same-ID record is a conflict. All new check-ins are inserted in the same isolated recovery context and transaction as the rest of the archive.
 - Check-ins are not care completions and restore does not change care tasks, due dates, reminders, opportunities or streak inputs.
