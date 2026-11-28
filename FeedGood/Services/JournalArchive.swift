@@ -68,6 +68,7 @@ struct JournalArchive: Codable {
     var quietPeriodTaskSnapshots: [QuietPeriodTaskSnapshotRecord]?
     var plantCheckIns: [PlantCheckInRecord]? = nil
     var hasPlantCheckInsKey = false
+    var wasDecoded = false
 
     enum CodingKeys: String, CodingKey {
         case version, plants, entries, careTasks, careEvents, careOpportunities
@@ -295,7 +296,7 @@ struct JournalArchive: Codable {
         if version < 6, hasPlantCheckInsKey {
             throw JournalArchiveError.invalidRecord
         }
-        if version == 6, plantCheckIns == nil {
+        if version == 6, wasDecoded, (!hasPlantCheckInsKey || plantCheckIns == nil) {
             throw JournalArchiveError.invalidRecord
         }
         guard plants.count <= Self.maxRecords,
@@ -865,6 +866,25 @@ extension JournalArchive {
         quietPeriodTaskSnapshots = try container.decodeIfPresent([QuietPeriodTaskSnapshotRecord].self, forKey: .quietPeriodTaskSnapshots)
         plantCheckIns = try container.decodeIfPresent([PlantCheckInRecord].self, forKey: .plantCheckIns)
         hasPlantCheckInsKey = container.contains(.plantCheckIns)
+        wasDecoded = true
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(plants, forKey: .plants)
+        try container.encode(entries, forKey: .entries)
+        try container.encodeIfPresent(careTasks, forKey: .careTasks)
+        try container.encodeIfPresent(careEvents, forKey: .careEvents)
+        try container.encodeIfPresent(careOpportunities, forKey: .careOpportunities)
+        try container.encodeIfPresent(tags, forKey: .tags)
+        try container.encodeIfPresent(quietPeriods, forKey: .quietPeriods)
+        try container.encodeIfPresent(quietPeriodTaskSnapshots, forKey: .quietPeriodTaskSnapshots)
+        if let plantCheckIns {
+            try container.encode(plantCheckIns, forKey: .plantCheckIns)
+        } else if version >= 6 {
+            try container.encode([PlantCheckInRecord](), forKey: .plantCheckIns)
+        }
     }
 }
 
