@@ -181,6 +181,9 @@ jobs:
                 TEST_ARGS+=("-only-testing:FeedGoodTests/PlantChangeTests")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/JournalMilestoneTests")
                 ;;
+              185)
+                TEST_ARGS+=("-only-testing:FeedGoodTests/PlantPersistenceTests")
+                ;;
               125)
                 TEST_ARGS+=("-only-testing:FeedGoodTests/QuietPeriodArchiveTests")
                 TEST_ARGS+=("-only-testing:FeedGoodTests/JournalTests")
