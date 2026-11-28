@@ -490,7 +490,7 @@ struct QuietPeriodArchiveTests {
         unknown.plantCheckIns = [
             .init(id: UUID(), plantID: plant.id, observedAt: .now, signRawValues: ["futureObservation2027"], note: "", photoData: nil)
         ]
-        #expect(throws: Never.self) { try unknown.validate() }
+        try unknown.validate()
 
         var malformed = base
         malformed.plantCheckIns = [
