@@ -476,9 +476,18 @@ enum FeedGoodSchemaV6: VersionedSchema {
     }
 }
 
+/// V7 adds the independent PlantCheckIn observation model. Existing model types
+/// remain unchanged so the V1–V6 schema graphs retain their historical checksums.
+enum FeedGoodSchemaV7: VersionedSchema {
+    static var versionIdentifier = Schema.Version(7, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Plant.self, CareTask.self, CareEvent.self, JournalEntry.self, PlantTag.self, QuietPeriod.self, QuietPeriodTaskSnapshot.self, CareOpportunity.self, PlantCheckIn.self]
+    }
+}
+
 enum FeedGoodMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self, FeedGoodSchemaV5.self, FeedGoodSchemaV6.self]
+        [FeedGoodSchemaV1.self, FeedGoodSchemaV2.self, FeedGoodSchemaV3.self, FeedGoodSchemaV4.self, FeedGoodSchemaV5.self, FeedGoodSchemaV6.self, FeedGoodSchemaV7.self]
     }
 
     static var stages: [MigrationStage] {
@@ -518,7 +527,8 @@ enum FeedGoodMigrationPlan: SchemaMigrationPlan {
                     }
                     try context.save()
                 }
-            )
+            ),
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV6.self, toVersion: FeedGoodSchemaV7.self)
         ]
     }
 }

@@ -480,4 +480,142 @@ struct PlantPersistenceTests {
         #expect(try context.fetch(FetchDescriptor<QuietPeriodTaskSnapshot>()).isEmpty)
     }
 
+
+    @Test func checkInStoreCreatesEditsAndDeletesWithoutTouchingCare() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV7.self), configurations: configuration)
+        let context = ModelContext(container)
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        let dueDate = Date(timeIntervalSince1970: 1_800_000_000)
+        let task = CareTask(kind: .watering, intervalDays: 7, dueDate: dueDate, plant: plant)
+        context.insert(task)
+        try context.save()
+
+        var draft = PlantCheckInDraft(
+            observedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            signs: [.yellowing, .spots],
+            note: "  Lower leaves have small marks  ",
+            photoData: Data([0x01, 0x02])
+        )
+        try PlantCheckInStore.save(draft, for: plant, in: context)
+        var records = try context.fetch(FetchDescriptor<PlantCheckIn>())
+        #expect(records.count == 1)
+        let checkIn = try #require(records.first)
+        let checkInID = checkIn.id
+        #expect(checkIn.plantID == plant.id)
+        #expect(checkIn.signRawValues == ["spots", "yellowing"])
+        #expect(checkIn.note == "Lower leaves have small marks")
+        #expect(checkIn.photoData == Data([0x01, 0x02]))
+
+        draft.observedAt = Date(timeIntervalSince1970: 1_710_000_000)
+        draft.signs = [.wilting]
+        draft.note = "Updated observation"
+        draft.photoData = nil
+        try PlantCheckInStore.save(draft, for: plant, editing: checkIn, in: context)
+        records = try context.fetch(FetchDescriptor<PlantCheckIn>())
+        #expect(records.count == 1)
+        #expect(records.first?.id == checkInID)
+        #expect(records.first?.signRawValues == ["wilting"])
+        #expect(records.first?.note == "Updated observation")
+        #expect(task.dueDate == dueDate)
+        #expect(try context.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+
+        try PlantCheckInStore.delete(checkIn, in: context)
+        #expect(try context.fetch(FetchDescriptor<PlantCheckIn>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<CareTask>()).count == 1)
+    }
+
+    @Test func checkInStoreEnforcesPlantIsolationAndNotSureExclusivity() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV7.self), configurations: configuration)
+        let context = ModelContext(container)
+        let fern = Plant(name: "Fern")
+        let aloe = Plant(name: "Aloe")
+        context.insert(fern)
+        context.insert(aloe)
+        try context.save()
+
+        let invalid = PlantCheckInDraft(signs: [.notSure, .yellowing])
+        #expect(throws: PlantCheckInStoreError.invalidRecord) {
+            try PlantCheckInStore.save(invalid, for: fern, in: context)
+        }
+        let valid = PlantCheckInDraft(signs: [.yellowing])
+        try PlantCheckInStore.save(valid, for: fern, in: context)
+        let record = try #require(context.fetch(FetchDescriptor<PlantCheckIn>()).first)
+        #expect(throws: PlantCheckInStoreError.invalidRecord) {
+            try PlantCheckInStore.save(valid, for: aloe, editing: record, in: context)
+        }
+        #expect(try context.fetch(FetchDescriptor<PlantCheckIn>()).count == 1)
+    }
+
+    @Test func checkInStoreRejectsNewRecordsForArchivedPlants() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV7.self), configurations: configuration)
+        let context = ModelContext(container)
+        let plant = Plant(name: "Fern", archivedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        context.insert(plant)
+        try context.save()
+
+        #expect(throws: PlantCheckInStoreError.archivedPlant) {
+            try PlantCheckInStore.save(PlantCheckInDraft(signs: [.wilting]), for: plant, in: context)
+        }
+        #expect(try context.fetch(FetchDescriptor<PlantCheckIn>()).isEmpty)
+    }
+
+    @Test func v6StoreMigratesToV7WithoutChangingExistingPlantData() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let storeURL = folder.appendingPathComponent("v6-garden.store")
+        let plantID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1_650_000_000)
+
+        do {
+            let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
+            let configuration = ModelConfiguration(schema: schema, url: storeURL)
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            let context = ModelContext(container)
+            context.insert(Plant(id: plantID, name: "Legacy Fern", notes: "Keep this note", createdAt: createdAt))
+            try context.save()
+        }
+
+        do {
+            let schema = Schema(versionedSchema: FeedGoodSchemaV7.self)
+            let configuration = ModelConfiguration(schema: schema, url: storeURL)
+            let container = try ModelContainer(for: schema, migrationPlan: FeedGoodMigrationPlan.self, configurations: [configuration])
+            let context = ModelContext(container)
+            let plants = try context.fetch(FetchDescriptor<Plant>())
+            #expect(plants.count == 1)
+            #expect(plants.first?.id == plantID)
+            #expect(plants.first?.name == "Legacy Fern")
+            #expect(plants.first?.notes == "Keep this note")
+            #expect(plants.first?.createdAt == createdAt)
+            #expect(try context.fetch(FetchDescriptor<PlantCheckIn>()).isEmpty)
+        }
+    }
+
+
+    @Test func permanentlyDeletingPlantStagesAndRemovesItsCheckIns() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV7.self), configurations: configuration)
+        let context = ModelContext(container)
+        let fern = Plant(name: "Fern")
+        let aloe = Plant(name: "Aloe")
+        context.insert(fern)
+        context.insert(aloe)
+        try context.save()
+
+        try PlantCheckInStore.save(PlantCheckInDraft(signs: [.yellowing]), for: fern, in: context)
+        try PlantCheckInStore.save(PlantCheckInDraft(signs: [.wilting]), for: aloe, in: context)
+        try PlantCheckInStore.deleteAll(for: fern.id, in: context)
+        context.delete(fern)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<PlantCheckIn>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.plantID == aloe.id)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).map { $0.id } == [aloe.id])
+    }
+
 }
