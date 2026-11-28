@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct QuietPeriodArchiveTests {
     private func memory() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: FeedGoodSchemaV6.self)
+        let schema = Schema(versionedSchema: FeedGoodSchemaV7.self)
         return try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
@@ -53,7 +53,7 @@ struct QuietPeriodArchiveTests {
             quietPeriodTaskSnapshots: [snapshot]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 5)
+        #expect(archive.version == 6)
         #expect(archive.quietPeriods?.count == 1)
         #expect(archive.quietPeriodTaskSnapshots?.count == 1)
 
@@ -208,7 +208,7 @@ struct QuietPeriodArchiveTests {
             careOpportunities: [opportunity]
         )
         let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(archive.version == 5)
+        #expect(archive.version == 6)
         #expect(archive.careOpportunities?.count == 1)
 
         let destination = try memory()
