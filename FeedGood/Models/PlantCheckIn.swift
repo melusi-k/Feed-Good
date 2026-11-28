@@ -68,6 +68,16 @@ final class PlantCheckIn {
         signRawValues.compactMap(PlantCheckInSign.init(rawValue:))
     }
 
+    /// Unknown values are retained verbatim for forward-compatible archive recovery
+    /// and can be rendered as a neutral “Other observation” in story surfaces.
+    var unknownSignRawValues: [String] {
+        signRawValues.filter { PlantCheckInSign(rawValue: $0) == nil }
+    }
+
+    var displaySignLabels: [String] {
+        signRawValues.map { PlantCheckInSign(rawValue: $0)?.title ?? "Other observation" }
+    }
+
     init(
         id: UUID = UUID(),
         plantID: UUID,
