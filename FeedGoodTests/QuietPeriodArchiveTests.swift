@@ -389,10 +389,13 @@ struct QuietPeriodArchiveTests {
             in: sourceContext
         )
         try PlantCheckInStore.save(
-            PlantCheckInDraft(signs: [.notSure], note: "Couldn't identify what changed"),
+            PlantCheckInDraft(signs: [.yellowing], note: "An observation from a newer app version"),
             for: aloe,
             in: sourceContext
         )
+        let aloeCheckIn = try #require(try sourceContext.fetch(FetchDescriptor<PlantCheckIn>()).first { $0.plantID == aloe.id })
+        aloeCheckIn.signRawValues = ["futureObservation2027"]
+        try sourceContext.save()
         fern.archivedAt = Date(timeIntervalSince1970: 1_710_000_000)
         try sourceContext.save()
         let sourceRecords = try sourceContext.fetch(FetchDescriptor<PlantCheckIn>())
@@ -420,7 +423,10 @@ struct QuietPeriodArchiveTests {
         #expect(restoredFern.note == "Lower leaves have small marks")
         #expect(restoredFern.photoData == photoData)
         #expect(try recovery.fetch(FetchDescriptor<Plant>()).first { $0.id == fern.id }?.archivedAt == Date(timeIntervalSince1970: 1_710_000_000))
-        #expect(restored.first { $0.plantID == aloe.id }?.signRawValues == ["notSure"])
+        let restoredAloe = try #require(restored.first { $0.plantID == aloe.id })
+        #expect(restoredAloe.signRawValues == ["futureObservation2027"])
+        #expect(restoredAloe.unknownSignRawValues == ["futureObservation2027"])
+        #expect(restoredAloe.displaySignLabels == ["Other observation"])
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
 
         restoredFern.note = "Changed locally"
@@ -482,9 +488,15 @@ struct QuietPeriodArchiveTests {
 
         var unknown = base
         unknown.plantCheckIns = [
-            .init(id: UUID(), plantID: plant.id, observedAt: .now, signRawValues: ["unknown-sign"], note: "", photoData: nil)
+            .init(id: UUID(), plantID: plant.id, observedAt: .now, signRawValues: ["futureObservation2027"], note: "", photoData: nil)
         ]
-        #expect(throws: JournalArchiveError.invalidRecord) { try unknown.validate() }
+        #expect(throws: Never.self) { try unknown.validate() }
+
+        var malformed = base
+        malformed.plantCheckIns = [
+            .init(id: UUID(), plantID: plant.id, observedAt: .now, signRawValues: ["not a valid ID"], note: "", photoData: nil)
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try malformed.validate() }
 
         var invalidPhoto = base
         invalidPhoto.plantCheckIns = [
