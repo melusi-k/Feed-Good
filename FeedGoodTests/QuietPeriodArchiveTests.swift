@@ -395,6 +395,7 @@ struct QuietPeriodArchiveTests {
         )
         let aloeCheckIn = try #require(try sourceContext.fetch(FetchDescriptor<PlantCheckIn>()).first { $0.plantID == aloe.id })
         aloeCheckIn.signRawValues = ["futureObservation2027"]
+        aloeCheckIn.note = "  Note from a newer app version  "
         try sourceContext.save()
         fern.archivedAt = Date(timeIntervalSince1970: 1_710_000_000)
         try sourceContext.save()
@@ -428,6 +429,7 @@ struct QuietPeriodArchiveTests {
         #expect(restoredAloe.signRawValues == ["futureObservation2027"])
         #expect(restoredAloe.unknownSignRawValues == ["futureObservation2027"])
         #expect(restoredAloe.displaySignLabels == ["Other observation"])
+        #expect(restoredAloe.note == "  Note from a newer app version  ")
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
 
         restoredFern.note = "Changed locally"
