@@ -67,9 +67,9 @@ Included in the local-first app if the reviewed content ships. No account or rem
 1. Assign editorial and safety ownership before selecting the initial symptom set; do not ship troubleshooting content before the owner, source hierarchy and review process are approved.
 2. Implement a distinct `PlantCheckIn` model; do not extend `JournalEntry` with check-in semantics. Add the SwiftData V7 migration from V6 and preserve all existing V1–V6 schema definitions.
 3. Keep troubleshooting content disabled and out of this implementation phase. A later content phase may begin only after each item has complete source provenance and independent qualified review.
-4. Add content validation for stable IDs, provenance, review status and safe wording.
-5. Test record/edit/delete, plant isolation, archive compatibility, offline traversal and unknown inputs.
-6. Complete product, accessibility, privacy, content and physical-device review before release.
+4. Add data validation for stable IDs, existing plant references, approved sign identifiers, note/photo constraints and duplicate records.
+5. Test offline create/edit/delete, plant isolation, V6-to-V7 migration, archive v1–v6 compatibility, export/restore conflicts, permanent deletion and archived-plant retention.
+6. Complete product, accessibility, privacy, Dynamic Type, appearance and physical-device review for the check-in capture and story surfaces. Guidance content has its own independent editorial/safety release review.
 
 ## 10. Replaces
 
