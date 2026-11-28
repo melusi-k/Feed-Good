@@ -1,8 +1,8 @@
 # PRD-014 — Plant Check-ins and Cautious Troubleshooting
 
-**Status:** Proposal consistent; implementation not started; troubleshooting release is safety-gated  
-**Priority:** P2, contingent on editorial and safety ownership  
-**Release:** Post-MVP, after the Care Guide review process is established  
+**Status:** Data-contract decision approved; implementation in progress; troubleshooting release remains safety-gated  
+**Priority:** P2  
+**Release:** Check-in records may be implemented independently; troubleshooting guidance remains post-MVP and safety-gated  
 **Primary surfaces:** Plant Profile, Today, Plant Story, offline Care Guide
 
 ## 1. One-line goal
@@ -65,8 +65,8 @@ Included in the local-first app if the reviewed content ships. No account or rem
 ## 9. Launch plan
 
 1. Assign editorial and safety ownership before selecting the initial symptom set; do not ship troubleshooting content before the owner, source hierarchy and review process are approved.
-2. Decide whether typed observation metadata extends `JournalEntry` or uses a small `PlantCheckIn` model; preserve the current story projection and archive guarantees.
-3. Write and source-check the first 3–5 offline observation paths and their neutral fallback.
+2. Implement a distinct `PlantCheckIn` model; do not extend `JournalEntry` with check-in semantics. Add the SwiftData V7 migration from V6 and preserve all existing V1–V6 schema definitions.
+3. Keep troubleshooting content disabled and out of this implementation phase. A later content phase may begin only after each item has complete source provenance and independent qualified review.
 4. Add content validation for stable IDs, provenance, review status and safe wording.
 5. Test record/edit/delete, plant isolation, archive compatibility, offline traversal and unknown inputs.
 6. Complete product, accessibility, privacy, content and physical-device review before release.
@@ -93,7 +93,26 @@ The following policy is approved as a mandatory content and release gate for all
 
 This policy approves the editorial standard only. It does not approve any specific troubleshooting content or remove the existing release gate: each item must still be reviewed and have complete provenance before it ships.
 
-The schema choice remains open. Extending JournalEntry may minimise relationships and preserve the existing story; a separate PlantCheckIn may keep typed observation state clearer. Either option must define archive versioning, conflict behavior and deletion semantics before code is written.
+### Approved data and persistence contract
+
+Product has approved a separate `PlantCheckIn` model. It is a first-class observation record, not a `JournalEntry`, `CareEvent`, care completion or care opportunity.
+
+- Preserve the existing `JournalEntry` contract and all immutable `FeedGoodSchemaV1` through `FeedGoodSchemaV6` definitions.
+- Add `PlantCheckIn` to a new `FeedGoodSchemaV7` and migrate V6 to V7 without rewriting historical records. Existing installs must retain plant identity, journal/media, care, opportunity, quiet-period and tag relationships.
+- Each check-in belongs to exactly one plant and has a stable ID, observation date, one or more validated observable-sign identifiers, optional context note and optional photo using the existing local-media policy. Do not infer signs from photos or notes.
+- Check-in create/edit/delete is local-first and transactional. Plant deletion follows the existing cascade lifecycle. Archived plants retain their check-ins and story; archived check-ins remain editable only where the existing archived-plant policy permits, and no check-in may reactivate a plant.
+- Check-ins are projected into Plant Story as a visibly labelled observation. Plant Story remains a projection, not a second persisted history store.
+- Saving, editing or deleting a check-in must not mutate care tasks, due dates, reminders, `CareEvent`, care opportunities or streak/analytics qualification.
+- Bump the JSON archive format from v5 to v6. Export check-ins with their plant IDs and media; decode v1–v5 archives as containing no check-ins; validate IDs, plant references, sign values, media, duplicate/conflicting records and record limits before writes; include check-ins in preview counts and transactional restore. Existing same-ID records must be identical or recovery must fail without partial writes.
+- Keep offline troubleshooting content out of this data-contract implementation. The approved editorial policy is not approval of any content item. A named independent reviewer, qualifications, source-level provenance and review date remain mandatory before any guidance can ship.
+
+### Delivery phases
+
+1. **Data foundation:** V7 model/migration, archive v6 compatibility, validation, export/restore and offline CRUD.
+2. **Story and entry points:** Plant Story projection and Plant Profile entry point; Today integration only after its navigation/archived-plant behavior is validated.
+3. **Guidance (separate release gate):** reviewed offline content, neutral unknown/conflicting fallback, provenance UI and offline journey. This phase cannot ship until every item passes the approved editorial/safety review.
+
+Issue #69 — Plant Archive and Restore — is closed and its archive contract is delivered. It is no longer an outstanding blocker; this work must preserve and extend that contract rather than re-open #69.
 
 ## 12. Delivery tracking
 
