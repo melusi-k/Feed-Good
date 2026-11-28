@@ -202,7 +202,7 @@ enum PlantCheckInStore {
         let record = checkIn ?? PlantCheckIn(plantID: storedPlant.id, signRawValues: [])
         if checkIn == nil { context.insert(record) }
         record.observedAt = draft.observedAt
-        record.signRawValues = draft.signs.map(\\.rawValue).sorted()
+        record.signRawValues = draft.signs.map { $0.rawValue }.sorted()
         record.note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
         record.photoData = draft.photoData
 
