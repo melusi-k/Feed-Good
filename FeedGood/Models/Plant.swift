@@ -214,6 +214,15 @@ enum PlantCheckInStore {
         }
     }
 
+    /// Stages all observations for permanent plant deletion. The caller saves
+    /// these deletions together with the plant and its other owned records.
+    static func deleteAll(for plantID: UUID, in context: ModelContext) throws {
+        let records = try context.fetch(FetchDescriptor<PlantCheckIn>())
+        for record in records where record.plantID == plantID {
+            context.delete(record)
+        }
+    }
+
     static func delete(_ checkIn: PlantCheckIn, in context: ModelContext) throws {
         context.delete(checkIn)
         do {
