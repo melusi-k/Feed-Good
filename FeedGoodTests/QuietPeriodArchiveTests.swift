@@ -431,6 +431,19 @@ struct QuietPeriodArchiveTests {
         #expect(throws: JournalArchiveError.invalidRecord) {
             try decoded.validate()
         }
+
+        var current = JournalArchive(
+            plants: [.init(id: plantID, name: "Fern", species: "", notes: "", createdAt: .now)],
+            entries: []
+        )
+        let currentData = try JSONEncoder().encode(current)
+        var object = try #require(JSONSerialization.jsonObject(with: currentData) as? [String: Any])
+        object.removeValue(forKey: "plantCheckIns")
+        let missingKeyData = try JSONSerialization.data(withJSONObject: object)
+        let missingKey = try JSONDecoder().decode(JournalArchive.self, from: missingKeyData)
+        #expect(throws: JournalArchiveError.invalidRecord) {
+            try missingKey.validate()
+        }
     }
 
     @Test func invalidPlantCheckInReferencesSignsAndPhotosRejectBeforeWrites() throws {
