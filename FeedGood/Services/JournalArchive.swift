@@ -358,13 +358,20 @@ struct JournalArchive: Codable {
                 throw JournalArchiveError.invalidRecord
             }
         }
+        let isLetter: (UInt8) -> Bool = { (65...90).contains($0) || (97...122).contains($0) }
+        let isWellFormedSignID: (String) -> Bool = { value in
+            let bytes = Array(value.utf8)
+            guard (1...64).contains(bytes.count), let first = bytes.first, isLetter(first) else { return false }
+            return bytes.dropFirst().allSatisfy {
+                isLetter($0) || (48...57).contains($0) || $0 == 45 || $0 == 95
+            }
+        }
         for checkIn in checkInRecords {
-            let signs = checkIn.signRawValues.compactMap(PlantCheckInSign.init(rawValue:))
             guard plantIDs.contains(checkIn.plantID),
                   !checkIn.signRawValues.isEmpty,
-                  signs.count == checkIn.signRawValues.count,
                   Set(checkIn.signRawValues).count == checkIn.signRawValues.count,
-                  !signs.contains(.notSure) || signs.count == 1 else {
+                  checkIn.signRawValues.allSatisfy(isWellFormedSignID),
+                  !checkIn.signRawValues.contains(PlantCheckInSign.notSure.rawValue) || checkIn.signRawValues.count == 1 else {
                 throw JournalArchiveError.invalidRecord
             }
             if let data = checkIn.photoData, UIImage(data: data) == nil {
