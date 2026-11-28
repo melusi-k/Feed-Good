@@ -527,7 +527,8 @@ enum FeedGoodMigrationPlan: SchemaMigrationPlan {
                     }
                     try context.save()
                 }
-            )
+            ),
+            MigrationStage.lightweight(fromVersion: FeedGoodSchemaV6.self, toVersion: FeedGoodSchemaV7.self)
         ]
     }
 }
