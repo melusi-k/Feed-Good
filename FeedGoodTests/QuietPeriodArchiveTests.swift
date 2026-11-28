@@ -358,4 +358,134 @@ struct QuietPeriodArchiveTests {
         #expect(try recovery.fetch(FetchDescriptor<CareOpportunity>()).isEmpty)
     }
 
+
+    @Test func versionSixRoundTripsPlantCheckInsIdempotentlyAndRejectsConflicts() throws {
+        let source = try memory()
+        let sourceContext = ModelContext(source)
+        let fern = Plant(name: "Fern")
+        let aloe = Plant(name: "Aloe")
+        sourceContext.insert(fern)
+        sourceContext.insert(aloe)
+        try sourceContext.save()
+
+        try PlantCheckInStore.save(
+            PlantCheckInDraft(
+                observedAt: Date(timeIntervalSince1970: 1_700_000_000),
+                signs: [.yellowing, .spots],
+                note: "Lower leaves have small marks",
+                photoData: Data([0x01, 0x02, 0x03])
+            ),
+            for: fern,
+            in: sourceContext
+        )
+        try PlantCheckInStore.save(
+            PlantCheckInDraft(signs: [.notSure], note: "Couldn't identify what changed"),
+            for: aloe,
+            in: sourceContext
+        )
+        let sourceRecords = try sourceContext.fetch(FetchDescriptor<PlantCheckIn>())
+        let data = try JournalArchive.export(
+            plants: [fern, aloe],
+            entries: [],
+            plantCheckIns: sourceRecords
+        )
+        let archive = try JSONDecoder().decode(JournalArchive.self, from: data)
+        #expect(archive.version == 6)
+        #expect(archive.plantCheckIns?.count == 2)
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        let preview = try JournalArchive.preview(data, context: recovery)
+        #expect(preview.plantCheckInsToAdd == 2)
+        #expect(preview.plantCheckInsAlreadyPresent == 0)
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+
+        let restored = try recovery.fetch(FetchDescriptor<PlantCheckIn>())
+        #expect(restored.count == 2)
+        let restoredFern = try #require(restored.first { $0.plantID == fern.id })
+        #expect(restoredFern.signRawValues == ["spots", "yellowing"])
+        #expect(restoredFern.observedAt == Date(timeIntervalSince1970: 1_700_000_000))
+        #expect(restoredFern.note == "Lower leaves have small marks")
+        #expect(restoredFern.photoData == Data([0x01, 0x02, 0x03]))
+        #expect(restored.first { $0.plantID == aloe.id }?.signRawValues == ["notSure"])
+        #expect(try JournalArchive.recover(data, context: recovery) == 0)
+
+        restoredFern.note = "Changed locally"
+        try recovery.save()
+        #expect(throws: JournalArchiveError.conflictingRecord) {
+            try JournalArchive.recover(data, context: recovery)
+        }
+        #expect(restoredFern.note == "Changed locally")
+    }
+
+    @Test func preV6ArchiveRejectsEvenAnEmptyPlantCheckInsPayload() throws {
+        let plantID = UUID()
+        var legacy = JournalArchive(
+            plants: [.init(id: plantID, name: "Legacy Fern", species: "", notes: "", createdAt: .now)],
+            entries: [],
+            plantCheckIns: []
+        )
+        legacy.version = 5
+        let data = try JSONEncoder().encode(legacy)
+        let decoded = try JSONDecoder().decode(JournalArchive.self, from: data)
+        #expect(throws: JournalArchiveError.invalidRecord) {
+            try decoded.validate()
+        }
+    }
+
+    @Test func invalidPlantCheckInReferencesSignsAndPhotosRejectBeforeWrites() throws {
+        let plant = Plant(name: "Fern")
+        let base = JournalArchive(
+            plants: [.init(id: plant.id, name: plant.name, species: "", notes: "", createdAt: plant.createdAt)],
+            entries: [],
+            plantCheckIns: [
+                .init(
+                    id: UUID(), plantID: plant.id, observedAt: .now,
+                    signRawValues: [PlantCheckInSign.notSure.rawValue, PlantCheckInSign.yellowing.rawValue],
+                    note: "", photoData: nil
+                )
+            ]
+        )
+        #expect(throws: JournalArchiveError.invalidRecord) { try base.validate() }
+
+        var orphan = base
+        orphan.plantCheckIns = [
+            .init(id: UUID(), plantID: UUID(), observedAt: .now, signRawValues: [PlantCheckInSign.wilting.rawValue], note: "", photoData: nil)
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try orphan.validate() }
+
+        var unknown = base
+        unknown.plantCheckIns = [
+            .init(id: UUID(), plantID: plant.id, observedAt: .now, signRawValues: ["unknown-sign"], note: "", photoData: nil)
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try unknown.validate() }
+
+        var invalidPhoto = base
+        invalidPhoto.plantCheckIns = [
+            .init(id: UUID(), plantID: plant.id, observedAt: .now, signRawValues: [PlantCheckInSign.yellowing.rawValue], note: "", photoData: Data([0x00, 0x01]))
+        ]
+        #expect(throws: JournalArchiveError.invalidRecord) { try invalidPhoto.validate() }
+    }
+
+    @Test func failedCheckInRecoveryRollsBackPlantsAndObservationsTogether() throws {
+        enum InjectedFailure: Error { case save }
+        let source = try memory()
+        let context = ModelContext(source)
+        let plant = Plant(name: "Fern")
+        context.insert(plant)
+        try context.save()
+        try PlantCheckInStore.save(PlantCheckInDraft(signs: [.wilting]), for: plant, in: context)
+        let checkIn = try #require(context.fetch(FetchDescriptor<PlantCheckIn>()).first)
+        let data = try JournalArchive.export(plants: [plant], entries: [], plantCheckIns: [checkIn])
+
+        let destination = try memory()
+        let recovery = ModelContext(destination)
+        #expect(throws: InjectedFailure.self) {
+            try JournalArchive.recover(data, context: recovery) { _ in throw InjectedFailure.save }
+        }
+        let verify = ModelContext(destination)
+        #expect(try verify.fetch(FetchDescriptor<Plant>()).isEmpty)
+        #expect(try verify.fetch(FetchDescriptor<PlantCheckIn>()).isEmpty)
+    }
+
 }
