@@ -413,6 +413,7 @@ struct QuietPeriodArchiveTests {
         let preview = try JournalArchive.preview(data, context: recovery)
         #expect(preview.plantCheckInsToAdd == 2)
         #expect(preview.plantCheckInsAlreadyPresent == 0)
+        #expect(preview.confirmationMessage.contains("Plant check-ins: 2 to add, 0 already present"))
         #expect(try JournalArchive.recover(data, context: recovery) == 0)
 
         let restored = try recovery.fetch(FetchDescriptor<PlantCheckIn>())
