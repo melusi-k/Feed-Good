@@ -5,7 +5,7 @@ import UIKit
 
 @MainActor
 struct JournalTests {
-    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV6.self) }
+    private var schema: Schema { Schema(versionedSchema: FeedGoodSchemaV7.self) }
     private func memory() throws -> ModelContainer {
         try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
@@ -107,7 +107,7 @@ struct JournalTests {
             careEvents: [event]
         )
         let decoded = try JSONDecoder().decode(JournalArchive.self, from: data)
-        #expect(decoded.version == 5)
+        #expect(decoded.version == 6)
         #expect(decoded.careTasks?.count == 1)
         #expect(decoded.careEvents?.count == 1)
 
@@ -187,7 +187,7 @@ struct JournalTests {
         try destinationContext.save()
 
         let preview = try JournalArchive.preview(data, context: destinationContext)
-        #expect(preview.version == 5)
+        #expect(preview.version == 6)
         #expect(preview.plantsToAdd == 0)
         #expect(preview.plantsAlreadyPresent == 1)
         #expect(preview.entriesToAdd == 1)
