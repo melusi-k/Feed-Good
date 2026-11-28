@@ -773,14 +773,18 @@ struct JournalArchive: Codable {
             }
             for record in archive.plantCheckIns ?? [] where plantCheckIns[record.id] == nil {
                 guard plants[record.plantID] != nil else { throw JournalArchiveError.invalidRecord }
-                recoveryContext.insert(PlantCheckIn(
+                let restoredCheckIn = PlantCheckIn(
                     id: record.id,
                     plantID: record.plantID,
                     observedAt: record.observedAt,
                     signRawValues: record.signRawValues,
-                    note: record.note,
+                    note: "",
                     photoData: record.photoData
-                ))
+                )
+                // Archive recovery is lossless: unlike user-entered drafts, a
+                // stored archive note must not be normalized or rewritten.
+                restoredCheckIn.note = record.note
+                recoveryContext.insert(restoredCheckIn)
             }
             for record in archive.careTasks ?? [] where tasks[record.id] == nil {
                 guard let plant = plants[record.plantID],
