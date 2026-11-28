@@ -595,4 +595,27 @@ struct PlantPersistenceTests {
         }
     }
 
+
+    @Test func permanentlyDeletingPlantStagesAndRemovesItsCheckIns() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Schema(versionedSchema: FeedGoodSchemaV7.self), configurations: configuration)
+        let context = ModelContext(container)
+        let fern = Plant(name: "Fern")
+        let aloe = Plant(name: "Aloe")
+        context.insert(fern)
+        context.insert(aloe)
+        try context.save()
+
+        try PlantCheckInStore.save(PlantCheckInDraft(signs: [.yellowing]), for: fern, in: context)
+        try PlantCheckInStore.save(PlantCheckInDraft(signs: [.wilting]), for: aloe, in: context)
+        try PlantCheckInStore.deleteAll(for: fern.id, in: context)
+        context.delete(fern)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<PlantCheckIn>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.plantID == aloe.id)
+        #expect(try context.fetch(FetchDescriptor<Plant>()).map(\\.id) == [aloe.id])
+    }
+
 }
