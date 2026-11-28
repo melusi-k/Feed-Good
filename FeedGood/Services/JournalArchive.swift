@@ -34,6 +34,8 @@ struct JournalArchivePreview: Equatable {
     var quietPeriodsAlreadyPresent: Int = 0
     var quietPeriodSnapshotsToAdd: Int = 0
     var quietPeriodSnapshotsAlreadyPresent: Int = 0
+    var plantCheckInsToAdd: Int = 0
+    var plantCheckInsAlreadyPresent: Int = 0
 
     var confirmationMessage: String {
         """
@@ -45,6 +47,7 @@ struct JournalArchivePreview: Equatable {
         Scheduled care opportunities: \(careOpportunitiesToAdd) to add, \(careOpportunitiesAlreadyPresent) already present
         Quiet Periods: \(quietPeriodsToAdd) to add, \(quietPeriodsAlreadyPresent) already present
         Quiet Period task snapshots: \(quietPeriodSnapshotsToAdd) to add, \(quietPeriodSnapshotsAlreadyPresent) already present
+        Plant check-ins: \(plantCheckInsToAdd) to add, \(plantCheckInsAlreadyPresent) already present
 
         Existing plant records are preserved. Archive timestamps are restored for new plants; existing same-ID plants keep their current state. Existing journal and care records are checked for identical content; any conflict stops recovery before changes are saved.
         """
